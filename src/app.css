@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/* Fonts */
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+
+/* Tailwind v4 theme — maps design tokens to utility classes */
+@theme {
+  /* Backgrounds → bg-bg-base, bg-bg-surface, etc. */
+  --color-bg-base:     #0a0a0a;
+  --color-bg-surface:  #111111;
+  --color-bg-elevated: #1a1a1a;
+  --color-bg-border:   #242424;
+
+  /* Text → text-text-primary, text-text-secondary, etc. */
+  --color-text-primary:   #f0ede8;
+  --color-text-secondary: #7a7672;
+  --color-text-muted:     #3d3b38;
+
+  /* Accents → bg-accent-gain, text-accent-loss, etc. */
+  --color-accent-gain:    #4ade80;
+  --color-accent-loss:    #f87171;
+  --color-accent-neutral: #f0ede8;
+  --color-accent-amber:   #f59e0b;
+
+  /* Font families → font-sans, font-mono, font-serif */
+  --font-sans:  'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:  'IBM Plex Mono', monospace;
+  --font-serif: 'Instrument Serif', serif;
+
+  /* Type scale → text-xs (11px), text-sm (13px), etc. */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-lg:   18px;
+  --text-xl:   24px;
+  --text-2xl:  36px;
+}
+
+/* Design system — color variables (Design.md §2) */
+:root {
+  /* Backgrounds */
+  --bg-base:        #0a0a0a;
+  --bg-surface:     #111111;
+  --bg-elevated:    #1a1a1a;
+  --bg-border:      #242424;
+
+  /* Text */
+  --text-primary:   #f0ede8;
+  --text-secondary: #7a7672;
+  --text-muted:     #3d3b38;
+
+  /* Accents */
+  --accent-gain:    #4ade80;
+  --accent-loss:    #f87171;
+  --accent-neutral: #f0ede8;
+  --accent-amber:   #f59e0b;
+
+  /* Charts */
+  --chart-line:     #f0ede8;
+  --chart-bench:    #3d3b38;
+  --chart-hold:     rgba(240, 237, 232, 0.06);
+  --chart-entry:    #4ade80;
+  --chart-exit:     #f87171;
+  --chart-window:   rgba(245, 158, 11, 0.15);
+
+  /* Type scale (Design.md §3) */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-lg:   18px;
+  --text-xl:   24px;
+  --text-2xl:  36px;
+  --text-hero: 40px;
+  --text-3xl:  56px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+}
+
+:focus-visible {
+  outline: 1px solid var(--text-secondary);
+  outline-offset: 2px;
+}

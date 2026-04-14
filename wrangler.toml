@@ -1,0 +1,23 @@
+name                   = "aslan-ai"
+pages_build_output_dir = ".svelte-kit/cloudflare"
+compatibility_date     = "2024-10-01"
+compatibility_flags    = ["nodejs_compat"]
+
+[[d1_databases]]
+binding        = "DB"
+database_name  = "aslan-ai"
+database_id    = "81f2a5e9-5864-41be-9870-19a36fc3b1d6"
+migrations_dir = "src/lib/server/db/migrations/drizzle"
+
+# Non-secret public vars. Secrets must be set via: wrangler pages secret put <NAME> --project-name aslan-ai
+# Secrets needed: BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY,
+#                 OPENROUTER_API_KEY, ALPACA_API_KEY, ALPACA_API_SECRET, EXA_API_KEY,
+#                 POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET, POLAR_PRODUCT_STARTER,
+#                 POLAR_PRODUCT_PRO, POLAR_PRODUCT_POWER
+[observability]
+enabled = true
+
+[vars]
+PUBLIC_BASE_URL          = "https://aslanfinance.app"
+OPENROUTER_DEFAULT_MODEL = "openai/gpt-5.4-mini"
+EMAIL_FROM_DOMAIN        = "aslanfinance.app"
