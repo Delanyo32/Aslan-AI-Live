@@ -63,7 +63,7 @@
 
       <form onsubmit={handleSubmit}>
         <input
-          class="w-full py-2.5 px-3 bg-bg-base border text-text-primary font-sans text-sm rounded-[2px] outline-none focus:border-text-secondary {error ? 'border-accent-loss' : 'border-bg-border'}"
+          class="w-full py-2.5 px-3 bg-bg-base border text-text-primary font-sans text-sm rounded-none outline-none focus:border-text-secondary {error ? 'border-accent-loss' : 'border-bg-border'}"
           type="email"
           bind:value={email}
           placeholder="your@email.com"
@@ -73,7 +73,7 @@
           <p class="text-xs text-accent-loss mt-1.5">{error}</p>
         {/if}
         <button
-          class="mt-3 block w-full bg-transparent border border-bg-border text-text-primary font-sans text-sm py-2.5 px-4 cursor-pointer rounded-[2px] transition-[background] duration-100 hover:not-disabled:bg-bg-elevated disabled:text-accent-gain disabled:border-accent-gain disabled:cursor-default disabled:opacity-85"
+          class="mt-3 block w-full bg-transparent border border-bg-border text-text-primary font-sans text-sm py-2.5 px-4 cursor-pointer rounded-none transition-[background] duration-100 hover:not-disabled:bg-bg-elevated disabled:text-accent-gain disabled:border-accent-gain disabled:cursor-default disabled:opacity-85"
           type="submit"
           disabled={btnText !== 'Join waitlist →'}
         >

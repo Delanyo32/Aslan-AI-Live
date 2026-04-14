@@ -162,7 +162,7 @@
     <div class="relative flex items-center">
       <input
         type="text"
-        class="w-full py-1.5 px-2.5 bg-bg-surface border border-bg-border text-text-primary font-mono text-sm rounded-[2px] outline-none focus:border-text-secondary placeholder:text-text-muted placeholder:font-sans"
+        class="w-full py-1.5 px-2.5 bg-bg-surface border border-bg-border text-text-primary font-mono text-sm rounded-none outline-none focus:border-text-secondary placeholder:text-text-muted placeholder:font-sans"
         placeholder="Search ticker or company name…"
         bind:value={searchInput}
         oninput={onSearchInput}
@@ -198,7 +198,7 @@
       <span class="font-mono text-sm text-text-secondary">$</span>
       <input
         type="number"
-        class="w-[120px] py-1.5 px-2 bg-bg-surface border border-bg-border text-text-primary font-mono text-sm rounded-[2px] outline-none focus:border-text-secondary appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        class="w-[120px] py-1.5 px-2 bg-bg-surface border border-bg-border text-text-primary font-mono text-sm rounded-none outline-none focus:border-text-secondary appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         bind:value={totalPortfolioValue}
         min="1000"
         step="5000"

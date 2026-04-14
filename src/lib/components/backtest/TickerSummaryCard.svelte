@@ -58,7 +58,7 @@
   {/snippet}
 
   {#snippet children()}
-    <div class="edit-wrap">
+    <div class="flex flex-col gap-3 pt-1">
       <TickerConfirmation
         ranked_tickers={rankedTickers}
         {defaultDirection}
@@ -68,33 +68,10 @@
         initialManualTickers={extraTickers}
         onconfirmed={(payload) => onSave(payload)}
       />
-      <button class="cancel-btn" onclick={onCancel}>Cancel edit</button>
+      <button
+        class="bg-transparent border-none p-0 font-sans text-sm text-text-muted cursor-pointer underline decoration-black hover:text-text-secondary text-left"
+        onclick={onCancel}
+      >Cancel edit</button>
     </div>
   {/snippet}
 </StepCard>
-
-<style>
-  .edit-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 4px;
-  }
-
-  .cancel-btn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-    text-align: left;
-  }
-
-  .cancel-btn:hover {
-    color: var(--text-secondary);
-  }
-</style>

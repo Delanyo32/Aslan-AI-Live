@@ -6,32 +6,37 @@
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/instrument-serif/400.css';
 @import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource/playfair-display/400.css';
+@import '@fontsource/playfair-display/400-italic.css';
+@import '@fontsource/playfair-display/700.css';
+@import '@fontsource/source-serif-4/400.css';
+@import '@fontsource/source-serif-4/400-italic.css';
 
 /* Tailwind v4 theme — maps design tokens to utility classes */
 @theme {
   /* Backgrounds → bg-bg-base, bg-bg-surface, etc. */
-  --color-bg-base:     #0a0a0a;
-  --color-bg-surface:  #111111;
-  --color-bg-elevated: #1a1a1a;
-  --color-bg-border:   #242424;
+  --color-bg-base:     #FFFFFF;
+  --color-bg-surface:  #F5F5F5;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-border:   #000000;
 
   /* Text → text-text-primary, text-text-secondary, etc. */
-  --color-text-primary:   #f0ede8;
-  --color-text-secondary: #7a7672;
-  --color-text-muted:     #3d3b38;
+  --color-text-primary:   #000000;
+  --color-text-secondary: #525252;
+  --color-text-muted:     #AAAAAA;
 
-  /* Accents → bg-accent-gain, text-accent-loss, etc. */
+  /* Accents — functional data indicators only */
   --color-accent-gain:    #4ade80;
   --color-accent-loss:    #f87171;
-  --color-accent-neutral: #f0ede8;
-  --color-accent-amber:   #f59e0b;
+  --color-accent-neutral: #000000;
 
-  /* Font families → font-sans, font-mono, font-serif */
-  --font-sans:  'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono:  'IBM Plex Mono', monospace;
-  --font-serif: 'Instrument Serif', serif;
+  /* Font families → font-sans, font-mono, font-serif, font-display */
+  --font-sans:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+  --font-serif:   'Instrument Serif', serif;
+  --font-display: 'Playfair Display', Georgia, serif;
 
-  /* Type scale → text-xs (11px), text-sm (13px), etc. */
+  /* Type scale */
   --text-xs:   11px;
   --text-sm:   13px;
   --text-base: 15px;
@@ -40,65 +45,94 @@
   --text-2xl:  36px;
 }
 
-/* Design system — color variables (Design.md §2) */
+/* Design system — color variables */
 :root {
-  /* Backgrounds */
-  --bg-base:        #0a0a0a;
-  --bg-surface:     #111111;
-  --bg-elevated:    #1a1a1a;
-  --bg-border:      #242424;
+  /* Backgrounds — Minimalist Monochrome */
+  --bg-base:        #FFFFFF;
+  --bg-surface:     #F5F5F5;
+  --bg-elevated:    #FFFFFF;
+  --bg-border:      #000000;
+  --bg-border-light: #E5E5E5;
 
   /* Text */
-  --text-primary:   #f0ede8;
-  --text-secondary: #7a7672;
-  --text-muted:     #3d3b38;
+  --text-primary:   #000000;
+  --text-secondary: #525252;
+  --text-muted:     #AAAAAA;   /* disabled text, hints, timestamps */
 
-  /* Accents */
+  /* Accents — functional data indicators only, no decorative accent colors */
   --accent-gain:    #4ade80;
   --accent-loss:    #f87171;
-  --accent-neutral: #f0ede8;
-  --accent-amber:   #f59e0b;
+  --accent-neutral: #000000;
 
-  /* Charts */
-  --chart-line:     #f0ede8;
-  --chart-bench:    #3d3b38;
-  --chart-hold:     rgba(240, 237, 232, 0.06);
+  /* Charts — adapted for white background */
+  --chart-line:     #000000;
+  --chart-bench:    #888888;
+  --chart-hold:     rgba(0, 0, 0, 0.04);
   --chart-entry:    #4ade80;
   --chart-exit:     #f87171;
-  --chart-window:   rgba(245, 158, 11, 0.15);
+  --chart-window:   rgba(0, 0, 0, 0.06);
 
-  /* Type scale (Design.md §3) */
+  /* Display font */
+  --font-display: 'Playfair Display', Georgia, serif;
+
+  /* Type scale — extended MM range */
   --text-xs:   11px;
   --text-sm:   13px;
   --text-base: 15px;
   --text-lg:   18px;
   --text-xl:   24px;
   --text-2xl:  36px;
-  --text-hero: 40px;
-  --text-3xl:  56px;
+  --text-3xl:  2rem;    /* 32px */
+  --text-4xl:  2.5rem;  /* 40px */
+  --text-5xl:  3.5rem;  /* 56px */
+  --text-6xl:  4.5rem;  /* 72px */
+  --text-7xl:  6rem;    /* 96px */
+  --text-8xl:  8rem;    /* 128px */
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    color-scheme: light;
+    background: #FFFFFF;
+    color: #000000;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: var(--text-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  :focus-visible {
+    outline: 3px solid #000000;
+    outline-offset: 3px;
+  }
 }
 
-html {
-  color-scheme: dark;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: var(--text-base);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+/* MM texture utilities */
+.texture-lines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    #000 1px,
+    #000 2px
+  );
+  background-size: 100% 4px;
+  opacity: 0.015;
 }
 
-body {
-  min-height: 100vh;
-}
-
-:focus-visible {
-  outline: 1px solid var(--text-secondary);
-  outline-offset: 2px;
+.texture-grid {
+  background-image:
+    linear-gradient(#00000008 1px, transparent 1px),
+    linear-gradient(90deg, #00000008 1px, transparent 1px);
+  background-size: 40px 40px;
 }

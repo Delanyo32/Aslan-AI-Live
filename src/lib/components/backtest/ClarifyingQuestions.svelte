@@ -96,7 +96,7 @@
         <span class="font-mono text-base text-text-secondary">$</span>
         <input
           type="number"
-          class="w-[120px] max-sm:w-full py-1.5 px-2 bg-bg-surface border border-bg-border text-text-primary font-mono text-base rounded-[2px] outline-none focus:border-text-secondary appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          class="w-[120px] max-sm:w-full py-1.5 px-2 bg-bg-surface border border-bg-border text-text-primary font-mono text-base rounded-none outline-none focus:border-text-secondary appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           bind:value={positionSize}
           min="100"
           step="1000"

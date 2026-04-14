@@ -78,34 +78,34 @@
 
 <!-- ── Success Banner ──────────────────────────────────────────────────────── -->
 {#if success}
-  <div class="success-banner">
+  <div class="inline-block font-sans text-sm text-accent-gain mb-8">
     ✓ Credits added to your account.
   </div>
 {/if}
 
 <!-- ── Balance ─────────────────────────────────────────────────────────────── -->
-<section class="section">
-  <span class="section-label">BALANCE</span>
-  <p class="balance-display">⚡ {credits} {credits === 1 ? 'credit' : 'credits'} remaining</p>
+<section class="flex flex-col gap-4 mb-12">
+  <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">BALANCE</span>
+  <p class="font-mono text-2xl text-text-primary">⚡ {credits} {credits === 1 ? 'credit' : 'credits'} remaining</p>
 </section>
 
 <!-- ── Credit Packs ────────────────────────────────────────────────────────── -->
-<section class="section">
-  <span class="section-label">CREDIT PACKS</span>
+<section class="flex flex-col gap-4 mb-12">
+  <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">CREDIT PACKS</span>
 
-  <div class="packs-table">
+  <div class="border-t border-black">
     {#each packs as pack (pack.key)}
-      <div class="pack-row">
-        <span class="pack-name">{pack.label}</span>
-        <span class="pack-credits mono">{pack.credits} credits</span>
-        <span class="pack-price mono">{pack.price}</span>
-        <span class="pack-per mono">{pack.perCredit}</span>
-        <div class="pack-action">
+      <div class="flex items-center gap-4 py-3 border-b border-black flex-wrap">
+        <span class="font-sans text-sm text-text-primary min-w-[64px]">{pack.label}</span>
+        <span class="font-mono text-sm text-text-secondary min-w-[80px]">{pack.credits} credits</span>
+        <span class="font-mono text-sm text-text-secondary min-w-[52px]">{pack.price}</span>
+        <span class="font-mono text-sm text-text-secondary min-w-[96px]">{pack.perCredit}</span>
+        <div class="ml-auto flex items-center gap-3">
           {#if buyError === pack.key}
-            <span class="buy-error">Error — try again</span>
+            <span class="font-sans text-xs text-accent-loss">Error — try again</span>
           {/if}
           <button
-            class="buy-btn"
+            class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 hover:border-[#525252] disabled:opacity-40 disabled:cursor-default"
             disabled={!!buying}
             onclick={() => buy(pack.key)}
           >
@@ -118,175 +118,22 @@
 </section>
 
 <!-- ── Usage History ───────────────────────────────────────────────────────── -->
-<section class="section">
-  <span class="section-label">USAGE HISTORY</span>
+<section class="flex flex-col gap-4 mb-12">
+  <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">USAGE HISTORY</span>
 
   {#if data.transactions.length === 0}
-    <p class="empty-state">No transactions yet.</p>
+    <p class="font-sans text-sm text-text-secondary py-6">No transactions yet.</p>
   {:else}
-    <div class="history-table">
+    <div class="border-t border-black">
       {#each data.transactions as tx (tx.id)}
-        <div class="history-row">
-          <span class="tx-date mono">{formatDate(tx.created_at)}</span>
-          <span class="tx-reason">{formatReason(tx.reason)}</span>
+        <div class="flex items-center gap-4 py-2.5 border-b border-black flex-wrap">
+          <span class="font-mono text-sm text-text-muted whitespace-nowrap min-w-[96px]">{formatDate(tx.created_at)}</span>
+          <span class="font-sans text-sm text-text-secondary flex-1">{formatReason(tx.reason)}</span>
           <span
-            class="tx-amount mono"
-            class:gain={tx.amount > 0}
-            class:loss={tx.amount < 0}
+            class="font-mono text-sm whitespace-nowrap ml-auto {tx.amount > 0 ? 'text-accent-gain' : tx.amount < 0 ? 'text-accent-loss' : 'text-text-secondary'}"
           >{tx.amount > 0 ? `+${tx.amount}` : tx.amount}</span>
         </div>
       {/each}
     </div>
   {/if}
 </section>
-
-<style>
-  /* ── Success Banner ──────────────────────────────────────────────────────── */
-  .success-banner {
-    display: inline-block;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--accent-gain);
-    margin-bottom: 32px;
-  }
-
-  /* ── Sections ────────────────────────────────────────────────────────────── */
-  .section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 48px;
-  }
-
-  .section-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  /* ── Balance ─────────────────────────────────────────────────────────────── */
-  .balance-display {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-2xl);
-    color: var(--text-primary);
-  }
-
-  /* ── Credit Packs ────────────────────────────────────────────────────────── */
-  .packs-table {
-    border-top: 1px solid var(--bg-border);
-  }
-
-  .pack-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--bg-border);
-    flex-wrap: wrap;
-  }
-
-  .pack-name {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    min-width: 64px;
-  }
-
-  .mono {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  .pack-credits {
-    min-width: 80px;
-  }
-
-  .pack-price {
-    min-width: 52px;
-  }
-
-  .pack-per {
-    min-width: 96px;
-  }
-
-  .pack-action {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .buy-btn {
-    background: transparent;
-    border: 1px solid var(--bg-border);
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    padding: 6px 14px;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: border-color 100ms, color 100ms;
-  }
-
-  .buy-btn:hover:not(:disabled) {
-    border-color: var(--text-secondary);
-  }
-
-  .buy-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
-  .buy-error {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    color: var(--accent-loss);
-  }
-
-  /* ── Usage History ───────────────────────────────────────────────────────── */
-  .history-table {
-    border-top: 1px solid var(--bg-border);
-  }
-
-  .history-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--bg-border);
-    flex-wrap: wrap;
-  }
-
-  .tx-date {
-    color: var(--text-muted);
-    white-space: nowrap;
-    min-width: 96px;
-  }
-
-  .tx-reason {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    flex: 1;
-  }
-
-  .tx-amount {
-    white-space: nowrap;
-    margin-left: auto;
-  }
-
-  .tx-amount.gain { color: var(--accent-gain); }
-  .tx-amount.loss { color: var(--accent-loss); }
-
-  /* ── Empty State ─────────────────────────────────────────────────────────── */
-  .empty-state {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    padding: 24px 0;
-  }
-</style>

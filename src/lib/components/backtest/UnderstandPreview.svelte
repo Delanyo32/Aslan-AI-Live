@@ -61,81 +61,79 @@
   );
 </script>
 
-<div class="understand-preview">
-  <hr class="divider" />
+<div class="flex flex-col gap-6">
+  <hr class="border-none border-t border-black m-0" />
 
-  <!-- ── Understanding card ─────────────────────────────────────────────── -->
-  <div class="section">
-    <p class="section-label">ASLAN UNDERSTOOD</p>
-    <p class="event-description">{understand.event_spec.event_description}</p>
-    <p class="event-meta">
-      <span class="event-type">{understand.event_spec.event_type}</span>
-      <span class="meta-sep">·</span>
-      <span class="date-range">
+  <!-- Understanding card -->
+  <div class="flex flex-col gap-3">
+    <p class="font-sans text-xs font-medium uppercase tracking-[0.08em] text-text-secondary m-0">ASLAN UNDERSTOOD</p>
+    <p class="font-sans text-base text-text-primary leading-[1.6] m-0">{understand.event_spec.event_description}</p>
+    <p class="flex items-center gap-2 flex-wrap m-0">
+      <span class="font-sans text-sm text-text-secondary lowercase">{understand.event_spec.event_type}</span>
+      <span class="text-sm text-text-muted select-none">·</span>
+      <span class="font-mono text-sm text-text-secondary">
         {formatDate(understand.event_spec.date_range.start)} → {formatDate(understand.event_spec.date_range.end)}
       </span>
     </p>
   </div>
 
-  <!-- ── News evidence ──────────────────────────────────────────────────── -->
+  <!-- News evidence -->
   {#if previewArticles.length > 0}
-    <div class="section">
-      <p class="section-label">NEWS EVIDENCE</p>
-      <div class="articles">
+    <div class="flex flex-col gap-3">
+      <p class="font-sans text-xs font-medium uppercase tracking-[0.08em] text-text-secondary m-0">NEWS EVIDENCE</p>
+      <div class="flex flex-col gap-4">
         {#each previewArticles as article}
           {@const src = article.sources[0]}
-          <div class="article-card">
+          <div class="flex flex-col gap-1 p-3 bg-bg-surface border border-black">
             <a
               href={src.url}
               target="_blank"
               rel="noopener noreferrer"
-              class="article-headline"
+              class="font-sans text-sm text-text-primary no-underline leading-[1.5] hover:underline hover:decoration-black"
             >{src.title}</a>
-            <p class="article-meta">
-              <span class="article-source">{extractSource(src.url)}</span>
-              <span class="meta-sep">·</span>
-              <span class="article-date">{formatDate(article.event_date)}</span>
+            <p class="flex items-center gap-[6px] m-0">
+              <span class="font-sans text-xs text-text-muted capitalize">{extractSource(src.url)}</span>
+              <span class="text-xs text-text-muted select-none">·</span>
+              <span class="font-mono text-xs text-text-muted">{formatDate(article.event_date)}</span>
             </p>
-            <p class="article-summary">{article.description}</p>
+            <p class="font-sans text-sm text-text-secondary leading-[1.55] mt-1 mb-0">{article.description}</p>
           </div>
         {/each}
       </div>
     </div>
   {/if}
 
-  <!-- ── Clarifying questions (only if HIGH ambiguity) ─────────────────── -->
+  <!-- Clarifying questions (only if HIGH ambiguity) -->
   {#if understand.ambiguity === 'HIGH' && understand.clarifying_questions.length > 0}
-    <div class="section">
-      <p class="section-label">A FEW QUESTIONS</p>
-      <div class="questions">
+    <div class="flex flex-col gap-3">
+      <p class="font-sans text-xs font-medium uppercase tracking-[0.08em] text-text-secondary m-0">A FEW QUESTIONS</p>
+      <div class="flex flex-col gap-5">
         {#each understand.clarifying_questions as cq, i}
-          <div class="question">
-            <p class="question-text">{cq.question}</p>
-            <div class="options">
+          <div class="flex flex-col gap-[10px]">
+            <p class="font-sans text-base text-text-primary m-0">{cq.question}</p>
+            <div class="flex flex-wrap gap-y-1 gap-x-5">
               {#each cq.options as option}
                 <button
-                  class="radio-option"
-                  class:selected={modes[i] === 'option' && answers[i] === option}
+                  class="flex items-center gap-[7px] bg-transparent border-none p-0 font-sans text-sm cursor-pointer transition-colors duration-100 {modes[i] === 'option' && answers[i] === option ? 'text-text-primary' : 'text-text-secondary'}"
                   onclick={() => { answers[i] = option; modes[i] = 'option'; }}
                 >
-                  <span class="radio-mark">{modes[i] === 'option' && answers[i] === option ? '●' : '○'}</span>
+                  <span class="text-[11px] leading-none">{modes[i] === 'option' && answers[i] === option ? '●' : '○'}</span>
                   {option}
                 </button>
               {/each}
               <!-- Other / custom answer -->
               <button
-                class="radio-option"
-                class:selected={modes[i] === 'custom'}
+                class="flex items-center gap-[7px] bg-transparent border-none p-0 font-sans text-sm cursor-pointer transition-colors duration-100 {modes[i] === 'custom' ? 'text-text-primary' : 'text-text-secondary'}"
                 onclick={() => { modes[i] = 'custom'; }}
               >
-                <span class="radio-mark">{modes[i] === 'custom' ? '●' : '○'}</span>
+                <span class="text-[11px] leading-none">{modes[i] === 'custom' ? '●' : '○'}</span>
                 Other
               </button>
             </div>
             {#if modes[i] === 'custom'}
               <input
                 type="text"
-                class="custom-input"
+                class="w-full px-[10px] py-[7px] bg-bg-surface border border-black text-text-primary font-sans text-sm rounded-none outline-none focus:border-[#525252] placeholder:text-text-muted"
                 placeholder="Type your answer…"
                 bind:value={customInputs[i]}
               />
@@ -146,244 +144,21 @@
     </div>
   {/if}
 
-  <!-- ── Actions ────────────────────────────────────────────────────────── -->
-  <div class="actions">
-    <button type="button" class="continue-btn" onclick={handleContinue}>
+  <!-- Actions -->
+  <div class="flex items-center gap-5">
+    <button
+      type="button"
+      class="px-5 py-[11px] border border-black bg-transparent text-text-primary font-sans text-base cursor-pointer rounded-none transition-colors duration-100 hover:bg-bg-elevated"
+      onclick={handleContinue}
+    >
       Continue →
     </button>
-    <button type="button" class="refine-btn" onclick={onrefine}>
+    <button
+      type="button"
+      class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer underline decoration-black hover:text-text-primary hover:decoration-black"
+      onclick={onrefine}
+    >
       Refine query →
     </button>
   </div>
 </div>
-
-<style>
-  .understand-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--bg-border);
-    margin: 0;
-  }
-
-  .section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .section-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  /* Understanding */
-  .event-description {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    color: var(--text-primary);
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  .event-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin: 0;
-  }
-
-  .event-type {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    text-transform: lowercase;
-  }
-
-  .meta-sep {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    user-select: none;
-  }
-
-  .date-range {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  /* Articles */
-  .articles {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .article-card {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px;
-    background: var(--bg-surface);
-    border: 1px solid var(--bg-border);
-  }
-
-  .article-headline {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    text-decoration: none;
-    line-height: 1.5;
-  }
-
-  .article-headline:hover {
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-  }
-
-  .article-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-  }
-
-  .article-source {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    text-transform: capitalize;
-  }
-
-  .article-date {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-  }
-
-  .article-summary {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    line-height: 1.55;
-    margin: 4px 0 0;
-  }
-
-  /* Clarifying questions */
-  .questions {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .question {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .question-text {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    color: var(--text-primary);
-    margin: 0;
-  }
-
-  .options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 20px;
-  }
-
-  .radio-option {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: color 100ms;
-  }
-
-  .radio-option.selected {
-    color: var(--text-primary);
-  }
-
-  .radio-mark {
-    font-size: 11px;
-    line-height: 1;
-  }
-
-  .custom-input {
-    width: 100%;
-    padding: 7px 10px;
-    background: var(--bg-surface);
-    border: 1px solid var(--bg-border);
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    border-radius: 2px;
-    outline: none;
-  }
-
-  .custom-input:focus {
-    border-color: var(--text-secondary);
-  }
-
-  .custom-input::placeholder {
-    color: var(--text-muted);
-  }
-
-  /* Actions */
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .continue-btn {
-    padding: 11px 20px;
-    border: 1px solid var(--bg-border);
-    background: transparent;
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    cursor: pointer;
-    transition: background 100ms;
-  }
-
-  .continue-btn:hover {
-    background: var(--bg-elevated);
-  }
-
-  .refine-btn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-  }
-
-  .refine-btn:hover {
-    color: var(--text-primary);
-    text-decoration-color: var(--text-primary);
-  }
-</style>

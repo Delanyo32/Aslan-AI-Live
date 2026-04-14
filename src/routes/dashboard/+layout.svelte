@@ -10,8 +10,6 @@
   const credits = $derived(liveCredits ?? data.user.credits ?? 0)
   const creditsLabel = $derived(credits === 1 ? 'credit' : 'credits')
 
-  // When Polar redirects back with ?success=1, the webhook may not have fired yet.
-  // Poll /api/user/credits until the balance increases, then latch the fresh value.
   const isSuccessPage = $derived($page.url.searchParams.get('success') === '1')
 
   $effect(() => {
@@ -40,135 +38,36 @@
   }
 </script>
 
-<nav class="top-nav">
-  <a href="/dashboard" class="wordmark">Aslan Finance</a>
+<nav class="flex items-center py-4 border-b-2 border-black relative">
+  <a href="/dashboard" class="font-display italic text-lg font-normal text-black no-underline tracking-[-0.01em]">Aslan Finance</a>
 
-  <div class="nav-right">
-    <a href="/backtests" class="account-link desktop-only">Explore</a>
-    <a href="/dashboard/credits" class="credits-badge">⚡ {credits} {creditsLabel}</a>
-    <a href="/dashboard/account" class="account-link desktop-only">Account</a>
+  <div class="ml-auto flex items-center gap-6">
+    <a href="/backtests" class="max-sm:hidden font-sans text-xs tracking-[0.08em] uppercase text-[#525252] no-underline hover:text-black transition-colors duration-100">Explore</a>
+    <a href="/dashboard/credits" class="font-mono text-xs tracking-[0.05em] text-black no-underline hover:underline">⚡ {credits} {creditsLabel}</a>
+    <a href="/dashboard/account" class="max-sm:hidden font-sans text-xs tracking-[0.08em] uppercase text-[#525252] no-underline hover:text-black transition-colors duration-100">Account</a>
 
     <button
-      class="menu-toggle mobile-only"
+      class="hidden max-sm:block bg-transparent border border-black text-black text-base cursor-pointer py-1 px-2 leading-none hover:bg-black hover:text-white transition-colors duration-100"
       onclick={() => menuOpen = !menuOpen}
       aria-label="Toggle menu"
     >☰</button>
   </div>
 
   {#if menuOpen}
-    <div class="mobile-dropdown">
-      <a href="/dashboard/account" onclick={() => menuOpen = false}>Account</a>
-      <button class="dropdown-signout" onclick={handleSignOut}>Log out</button>
+    <div class="absolute top-full right-0 bg-white border border-black min-w-[140px] z-50">
+      <a
+        href="/dashboard/account"
+        onclick={() => menuOpen = false}
+        class="block px-4 py-3 font-sans text-xs tracking-[0.08em] uppercase text-black no-underline w-full text-left hover:bg-black hover:text-white transition-colors duration-100"
+      >Account</a>
+      <button
+        class="block px-4 py-3 font-sans text-xs tracking-[0.08em] uppercase text-black w-full text-left bg-transparent border-none cursor-pointer hover:bg-black hover:text-white transition-colors duration-100"
+        onclick={handleSignOut}
+      >Log out</button>
     </div>
   {/if}
 </nav>
 
-<div class="dashboard-content">
+<div class="pt-10 pb-16">
   {@render children()}
 </div>
-
-<style>
-  .top-nav {
-    display: flex;
-    align-items: center;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--bg-border);
-    position: relative;
-  }
-
-  .wordmark {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    font-weight: 500;
-    color: var(--text-primary);
-    text-decoration: none;
-  }
-
-  .nav-right {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .credits-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    text-decoration: none;
-  }
-
-  .credits-badge:hover {
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-  }
-
-  .account-link {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    text-decoration: none;
-  }
-
-  .account-link:hover {
-    color: var(--text-primary);
-  }
-
-  .menu-toggle {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: var(--text-base);
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-  }
-
-  .menu-toggle:hover {
-    color: var(--text-primary);
-  }
-
-  /* Mobile dropdown — no animation per spec */
-  .mobile-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--bg-elevated);
-    border: 1px solid var(--bg-border);
-    min-width: 120px;
-    z-index: 50;
-  }
-
-  .mobile-dropdown a,
-  .dropdown-signout {
-    display: block;
-    padding: 12px 16px;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    text-decoration: none;
-    width: 100%;
-    text-align: left;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-  }
-
-  .mobile-dropdown a:hover,
-  .dropdown-signout:hover {
-    background: var(--bg-base);
-  }
-
-  .dashboard-content {
-    padding: 40px 0 64px;
-  }
-
-  /* Responsive — desktop: show Account link, hide toggle */
-  .desktop-only { display: inline; }
-  .mobile-only  { display: none; }
-
-  @media (max-width: 640px) {
-    .desktop-only { display: none; }
-    .mobile-only  { display: block; }
-  }
-</style>

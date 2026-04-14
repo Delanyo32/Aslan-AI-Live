@@ -4,380 +4,120 @@
 </script>
 
 <!-- ── Nav ───────────────────────────────────────────────────────────────── -->
-<nav class="top-nav">
-	<a href="/" class="wordmark">Aslan Finance</a>
-	<div class="nav-right">
-		<a href="/#how-it-works" class="nav-link">How it works</a>
-		<a href="/pricing" class="nav-link active">Pricing</a>
+<nav class="flex items-center py-5 border-b-2 border-black">
+	<a href="/" class="font-display italic font-normal text-[22px] text-text-primary no-underline tracking-[-0.01em]">Aslan Finance</a>
+	<div class="ml-auto flex items-center gap-7 max-sm:gap-4">
+		<a href="/#how-it-works" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">How it works</a>
+		<a href="/pricing" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline border-b-2 border-black pb-px">Pricing</a>
 		{#if data.user}
-			<a href="/dashboard" class="nav-link nav-cta">Dashboard →</a>
+			<a href="/dashboard" class="font-sans text-xs tracking-[0.1em] uppercase bg-black text-white px-[18px] py-2 border-2 border-black no-underline transition-colors duration-100 hover:bg-white hover:text-black">Dashboard →</a>
 		{:else}
-			<a href="/auth/login" class="nav-link">Login</a>
-			<a href="/auth/register" class="nav-link nav-cta">Register</a>
+			<a href="/auth/login" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">Login</a>
+			<a href="/auth/register" class="font-sans text-xs tracking-[0.1em] uppercase bg-black text-white px-[18px] py-2 border-2 border-black no-underline transition-colors duration-100 hover:bg-white hover:text-black">Register →</a>
 		{/if}
 	</div>
 </nav>
 
-<main class="pricing-page">
-	<div class="content-col">
+<main class="pt-12 pb-24">
+	<div class="max-w-[560px] mx-auto flex flex-col">
 
-		<div class="page-header">
-			<h1 class="headline">Pricing</h1>
-			<p class="sub">Free to start — 3 credits on signup, no card required.</p>
+		<div class="pb-10">
+			<h1 class="font-display italic font-normal text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.1] text-text-primary m-0 mb-4">Pricing</h1>
+			<p class="font-sans text-base text-text-secondary m-0">Free to start — 3 credits on signup, no card required.</p>
 		</div>
 
 		<!-- Credit packs -->
-		<div class="section-block">
-			<span class="section-label">CREDIT PACKS</span>
+		<div class="border-t border-black py-10 flex flex-col gap-5">
+			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">CREDIT PACKS</span>
 
-			<div class="pricing-table">
-				<div class="pricing-row pricing-header">
+			<div class="flex flex-col border border-black">
+				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-sans text-xs tracking-[0.06em] text-text-secondary bg-bg-surface uppercase border-b border-black">
 					<span>PACK</span>
 					<span>CREDITS</span>
-					<span class="col-right">PRICE</span>
-					<span class="col-right">PER CREDIT</span>
+					<span class="text-right">PRICE</span>
+					<span class="text-right">PER CREDIT</span>
 				</div>
-				<div class="pricing-row">
+				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
 					<span>Starter</span>
 					<span>10</span>
-					<span class="col-right">$9</span>
-					<span class="col-right muted">$0.90</span>
+					<span class="text-right">$9</span>
+					<span class="text-right text-text-muted">$0.90</span>
 				</div>
-				<div class="pricing-row">
+				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
 					<span>Pro</span>
 					<span>30</span>
-					<span class="col-right">$19</span>
-					<span class="col-right muted">$0.63</span>
+					<span class="text-right">$19</span>
+					<span class="text-right text-text-muted">$0.63</span>
 				</div>
-				<div class="pricing-row">
+				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary">
 					<span>Power</span>
 					<span>100</span>
-					<span class="col-right">$49</span>
-					<span class="col-right muted">$0.49</span>
+					<span class="text-right">$49</span>
+					<span class="text-right text-text-muted">$0.49</span>
 				</div>
 			</div>
 
-			<p class="note">Credits do not expire. No subscription required.</p>
+			<p class="font-sans text-sm text-text-muted m-0">Credits do not expire. No subscription required.</p>
 		</div>
 
 		<!-- Credit costs -->
-		<div class="section-block">
-			<span class="section-label">CREDIT COSTS</span>
+		<div class="border-t border-black py-10 flex flex-col gap-5">
+			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">CREDIT COSTS</span>
 
-			<div class="cost-table">
-				<div class="cost-row">
-					<span class="cost-desc">Basic backtest (1 ticker, ≤5 events)</span>
-					<span class="cost-val">1 credit</span>
+			<div class="flex flex-col">
+				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
+					<span class="text-text-secondary">Basic backtest (1 ticker, ≤5 events)</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">1 credit</span>
 				</div>
-				<div class="cost-row">
-					<span class="cost-desc">Standard backtest (1 ticker, 6–20 events)</span>
-					<span class="cost-val">2 credits</span>
+				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
+					<span class="text-text-secondary">Standard backtest (1 ticker, 6–20 events)</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">2 credits</span>
 				</div>
-				<div class="cost-row">
-					<span class="cost-desc">Multi-stock backtest (2–5 tickers)</span>
-					<span class="cost-val">3 credits</span>
+				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
+					<span class="text-text-secondary">Multi-stock backtest (2–5 tickers)</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">3 credits</span>
 				</div>
-				<div class="cost-row">
-					<span class="cost-desc">Multi-stock backtest (6–10 tickers)</span>
-					<span class="cost-val">5 credits</span>
+				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
+					<span class="text-text-secondary">Multi-stock backtest (6–10 tickers)</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">5 credits</span>
 				</div>
-				<div class="cost-row">
-					<span class="cost-desc">Re-run with adjusted parameters</span>
-					<span class="cost-val">1 credit</span>
+				<div class="flex justify-between py-[9px] font-sans text-sm">
+					<span class="text-text-secondary">Re-run with adjusted parameters</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">1 credit</span>
 				</div>
 			</div>
 
-			<div class="rules">
-				<p class="rule">Credits are deducted only on successful completion.</p>
-				<p class="rule">Zero events found = 0 credits consumed.</p>
-				<p class="rule">Shared reports are free to view — no credits required.</p>
+			<div class="flex flex-col gap-1.5">
+				<p class="font-sans text-sm text-text-muted m-0">Credits are deducted only on successful completion.</p>
+				<p class="font-sans text-sm text-text-muted m-0">Zero events found = 0 credits consumed.</p>
+				<p class="font-sans text-sm text-text-muted m-0">Shared reports are free to view — no credits required.</p>
 			</div>
 		</div>
 
 		<!-- Free tier -->
-		<div class="section-block">
-			<span class="section-label">FREE TIER</span>
-			<p class="free-desc">
+		<div class="border-t border-black py-10 flex flex-col gap-5">
+			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">FREE TIER</span>
+			<p class="font-sans text-base text-text-secondary leading-relaxed m-0">
 				Every account starts with 3 free credits — no credit card required.
 				Run your first backtest immediately after signing up.
 			</p>
-			<a href="/auth/register" class="outlined-btn">Get started free →</a>
+			<a
+				href="/auth/register"
+				class="inline-block self-start py-[11px] px-5 border border-black bg-transparent text-text-primary font-sans text-sm no-underline cursor-pointer transition-colors duration-100 hover:bg-bg-elevated"
+			>Get started free →</a>
 		</div>
 
 	</div>
 </main>
 
-<footer class="site-footer">
-	<div class="footer-inner">
+<footer class="border-t border-black py-6">
+	<div class="max-w-[1100px] mx-auto px-6 flex items-center gap-3 font-sans text-xs text-text-muted flex-wrap">
 		<span>© 2025 Aslan Finance</span>
-		<span class="footer-sep">·</span>
-		<a href="/disclaimer" class="footer-link">Disclaimer</a>
-		<span class="footer-sep">·</span>
-		<a href="/terms" class="footer-link">Terms</a>
-		<span class="footer-sep">·</span>
-		<a href="/privacy" class="footer-link">Privacy</a>
+		<span>·</span>
+		<a href="/disclaimer" class="text-text-muted no-underline hover:text-text-secondary transition-colors duration-100">Disclaimer</a>
+		<span>·</span>
+		<a href="/terms" class="text-text-muted no-underline hover:text-text-secondary transition-colors duration-100">Terms</a>
+		<span>·</span>
+		<a href="/privacy" class="text-text-muted no-underline hover:text-text-secondary transition-colors duration-100">Privacy</a>
 	</div>
 </footer>
-
-<style>
-	/* ── Nav ──────────────────────────────────────────────────────────────── */
-	.top-nav {
-		display: flex;
-		align-items: center;
-		padding: 16px 0;
-		border-bottom: 1px solid var(--bg-border);
-	}
-
-	.wordmark {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-base);
-		font-weight: 500;
-		color: var(--text-primary);
-		text-decoration: none;
-	}
-
-	.nav-right {
-		margin-left: auto;
-		display: flex;
-		align-items: center;
-		gap: 24px;
-	}
-
-	.nav-link {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-sm);
-		color: var(--text-secondary);
-		text-decoration: none;
-	}
-
-	.nav-link:hover {
-		color: var(--text-primary);
-	}
-
-	.nav-link.active {
-		color: var(--text-primary);
-		border-bottom: 1px solid var(--text-primary);
-		padding-bottom: 1px;
-	}
-
-	.nav-cta {
-		color: var(--text-primary);
-	}
-
-	/* ── Layout ───────────────────────────────────────────────────────────── */
-	.pricing-page {
-		padding-top: 48px;
-		padding-bottom: 96px;
-	}
-
-	.content-col {
-		max-width: 560px;
-		margin: 0 auto;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.page-header {
-		margin-bottom: 0;
-		padding-bottom: 40px;
-	}
-
-	.headline {
-		font-family: 'Instrument Serif', Georgia, serif;
-		font-style: italic;
-		font-weight: 400;
-		font-size: var(--text-hero);
-		line-height: 1.1;
-		color: var(--text-primary);
-		margin: 0 0 16px;
-	}
-
-	.sub {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-base);
-		color: var(--text-secondary);
-		margin: 0;
-	}
-
-	/* ── Section blocks ───────────────────────────────────────────────────── */
-	.section-block {
-		border-top: 1px solid var(--bg-border);
-		padding: 40px 0;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-	}
-
-	.section-label {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-xs);
-		letter-spacing: 0.08em;
-		color: var(--text-secondary);
-		text-transform: uppercase;
-	}
-
-	/* ── Pricing table ────────────────────────────────────────────────────── */
-	.pricing-table {
-		display: flex;
-		flex-direction: column;
-		border: 1px solid var(--bg-border);
-	}
-
-	.pricing-row {
-		display: grid;
-		grid-template-columns: 1fr 80px 70px 90px;
-		padding: 10px 12px;
-		font-family: 'IBM Plex Mono', monospace;
-		font-size: var(--text-sm);
-		color: var(--text-primary);
-		border-bottom: 1px solid var(--bg-border);
-	}
-
-	.pricing-row:last-child {
-		border-bottom: none;
-	}
-
-	.pricing-header {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-xs);
-		letter-spacing: 0.06em;
-		color: var(--text-secondary);
-		background: var(--bg-surface);
-		text-transform: uppercase;
-	}
-
-	.col-right {
-		text-align: right;
-	}
-
-	.muted {
-		color: var(--text-muted);
-	}
-
-	.note {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-sm);
-		color: var(--text-muted);
-		margin: 0;
-	}
-
-	/* ── Cost table ───────────────────────────────────────────────────────── */
-	.cost-table {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.cost-row {
-		display: flex;
-		justify-content: space-between;
-		padding: 9px 0;
-		border-bottom: 1px solid var(--bg-border);
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-sm);
-	}
-
-	.cost-row:last-child {
-		border-bottom: none;
-	}
-
-	.cost-desc {
-		color: var(--text-secondary);
-	}
-
-	.cost-val {
-		font-family: 'IBM Plex Mono', monospace;
-		color: var(--text-primary);
-		white-space: nowrap;
-		margin-left: 16px;
-	}
-
-	/* ── Rules ────────────────────────────────────────────────────────────── */
-	.rules {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.rule {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-sm);
-		color: var(--text-muted);
-		margin: 0;
-	}
-
-	/* ── Free tier ────────────────────────────────────────────────────────── */
-	.free-desc {
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-base);
-		color: var(--text-secondary);
-		line-height: 1.6;
-		margin: 0;
-	}
-
-	.outlined-btn {
-		display: inline-block;
-		padding: 11px 20px;
-		border: 1px solid var(--bg-border);
-		background: transparent;
-		color: var(--text-primary);
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-sm);
-		text-decoration: none;
-		cursor: pointer;
-		transition: background 100ms;
-		align-self: flex-start;
-	}
-
-	.outlined-btn:hover {
-		background: var(--bg-elevated);
-	}
-
-	/* ── Footer ───────────────────────────────────────────────────────────── */
-	.site-footer {
-		border-top: 1px solid var(--bg-border);
-		padding: 24px 0;
-	}
-
-	.footer-inner {
-		max-width: 1100px;
-		margin: 0 auto;
-		padding: 0 24px;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		font-family: 'IBM Plex Sans', system-ui, sans-serif;
-		font-size: var(--text-xs);
-		color: var(--text-muted);
-		flex-wrap: wrap;
-	}
-
-	.footer-sep {
-		color: var(--text-muted);
-	}
-
-	.footer-link {
-		color: var(--text-muted);
-		text-decoration: none;
-	}
-
-	.footer-link:hover {
-		color: var(--text-secondary);
-	}
-
-	/* ── Responsive ───────────────────────────────────────────────────────── */
-	@media (max-width: 640px) {
-		.headline {
-			font-size: 32px;
-		}
-
-		.pricing-row {
-			grid-template-columns: 1fr 60px 55px 72px;
-			font-size: 11px;
-			padding: 8px;
-		}
-
-		.nav-right {
-			gap: 16px;
-		}
-	}
-</style>

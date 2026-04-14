@@ -38,156 +38,72 @@
   <meta name="description" content="Browse publicly shared news-driven backtest results from the Aslan AI community." />
 </svelte:head>
 
-<div class="page">
-  <header class="page-header">
-    <span class="page-label">COMMUNITY BACKTESTS</span>
-    <p class="page-desc">Public results shared by Aslan users.</p>
+<nav class="flex items-center py-5 border-b-2 border-black bg-white">
+  <a href="/" class="font-display italic font-normal text-[22px] text-black no-underline tracking-[-0.01em]">Aslan Finance</a>
+  <div class="ml-auto flex items-center gap-7 max-sm:gap-4">
+    <a href="/#how-it-works" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">How it works</a>
+    <a href="/pricing" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">Pricing</a>
+    <a href="/backtests" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline border-b-2 border-black pb-px">Backtests</a>
+    {#if data.user}
+      <a href="/dashboard" class="font-sans text-xs tracking-[0.1em] uppercase bg-black text-white px-[18px] py-2 border-2 border-black no-underline transition-colors duration-100 hover:bg-white hover:text-black">Dashboard →</a>
+    {:else}
+      <a href="/auth/login" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">Login</a>
+      <a href="/auth/register" class="font-sans text-xs tracking-[0.1em] uppercase bg-black text-white px-[18px] py-2 border-2 border-black no-underline transition-colors duration-100 hover:bg-white hover:text-black">Register →</a>
+    {/if}
+  </div>
+</nav>
+
+<div class="bg-white flex flex-col py-10 pb-16">
+  <header class="border-t-4 border-black pt-8 pb-8 flex flex-col gap-2">
+    <span class="font-mono text-[10px] font-normal tracking-[0.1em] uppercase text-[#525252]">Community Backtests</span>
+    <h1 class="font-display italic text-[clamp(2.5rem,6vw,4.5rem)] font-bold text-black leading-none tracking-[-0.025em]">Public Results</h1>
+    <p class="italic text-base text-[#525252] m-0" style="font-family:'Source Serif 4',Georgia,serif">Backtest results shared by Aslan users.</p>
   </header>
 
   {#if data.reports.length === 0}
-    <p class="empty">No public backtests yet.</p>
+    <p class="italic text-base text-[#525252] text-center py-12 m-0" style="font-family:'Source Serif 4',Georgia,serif">No public backtests yet.</p>
   {:else}
-    <div class="list">
+    <div class="border-t-4 border-black flex flex-col">
+      <div class="flex items-center gap-4 py-2 border-b border-black font-mono text-[10px] uppercase tracking-[0.1em] text-[#525252] max-sm:hidden">
+        <span class="flex-1 min-w-[180px]">Query</span>
+        <span class="max-w-[200px]">Tickers</span>
+        <span class="min-w-[60px] text-right">Return</span>
+        <span>Win Rate</span>
+        <span>Date</span>
+        <span class="ml-auto" aria-hidden="true"></span>
+      </div>
       {#each data.reports as report (report.slug)}
         {@const s = summary(report)}
-        <a href="/backtest/{report.slug}?ref=backtests" class="row">
-          <span class="col-query">{report.query}</span>
+        <a
+          href="/backtest/{report.slug}?ref=backtests"
+          class="flex items-center gap-4 py-3 border-b border-[#E5E5E5] no-underline flex-wrap transition-colors duration-100 hover:bg-[#F5F5F5] max-sm:gap-x-3 max-sm:gap-y-2"
+        >
+          <span class="flex-1 min-w-[180px] font-sans text-sm text-black overflow-hidden text-ellipsis whitespace-nowrap max-sm:basis-full">
+            {report.query}
+          </span>
 
-          <span class="col-tickers mono">
+          <span class="font-mono text-sm text-[#525252] whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">
             {report.confirmed_tickers.slice(0, 4).join(', ')}{report.confirmed_tickers.length > 4 ? ` +${report.confirmed_tickers.length - 4}` : ''}
           </span>
 
           {#if s}
-            <span class="col-return mono" class:gain={s.total_return_pct >= 0} class:loss={s.total_return_pct < 0}>
+            <span
+              class="font-mono text-sm whitespace-nowrap min-w-[60px] text-right"
+              class:text-accent-gain={s.total_return_pct >= 0}
+              class:text-accent-loss={s.total_return_pct < 0}
+            >
               {formatPct(s.total_return_pct)}
             </span>
-            <span class="col-winrate mono">{formatWinRate(s.win_rate)} win</span>
+            <span class="font-mono text-sm text-[#525252] whitespace-nowrap">{formatWinRate(s.win_rate)}</span>
           {:else}
-            <span class="col-return mono">—</span>
-            <span class="col-winrate mono">—</span>
+            <span class="font-mono text-sm text-black whitespace-nowrap min-w-[60px] text-right">—</span>
+            <span class="font-mono text-sm text-[#525252] whitespace-nowrap">—</span>
           {/if}
 
-          <span class="col-date mono">{formatDate(report.created_at)}</span>
-          <span class="col-link" aria-hidden="true">↗</span>
+          <span class="font-mono text-sm text-[#AAAAAA] whitespace-nowrap">{formatDate(report.created_at)}</span>
+          <span class="font-sans text-sm text-[#AAAAAA] ml-auto max-sm:hidden" aria-hidden="true">↗</span>
         </a>
       {/each}
     </div>
   {/if}
 </div>
-
-<style>
-  .page {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    padding: 40px 0;
-  }
-
-  .page-header {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .page-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  .page-desc {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    margin: 0;
-  }
-
-  .empty {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    text-align: center;
-    padding: 48px 0;
-    margin: 0;
-  }
-
-  .list {
-    border-top: 1px solid var(--bg-border);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--bg-border);
-    text-decoration: none;
-    flex-wrap: wrap;
-    transition: background 80ms;
-  }
-
-  .row:hover {
-    background: var(--bg-elevated);
-  }
-
-  .col-query {
-    flex: 1;
-    min-width: 180px;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mono {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-sm);
-  }
-
-  .col-tickers {
-    color: var(--text-secondary);
-    white-space: nowrap;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .col-return {
-    white-space: nowrap;
-    min-width: 60px;
-    text-align: right;
-  }
-
-  .col-return.gain { color: var(--accent-gain); }
-  .col-return.loss { color: var(--accent-loss); }
-
-  .col-winrate {
-    color: var(--text-secondary);
-    white-space: nowrap;
-  }
-
-  .col-date {
-    color: var(--text-muted);
-    white-space: nowrap;
-  }
-
-  .col-link {
-    color: var(--text-muted);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    margin-left: auto;
-  }
-
-  @media (max-width: 640px) {
-    .row { gap: 8px 12px; }
-    .col-query { flex-basis: 100%; }
-    .col-link { display: none; }
-  }
-</style>

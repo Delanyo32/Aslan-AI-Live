@@ -29,7 +29,7 @@
   {:else}
     <textarea
       rows={3}
-      class="w-full py-3 px-3 bg-bg-surface border border-bg-border text-text-primary font-sans text-base leading-[1.6] rounded-[2px] resize-none outline-none focus:border-text-secondary placeholder:text-text-muted"
+      class="w-full py-3 px-3 bg-bg-surface border-2 border-[#000000] text-text-primary font-sans text-base leading-[1.6] rounded-none resize-none outline-none focus:border-[3px] focus:border-[#000000] placeholder:text-text-muted"
       placeholder="Buy Nvidia every time the US announces new AI chip restrictions on China"
       bind:value={query}
     ></textarea>
@@ -49,7 +49,7 @@
               {market.label}
             </Tooltip.Trigger>
             <Tooltip.Content
-              class="bg-bg-elevated border border-bg-border text-text-secondary text-xs leading-[1.4] py-1 px-2 rounded-[2px] whitespace-nowrap z-10"
+              class="bg-bg-elevated border border-bg-border text-text-secondary text-xs leading-[1.4] py-1 px-2 rounded-none whitespace-nowrap z-10"
               sideOffset={8}
             >
               {market.tip}
@@ -62,11 +62,11 @@
     {#if !hideButton}
       <button
         type="button"
-        class="block w-full py-[11px] px-4 border border-bg-border bg-transparent text-text-primary font-sans text-base text-center cursor-pointer transition-[background] duration-100 hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-not-allowed"
+        class="block w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-widest text-center cursor-pointer transition-colors duration-100 hover:bg-neutral-800 disabled:bg-neutral-400 disabled:cursor-not-allowed"
         onclick={() => onrun(query)}
         disabled={!query.trim()}
       >
-        Run Backtest  →
+        Run Backtest →
       </button>
     {/if}
   {/if}

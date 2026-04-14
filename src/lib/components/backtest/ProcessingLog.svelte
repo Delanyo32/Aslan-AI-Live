@@ -44,7 +44,6 @@
     oncancelled,
   }: Props = $props();
 
-  // suppress unused warning — sessionId is part of the public interface
   void sessionId;
 
   interface LogLine {
@@ -104,8 +103,6 @@
     });
 
     es.addEventListener('error', (e) => {
-      // Custom server-sent error events have a MessageEvent.data field.
-      // Connection-level errors do not — handled by es.onerror below.
       if (e instanceof MessageEvent && e.data) {
         try {
           const data = JSON.parse(e.data);
@@ -136,75 +133,21 @@
   });
 </script>
 
-<div class="log-wrap">
+<div class="pl-4 flex flex-col gap-[10px]">
   {#if oncancelled}
-    <div class="log-header">
-      <button class="cancel-stream-btn" onclick={handleCancel}>Cancel & Edit</button>
+    <div class="flex justify-end">
+      <button
+        class="bg-transparent border-none p-0 font-sans text-sm text-text-muted cursor-pointer underline decoration-[#E5E5E5] transition-colors duration-100 hover:text-text-secondary"
+        onclick={handleCancel}
+      >Cancel &amp; Edit</button>
     </div>
   {/if}
-  <div class="log-rail">
+  <div class="border-l-[3px] border-black pl-4 flex flex-col gap-1">
     {#each visibleLines as line}
-      <div class="log-line">
-        <span class="timestamp">{line.time}</span>
-        <span class="log-text">{line.text}</span>
+      <div class="flex gap-3 font-mono text-sm leading-[1.5]">
+        <span class="text-text-muted shrink-0 select-none">{line.time}</span>
+        <span class="text-text-secondary">{line.text}</span>
       </div>
     {/each}
   </div>
 </div>
-
-<style>
-  .log-wrap {
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .log-header {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .cancel-stream-btn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-    transition: color 100ms;
-  }
-
-  .cancel-stream-btn:hover {
-    color: var(--text-secondary);
-  }
-
-  .log-rail {
-    border-left: 3px solid var(--bg-border);
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .log-line {
-    display: flex;
-    gap: 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-sm);
-    line-height: 1.5;
-  }
-
-  .timestamp {
-    color: var(--text-muted);
-    flex-shrink: 0;
-    user-select: none;
-  }
-
-  .log-text {
-    color: var(--text-secondary);
-  }
-</style>

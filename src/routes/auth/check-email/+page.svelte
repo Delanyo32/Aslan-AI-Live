@@ -31,133 +31,39 @@
   }
 </script>
 
-<main class="page">
-  <div class="card">
-    <div class="wordmark">Aslan Finance</div>
+<main class="min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-[360px] flex flex-col gap-8">
+    <div class="font-sans text-base font-medium text-black">Aslan Finance</div>
 
-    <div class="content">
-      <p class="label">VERIFY YOUR EMAIL</p>
+    <div class="flex flex-col gap-4">
+      <p class="font-sans text-xs font-medium uppercase tracking-[0.08em] text-[#525252] m-0">VERIFY YOUR EMAIL</p>
 
-      <p class="body">
+      <p class="font-sans text-base text-[#525252] m-0">
         Before accessing your dashboard, please verify your email address.
       </p>
 
       {#if userEmail}
-        <p class="email-hint">We sent a link to {userEmail}.</p>
+        <p class="font-sans text-sm text-[#525252] m-0">We sent a link to {userEmail}.</p>
       {/if}
 
-      <button class="btn" onclick={handleResend} disabled={resendLoading || resendSent}>
+      <button
+        onclick={handleResend}
+        disabled={resendLoading || resendSent}
+        class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] disabled:opacity-50 disabled:cursor-not-allowed border-0"
+      >
         {resendSent ? "Email sent ✓" : resendLoading ? "Sending…" : "Resend verification email →"}
       </button>
 
       {#if resendError}
-        <p class="resend-error">{resendError}</p>
+        <p class="font-sans text-sm text-accent-loss m-0">{resendError}</p>
       {/if}
 
-      <button class="sign-out-link" onclick={handleSignOut}>
+      <button
+        onclick={handleSignOut}
+        class="bg-transparent border-0 p-0 font-sans text-sm text-[#525252] cursor-pointer text-left mt-2 hover:text-black"
+      >
         Sign out →
       </button>
     </div>
   </div>
 </main>
-
-<style>
-  .page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-
-  .card {
-    width: 100%;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .wordmark {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-
-  .content {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  .body {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 15px;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  .email-hint {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  .btn {
-    width: 100%;
-    padding: 11px 16px;
-    border: 1px solid var(--bg-border);
-    background: transparent;
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    text-align: center;
-    border-radius: 0;
-    cursor: pointer;
-    transition: background 100ms;
-  }
-
-  .btn:hover:not(:disabled) {
-    background: var(--bg-elevated);
-  }
-
-  .btn:disabled {
-    color: var(--text-muted);
-    cursor: not-allowed;
-  }
-
-  .resend-error {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 13px;
-    color: var(--accent-loss);
-    margin: 0;
-  }
-
-  .sign-out-link {
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 13px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    text-align: left;
-    margin-top: 8px;
-  }
-
-  .sign-out-link:hover {
-    color: var(--text-primary);
-  }
-</style>

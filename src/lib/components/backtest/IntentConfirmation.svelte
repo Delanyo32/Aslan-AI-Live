@@ -15,115 +15,25 @@
   }
 </script>
 
-<div class="intent-confirmation">
-  <hr class="divider" />
-  <p class="section-label">ASLAN UNDERSTOOD</p>
-  <p class="event-description">{understand.event_spec.event_description}</p>
-  <p class="event-meta">
-    <span class="event-type">{understand.event_spec.event_type}</span>
-    <span class="meta-sep">·</span>
-    <span class="date-range">{formatDate(understand.event_spec.date_range.start)} → {formatDate(understand.event_spec.date_range.end)}</span>
+<div class="flex flex-col gap-3">
+  <hr class="border-none border-t border-black m-0" />
+  <p class="font-sans text-xs font-medium uppercase tracking-[0.08em] text-text-secondary m-0">ASLAN UNDERSTOOD</p>
+  <p class="font-sans text-base text-text-primary leading-[1.6] m-0">{understand.event_spec.event_description}</p>
+  <p class="flex items-center gap-2 flex-wrap m-0">
+    <span class="font-sans text-sm text-text-secondary lowercase">{understand.event_spec.event_type}</span>
+    <span class="text-sm text-text-muted select-none">·</span>
+    <span class="font-mono text-sm text-text-secondary">{formatDate(understand.event_spec.date_range.start)} → {formatDate(understand.event_spec.date_range.end)}</span>
   </p>
-  <div class="actions">
-    <button type="button" class="confirm-btn" onclick={onconfirm}>Run Backtest →</button>
-    <button type="button" class="refine-btn" onclick={onrefine}>Refine query →</button>
+  <div class="flex items-center gap-5 pt-1">
+    <button
+      type="button"
+      class="px-5 py-[11px] border border-black bg-transparent text-text-primary font-sans text-base cursor-pointer rounded-none transition-colors duration-100 hover:bg-bg-elevated"
+      onclick={onconfirm}
+    >Run Backtest →</button>
+    <button
+      type="button"
+      class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer underline decoration-black hover:text-text-primary hover:decoration-black"
+      onclick={onrefine}
+    >Refine query →</button>
   </div>
 </div>
-
-<style>
-  .intent-confirmation {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--bg-border);
-    margin: 0;
-  }
-
-  .section-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  .event-description {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    color: var(--text-primary);
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  .event-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin: 0;
-  }
-
-  .event-type {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    text-transform: lowercase;
-  }
-
-  .meta-sep {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    user-select: none;
-  }
-
-  .date-range {
-    font-family: 'IBM Plex Mono', 'IBM Plex Sans', monospace;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding-top: 4px;
-  }
-
-  .confirm-btn {
-    padding: 11px 20px;
-    border: 1px solid var(--bg-border);
-    background: transparent;
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    cursor: pointer;
-    transition: background 100ms;
-  }
-
-  .confirm-btn:hover {
-    background: var(--bg-elevated);
-  }
-
-  .refine-btn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-  }
-
-  .refine-btn:hover {
-    color: var(--text-primary);
-    text-decoration-color: var(--text-primary);
-  }
-</style>

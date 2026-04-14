@@ -328,35 +328,54 @@
 
 {#if !isFlowActive}
 <!-- ── My Backtests ─────────────────────────────────────────────────────────── -->
-<section class="section">
-  <div class="section-header">
-    <span class="section-label">MY BACKTESTS</span>
-    <div class="sort-controls">
-      <button class="sort-btn" class:active={sortKey === 'date'}   onclick={() => sortKey = 'date'}>Date ↓</button>
-      <span class="sort-sep" aria-hidden="true">|</span>
-      <button class="sort-btn" class:active={sortKey === 'return'} onclick={() => sortKey = 'return'}>Return</button>
-      <span class="sort-sep" aria-hidden="true">|</span>
-      <button class="sort-btn" class:active={sortKey === 'ticker'} onclick={() => sortKey = 'ticker'}>Ticker</button>
+<section class="flex flex-col gap-4 border-t-4 border-black pt-5 mb-12">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <span class="font-display text-xl font-bold tracking-[-0.025em] text-black">MY BACKTESTS</span>
+    <div class="flex items-center gap-2">
+      <button
+        class="bg-transparent border-none p-0 font-mono text-xs tracking-[0.08em] uppercase cursor-pointer transition-colors duration-100"
+        class:text-black={sortKey === 'date'}
+        class:text-[#E5E5E5]={sortKey !== 'date'}
+        onclick={() => sortKey = 'date'}
+      >Date ↓</button>
+      <span class="text-xs text-[#E5E5E5] select-none" aria-hidden="true">|</span>
+      <button
+        class="bg-transparent border-none p-0 font-mono text-xs tracking-[0.08em] uppercase cursor-pointer transition-colors duration-100"
+        class:text-black={sortKey === 'return'}
+        class:text-[#E5E5E5]={sortKey !== 'return'}
+        onclick={() => sortKey = 'return'}
+      >Return</button>
+      <span class="text-xs text-[#E5E5E5] select-none" aria-hidden="true">|</span>
+      <button
+        class="bg-transparent border-none p-0 font-mono text-xs tracking-[0.08em] uppercase cursor-pointer transition-colors duration-100"
+        class:text-black={sortKey === 'ticker'}
+        class:text-[#E5E5E5]={sortKey !== 'ticker'}
+        onclick={() => sortKey = 'ticker'}
+      >Ticker</button>
     </div>
   </div>
 
   {#if sortedReports.length === 0}
-    <p class="empty-state">No backtests yet. Run your first one below.</p>
+    <p class="font-sans text-sm text-text-secondary text-center py-8">No backtests yet. Run your first one below.</p>
   {:else}
-    <div class="reports-list">
+    <div class="border-t border-black">
       {#each sortedReports as report (report.slug)}
-        <div class="report-item">
-          <div class="report-row">
-            <span class="col-query">{report.query}</span>
-            <span class="col-tickers mono">{report.ticker_count} ticker{report.ticker_count !== 1 ? 's' : ''}</span>
-            <span class="col-pnl mono" class:gain={report.total_return_pct >= 0} class:loss={report.total_return_pct < 0}>
+        <div class="border-b border-[#E5E5E5]">
+          <div class="flex items-center gap-4 py-3 flex-wrap max-sm:gap-x-3 max-sm:gap-y-1.5">
+            <span class="flex-1 min-w-[180px] font-sans text-sm text-text-primary overflow-hidden text-ellipsis whitespace-nowrap max-sm:basis-full max-sm:min-w-0">{report.query}</span>
+            <span class="font-mono text-sm text-text-secondary whitespace-nowrap">{report.ticker_count} ticker{report.ticker_count !== 1 ? 's' : ''}</span>
+            <span
+              class="font-mono text-sm whitespace-nowrap min-w-[64px] text-right"
+              class:text-accent-gain={report.total_return_pct >= 0}
+              class:text-accent-loss={report.total_return_pct < 0}
+            >
               {formatPct(report.total_return_pct)}
             </span>
-            <span class="col-dates mono">{fmtMonthYear(report.date_from)}–{fmtMonthYear(report.date_to)}</span>
-            <div class="col-actions">
-              <a href="/backtest/{report.slug}" class="view-link">↗ View</a>
+            <span class="font-mono text-sm text-text-secondary whitespace-nowrap">{fmtMonthYear(report.date_from)}–{fmtMonthYear(report.date_to)}</span>
+            <div class="flex items-center gap-3 whitespace-nowrap ml-auto max-sm:ml-auto">
+              <a href="/backtest/{report.slug}" class="font-sans text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-100">↗ View</a>
               <button
-                class="delete-btn"
+                class="bg-transparent border-none font-sans text-sm text-text-secondary p-0 cursor-pointer hover:text-accent-loss transition-colors duration-100"
                 onclick={() => {
                   pendingDelete = pendingDelete === report.slug ? null : report.slug
                   deleteErrors = { ...deleteErrors, [report.slug]: '' }
@@ -366,14 +385,22 @@
           </div>
 
           {#if pendingDelete === report.slug}
-            <div class="delete-confirm">
+            <div class="flex items-center gap-3 flex-wrap py-2.5 pb-3.5 font-sans text-sm text-text-secondary">
               Delete this backtest? This cannot be undone.
-              <button class="confirm-yes" onclick={() => confirmDelete(report.slug)} disabled={deleteLoading === report.slug}>
+              <button
+                class="bg-transparent border border-accent-loss text-accent-loss font-sans text-xs px-2.5 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-accent-loss hover:text-white disabled:opacity-50"
+                onclick={() => confirmDelete(report.slug)}
+                disabled={deleteLoading === report.slug}
+              >
                 {deleteLoading === report.slug ? 'Deleting…' : 'Confirm delete'}
               </button>
-              <button class="confirm-cancel" onclick={() => { pendingDelete = null }} disabled={deleteLoading === report.slug}>Cancel</button>
+              <button
+                class="bg-transparent border border-black text-[#525252] font-sans text-xs px-2.5 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-black hover:text-white disabled:opacity-50"
+                onclick={() => { pendingDelete = null }}
+                disabled={deleteLoading === report.slug}
+              >Cancel</button>
               {#if deleteErrors[report.slug]}
-                <span class="confirm-error">{deleteErrors[report.slug]}</span>
+                <span class="text-xs text-accent-loss">{deleteErrors[report.slug]}</span>
               {/if}
             </div>
           {/if}
@@ -385,16 +412,16 @@
 {/if}
 
 <!-- ── Run New Backtest ─────────────────────────────────────────────────────── -->
-<section class="section">
+<section class="flex flex-col gap-4 border-t-4 border-black pt-5 mb-12">
   {#if !isFlowActive}
-    <span class="section-label">RUN NEW BACKTEST</span>
+    <span class="font-display text-xl font-bold tracking-[-0.025em] text-black">RUN NEW BACKTEST</span>
   {/if}
 
-  <div class="backtest-input-area">
+  <div class="flex flex-col gap-3">
 
     <!-- ── Summary cards: shown for every completed step ───────────────────── -->
     {#if completedSteps.query}
-      <div class="summary-stack">
+      <div class="border-t border-black flex flex-col">
         <QuerySummaryCard
           query={displayQuery}
           stale={false}
@@ -446,16 +473,28 @@
 
       <!-- ── Rerun banner: shown after saving an edit ─────────────────────── -->
       {#if pendingQuery !== null && editingStep === null}
-        <div class="rerun-banner">
-          <span class="rerun-msg">Query changed — downstream steps will rerun.</span>
-          <button class="rerun-btn" onclick={handleRerunFromQuery}>Rerun from Step 2 →</button>
-          <button class="rerun-cancel" onclick={handleCancelEdit}>Discard</button>
+        <div class="flex items-center gap-4 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black">
+          <span class="font-sans text-sm text-text-secondary flex-1 min-w-[160px]">Query changed — downstream steps will rerun.</span>
+          <button
+            class="bg-transparent border border-black rounded-none px-3.5 py-1.5 font-sans text-sm text-text-primary cursor-pointer whitespace-nowrap transition-colors duration-100 hover:bg-white"
+            onclick={handleRerunFromQuery}
+          >Rerun from Step 2 →</button>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-[#AAAAAA] cursor-pointer underline decoration-black hover:text-text-secondary transition-colors duration-100"
+            onclick={handleCancelEdit}
+          >Discard</button>
         </div>
       {:else if pendingTickerPayload !== null && editingStep === null}
-        <div class="rerun-banner">
-          <span class="rerun-msg">Instruments changed — processing will rerun.</span>
-          <button class="rerun-btn" onclick={handleRerunFromTickers}>Rerun from Step 5 →</button>
-          <button class="rerun-cancel" onclick={handleCancelEdit}>Discard</button>
+        <div class="flex items-center gap-4 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black">
+          <span class="font-sans text-sm text-text-secondary flex-1 min-w-[160px]">Instruments changed — processing will rerun.</span>
+          <button
+            class="bg-transparent border border-black rounded-none px-3.5 py-1.5 font-sans text-sm text-text-primary cursor-pointer whitespace-nowrap transition-colors duration-100 hover:bg-white"
+            onclick={handleRerunFromTickers}
+          >Rerun from Step 5 →</button>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-[#AAAAAA] cursor-pointer underline decoration-black hover:text-text-secondary transition-colors duration-100"
+            onclick={handleCancelEdit}
+          >Discard</button>
         </div>
       {/if}
     {/if}
@@ -464,49 +503,61 @@
     {#if view === 'input'}
 
       {#if errorState.kind === 'no_events'}
-        <div class="no-events-state">
-          <p class="ne-msg">No historical events found matching your hypothesis.</p>
-          <p class="ne-msg">Try broadening the date range, adjusting the event description, or checking the ticker.</p>
-          <button class="refine-link" onclick={handleRefineQuery}>Refine query →</button>
+        <div class="flex flex-col gap-2 border-l-4 border-l-black pl-4">
+          <p class="font-sans text-sm text-[#525252] m-0">No historical events found matching your hypothesis.</p>
+          <p class="font-sans text-sm text-[#525252] m-0">Try broadening the date range, adjusting the event description, or checking the ticker.</p>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-[#525252] cursor-pointer underline decoration-[#E5E5E5] text-left hover:text-black hover:decoration-black transition-colors duration-100"
+            onclick={handleRefineQuery}
+          >Refine query →</button>
         </div>
 
       {:else if errorState.kind === 'no_trades'}
-        <div class="no-events-state">
-          <p class="ne-msg">Events were found but no tradeable positions could be modelled.</p>
-          <p class="ne-msg">Try a different ticker selection or broaden the event description.</p>
-          <button class="refine-link" onclick={handleRefineQuery}>Refine query →</button>
+        <div class="flex flex-col gap-2 border-l-4 border-l-black pl-4">
+          <p class="font-sans text-sm text-[#525252] m-0">Events were found but no tradeable positions could be modelled.</p>
+          <p class="font-sans text-sm text-[#525252] m-0">Try a different ticker selection or broaden the event description.</p>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-[#525252] cursor-pointer underline decoration-[#E5E5E5] text-left hover:text-black hover:decoration-black transition-colors duration-100"
+            onclick={handleRefineQuery}
+          >Refine query →</button>
         </div>
 
       {:else if errorState.kind === 'insufficient_credits'}
-        <div class="credits-warning">
+        <div class="flex items-center gap-3 flex-wrap p-4 bg-black font-sans text-sm text-white">
           This backtest costs {errorState.required} credit{errorState.required !== 1 ? 's' : ''} — you have {errorState.available}. Buy more to continue.
-          <a href="/dashboard/credits" class="buy-link">Buy credits →</a>
+          <a href="/dashboard/credits" class="text-white underline decoration-white/50 hover:decoration-white transition-colors duration-100">Buy credits →</a>
         </div>
         <BacktestInput onrun={handleRun} initialValue={currentQuery} />
 
       {:else if errorState.kind === 'api_error'}
-        <div class="api-error">
+        <div class="flex items-center gap-3 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black font-sans text-sm text-black">
           Something went wrong retrieving {errorState.stage === 'detection' ? 'news data' : 'price data'}. Your credits were not deducted.
-          <button class="retry-link" onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}>Try again →</button>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-black cursor-pointer underline decoration-[#E5E5E5] whitespace-nowrap hover:decoration-black transition-colors duration-100"
+            onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}
+          >Try again →</button>
         </div>
         <BacktestInput onrun={handleRun} initialValue={currentQuery} />
 
       {:else if errorState.kind === 'generic'}
-        <div class="api-error">
+        <div class="flex items-center gap-3 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black font-sans text-sm text-black">
           {errorState.message}
-          <button class="retry-link" onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}>Try again →</button>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-black cursor-pointer underline decoration-[#E5E5E5] whitespace-nowrap hover:decoration-black transition-colors duration-100"
+            onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}
+          >Try again →</button>
         </div>
         <BacktestInput onrun={handleRun} initialValue={currentQuery} />
 
       {:else}
         {#if understandError}
-          <p class="understand-error">{understandError}</p>
+          <p class="font-sans text-sm text-accent-loss m-0">{understandError}</p>
         {/if}
         <BacktestInput onrun={handleRun} initialValue={currentQuery} />
       {/if}
 
     {:else if view === 'understanding'}
-      <p class="understanding-msg">Analysing your hypothesis…</p>
+      <p class="font-sans text-sm text-[#AAAAAA] m-0">Analysing your hypothesis…</p>
 
     {:else if view === 'previewing' && understandResult}
       <UnderstandPreview
@@ -545,255 +596,9 @@
       {/if}
 
     {:else if view === 'reviewing'}
-      <p class="review-hint">Edit any step above to adjust your backtest, then rerun.</p>
+      <p class="font-sans text-sm text-[#AAAAAA] m-0 py-1">Edit any step above to adjust your backtest, then rerun.</p>
 
     {/if}
 
   </div>
 </section>
-
-<style>
-  /* ── Sections ───────────────────────────────────────────────────────────── */
-  .section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 48px;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .section-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  /* ── Sort Controls ──────────────────────────────────────────────────────── */
-  .sort-controls { display: flex; align-items: center; gap: 8px; }
-  .sort-sep { font-size: var(--text-xs); color: var(--text-muted); user-select: none; }
-  .sort-btn {
-    background: transparent; border: none; padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-muted); cursor: pointer;
-  }
-  .sort-btn:hover, .sort-btn.active { color: var(--text-primary); }
-
-  /* ── Reports List ───────────────────────────────────────────────────────── */
-  .reports-list { border-top: 1px solid var(--bg-border); }
-  .report-item  { border-bottom: 1px solid var(--bg-border); }
-
-  .report-row {
-    display: flex; align-items: center; gap: 16px;
-    padding: 12px 0; flex-wrap: wrap;
-  }
-
-  .col-query {
-    flex: 1; min-width: 180px;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-primary);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-
-  @media (max-width: 640px) {
-    .report-row { gap: 6px 12px; }
-    .col-query  { flex-basis: 100%; min-width: 0; }
-    .col-actions { margin-left: auto; }
-  }
-
-  .mono { font-family: 'IBM Plex Mono', monospace; font-size: var(--text-sm); }
-  .col-tickers { color: var(--text-secondary); white-space: nowrap; }
-  .col-pnl { white-space: nowrap; min-width: 64px; text-align: right; }
-  .col-pnl.gain { color: var(--accent-gain); }
-  .col-pnl.loss { color: var(--accent-loss); }
-  .col-dates { color: var(--text-secondary); white-space: nowrap; }
-
-  .col-actions {
-    display: flex; align-items: center; gap: 12px;
-    white-space: nowrap; margin-left: auto;
-  }
-
-  .view-link {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-secondary); text-decoration: none;
-  }
-  .view-link:hover { color: var(--text-primary); }
-
-  .delete-btn {
-    background: transparent; border: none;
-    color: var(--text-secondary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); padding: 0; cursor: pointer;
-  }
-  .delete-btn:hover { color: var(--accent-loss); }
-
-  .delete-confirm {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 10px 0 14px;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-secondary);
-  }
-  .confirm-yes {
-    background: transparent; border: 1px solid var(--accent-loss);
-    color: var(--accent-loss);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs); padding: 4px 10px; cursor: pointer;
-    border-radius: 2px; transition: background 100ms;
-  }
-  .confirm-yes:hover { background: rgba(248, 113, 113, 0.1); }
-  .confirm-cancel {
-    background: transparent; border: 1px solid var(--bg-border);
-    color: var(--text-secondary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs); padding: 4px 10px; cursor: pointer;
-    border-radius: 2px; transition: background 100ms;
-  }
-  .confirm-cancel:hover { background: var(--bg-elevated); }
-  .confirm-error { font-size: var(--text-xs); color: var(--accent-loss); }
-
-  /* ── Empty State ────────────────────────────────────────────────────────── */
-  .empty-state {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-secondary);
-    text-align: center; padding: 32px 0;
-  }
-
-  /* ── Backtest input area ────────────────────────────────────────────────── */
-  .backtest-input-area { display: flex; flex-direction: column; gap: 12px; }
-
-  /* ── Summary cards stack ────────────────────────────────────────────────── */
-  .summary-stack {
-    border-top: 1px solid var(--bg-border);
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ── Rerun banner ───────────────────────────────────────────────────────── */
-  .rerun-banner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    padding: 10px 12px;
-    background: rgba(245, 158, 11, 0.05);
-    border: 1px solid rgba(245, 158, 11, 0.25);
-  }
-
-  .rerun-msg {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    flex: 1;
-    min-width: 160px;
-  }
-
-  .rerun-btn {
-    background: transparent;
-    border: 1px solid var(--bg-border);
-    padding: 6px 14px;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-    cursor: pointer;
-    border-radius: 2px;
-    transition: background 100ms;
-    white-space: nowrap;
-  }
-
-  .rerun-btn:hover {
-    background: var(--bg-elevated);
-  }
-
-  .rerun-cancel {
-    background: transparent;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-  }
-
-  .rerun-cancel:hover {
-    color: var(--text-secondary);
-  }
-
-  /* ── Review hint (post-cancel) ──────────────────────────────────────────── */
-  .review-hint {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    margin: 0;
-    padding: 4px 0;
-  }
-
-  /* ── Understanding loading ──────────────────────────────────────────────── */
-  .understanding-msg {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-muted); margin: 0;
-  }
-
-  .understand-error {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--accent-loss); margin: 0;
-  }
-
-  /* ── Credits Warning ────────────────────────────────────────────────────── */
-  .credits-warning {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 10px 12px;
-    background: rgba(245, 158, 11, 0.06);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--accent-amber);
-  }
-  .buy-link {
-    color: var(--accent-amber);
-    text-decoration: underline;
-    text-decoration-color: rgba(245, 158, 11, 0.4);
-  }
-  .buy-link:hover { text-decoration-color: var(--accent-amber); }
-
-  /* ── Pipeline error states ──────────────────────────────────────────────── */
-  .no-events-state { display: flex; flex-direction: column; gap: 8px; }
-  .ne-msg {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-secondary); margin: 0;
-  }
-  .refine-link {
-    background: transparent; border: none; padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--text-secondary);
-    cursor: pointer; text-decoration: underline;
-    text-decoration-color: var(--bg-border); text-align: left;
-  }
-  .refine-link:hover { color: var(--text-primary); text-decoration-color: var(--text-primary); }
-
-  .api-error {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 10px 12px;
-    border: 1px solid rgba(248, 113, 113, 0.2);
-    background: rgba(248, 113, 113, 0.05);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--accent-loss);
-  }
-  .retry-link {
-    background: transparent; border: none; padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm); color: var(--accent-loss);
-    cursor: pointer; text-decoration: underline;
-    text-decoration-color: rgba(248, 113, 113, 0.4); white-space: nowrap;
-  }
-  .retry-link:hover { text-decoration-color: var(--accent-loss); }
-</style>

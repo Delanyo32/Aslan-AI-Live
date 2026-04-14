@@ -18,5 +18,5 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.orderBy(desc(backtestReports.created_at))
 		.limit(24)
 
-	return { reports }
+	return { reports, user: locals.user ?? null }
 }

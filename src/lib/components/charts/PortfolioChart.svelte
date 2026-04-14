@@ -38,7 +38,6 @@
   const yMax = $derived(
     portfolio_series.length ? Math.max(...portfolio_series.map(d => d.value)) : 1
   );
-  // 5% vertical padding; +100 guards against a flat series
   const yPad  = $derived((yMax - yMin) * 0.05 + 100);
   const yLo   = $derived(yMin - yPad);
   const yHi   = $derived(yMax + yPad);
@@ -112,7 +111,7 @@
   }
 </script>
 
-<div class="pchart-wrap" bind:clientWidth={cw}>
+<div class="relative w-full" bind:clientWidth={cw}>
   <svg
     width={cw}
     height={H}
@@ -178,46 +177,17 @@
   <!-- Tooltip box -->
   {#if tooltip}
   <div
-    class="tt"
+    class="absolute bg-bg-elevated py-1.5 px-2.5 pointer-events-none flex flex-col gap-0.5"
     style:left="{Math.min(tooltip.x + 10, cw - 130)}px"
     style:top="{Math.max(tooltip.y - 44, 0)}px"
   >
-    <span class="tt-date">{fmtDate(tooltip.date)}</span>
-    <span class="tt-val">{fmtMoney(tooltip.value)}</span>
+    <span class="font-mono text-xs text-text-muted">{fmtDate(tooltip.date)}</span>
+    <span class="font-mono text-sm text-text-primary">{fmtMoney(tooltip.value)}</span>
   </div>
   {/if}
 </div>
 
 <style>
-  .pchart-wrap {
-    position: relative;
-    width: 100%;
-  }
-
-  svg {
-    display: block;
-    cursor: crosshair;
-  }
-
-  .tt {
-    position: absolute;
-    background: var(--bg-elevated);
-    padding: 6px 10px;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .tt-date {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-
-  .tt-val {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    color: var(--text-primary);
-  }
+  /* SVG element selector — cannot be targeted with Tailwind utilities */
+  svg { display: block; cursor: crosshair; }
 </style>

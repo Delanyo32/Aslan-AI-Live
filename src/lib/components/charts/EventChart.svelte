@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { scalePoint } from 'd3-scale';
+  import { Chart, Svg, Spline, Area, Axis, Highlight } from 'layerchart';
   import type { OHLCVBar } from '$lib/types/pipeline';
 
   interface Props {
@@ -17,223 +18,141 @@
     ohlcv,
     spy_ohlcv = [],
     entry_date,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     entry_price,
     exit_date,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     exit_price,
     impact_window_end,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     direction,
   }: Props = $props();
 
-  let container: HTMLDivElement;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let chart: any;
-  let resizeObserver: ResizeObserver | undefined;
-  let windowLineX = $state<number | null>(null);
-
-  function cssVar(name: string): string {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }
-
   // Normalize OHLCV closes to index 100 at the first bar for visual comparison.
-  function toIndexSeries(bars: OHLCVBar[]): { time: string; value: number }[] {
+  function toIndexSeries(bars: OHLCVBar[]): { date: string; value: number }[] {
     if (!bars || bars.length === 0) return [];
     const base = bars[0].close;
     if (base === 0) return [];
-    return bars.map(b => ({ time: b.date, value: (b.close / base) * 100 }));
+    return bars.map(b => ({ date: b.date, value: (b.close / base) * 100 }));
   }
 
-  // Find the nearest available time at-or-after a target date in a data series.
-  function nearestAtOrAfter(data: { time: string }[], target: string): string | null {
-    return data.find(d => d.time >= target)?.time ?? null;
-  }
+  const tickerData = $derived(toIndexSeries(ohlcv));
+  const spyData    = $derived(spy_ohlcv?.length ? toIndexSeries(spy_ohlcv) : []);
+  const holdData   = $derived(
+    tickerData.filter(d => d.date >= entry_date && d.date <= exit_date)
+  );
 
-  function syncWindowLine() {
-    if (!chart) return;
-    try {
-      const x = chart.timeScale().timeToCoordinate(impact_window_end);
-      windowLineX = x !== null && x > 0 ? x : null;
-    } catch {
-      windowLineX = null;
-    }
-  }
+  // Find the ticker's normalized value nearest to entry / exit for marker placement.
+  const entryPoint = $derived(tickerData.find(d => d.date >= entry_date) ?? null);
+  const exitPoint  = $derived(tickerData.find(d => d.date >= exit_date)  ?? null);
 
-  onMount(async () => {
-    const {
-      createChart,
-      ColorType,
-      LineStyle,
-      LineSeries,
-      AreaSeries,
-      createSeriesMarkers,
-    } = await import('lightweight-charts');
+  // Build x domain from all series dates + impact_window_end so the impact line
+  // renders even when impact_window_end falls after the last trading day.
+  const xDomain = $derived(
+    [
+      ...tickerData.map(d => d.date),
+      ...spyData.map(d => d.date),
+      impact_window_end,
+    ]
+      .filter((d, i, a) => a.indexOf(d) === i)
+      .sort()
+  );
 
-    const bgSurface  = cssVar('--bg-surface')  || '#111111';
-    const textMuted  = cssVar('--text-muted')  || '#3d3b38';
-    const chartLine  = cssVar('--chart-line')  || '#f0ede8';
-    const chartBench = cssVar('--chart-bench') || '#3d3b38';
-    const chartEntry = cssVar('--chart-entry') || '#4ade80';
-    const chartExit  = cssVar('--chart-exit')  || '#f87171';
-    const chartHold  = cssVar('--chart-hold')  || 'rgba(240,237,232,0.06)';
-
-    chart = createChart(container, {
-      width:  container.clientWidth,
-      height: 280,
-      layout: {
-        background: { type: ColorType.Solid, color: bgSurface },
-        textColor:  textMuted,
-        fontSize:   11,
-      },
-      grid: {
-        vertLines: { visible: false },
-        horzLines: { visible: false },
-      },
-      crosshair:       { mode: 1 },   // CrosshairMode.Normal
-      rightPriceScale: { visible: false },
-      leftPriceScale:  { visible: false },
-      timeScale: {
-        borderColor:  textMuted,
-        fixLeftEdge:  true,
-        fixRightEdge: true,
-      },
-      handleScroll: false,
-      handleScale:  false,
-    });
-
-    const tickerData = toIndexSeries(ohlcv);
-
-    // ── Hold-period background shading ────────────────────────────────────
-    // An AreaSeries on the same price scale gives a subtle shaded region
-    // beneath the ticker line during the hold window.
-    if (tickerData.length > 0 && entry_date && exit_date) {
-      const holdSeries = chart.addSeries(AreaSeries, {
-        lineColor:              'transparent',
-        topColor:               chartHold,
-        bottomColor:            chartHold,
-        crosshairMarkerVisible: false,
-        priceLineVisible:       false,
-        lastValueVisible:       false,
-      });
-      const holdData = tickerData.filter(d => d.time >= entry_date && d.time <= exit_date);
-      if (holdData.length > 0) holdSeries.setData(holdData);
-    }
-
-    // ── Ticker price line ─────────────────────────────────────────────────
-    const tickerSeries = chart.addSeries(LineSeries, {
-      color:            chartLine,
-      lineWidth:        1.5,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    if (tickerData.length > 0) tickerSeries.setData(tickerData);
-
-    // ── SPY benchmark line (dashed) ───────────────────────────────────────
-    if (spy_ohlcv && spy_ohlcv.length > 0) {
-      const spySeries = chart.addSeries(LineSeries, {
-        color:            chartBench,
-        lineWidth:        1,
-        lineStyle:        LineStyle.Dashed,
-        priceLineVisible: false,
-        lastValueVisible: false,
-      });
-      spySeries.setData(toIndexSeries(spy_ohlcv));
-    }
-
-    // ── Entry / exit markers ──────────────────────────────────────────────
-    type Marker = Parameters<typeof createSeriesMarkers>[1] extends (infer M)[] | undefined
-      ? M
-      : never;
-    const markers: Marker[] = [];
-
-    const entryTime = nearestAtOrAfter(tickerData, entry_date);
-    if (entryTime) {
-      markers.push({
-        time:     entryTime,
-        position: 'belowBar',
-        shape:    'arrowUp',
-        color:    chartEntry,
-        size:     1,
-      });
-    }
-
-    const exitTime = nearestAtOrAfter(tickerData, exit_date);
-    if (exitTime && exitTime !== entryTime) {
-      markers.push({
-        time:     exitTime,
-        position: 'aboveBar',
-        shape:    'arrowDown',
-        color:    chartExit,
-        size:     1,
-      });
-    }
-
-    if (markers.length > 0) {
-      createSeriesMarkers(
-        tickerSeries,
-        markers.sort((a, b) => String(a.time).localeCompare(String(b.time))),
-      );
-    }
-
-    chart.timeScale().fitContent();
-
-    // Keep the amber window-end line in sync with chart panning / zooming.
-    chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-      requestAnimationFrame(syncWindowLine);
-    });
-    requestAnimationFrame(syncWindowLine);
-
-    resizeObserver = new ResizeObserver(entries => {
-      const width = entries[0].contentRect.width;
-      chart?.applyOptions({ width });
-      requestAnimationFrame(syncWindowLine);
-    });
-    resizeObserver.observe(container);
-  });
-
-  onDestroy(() => {
-    resizeObserver?.disconnect();
-    chart?.remove();
-    chart = undefined;
-  });
+  const HALF   = 6;
+  const OFFSET = 10;
 </script>
 
-<div class="chart-wrap">
-  <div bind:this={container} class="chart-container"></div>
+<div class="h-[280px] w-full">
+  <!--
+    let:xScale / let:yScale / let:height — the computed D3 scale functions and inner
+    chart height, exposed as slot props by Chart (from LayerCake). Used below to
+    position custom SVG overlays without needing chartContext().
+  -->
+  <Chart
+    data={tickerData}
+    x="date"
+    y="value"
+    xScale={scalePoint().padding(0)}
+    {xDomain}
+    yNice
+    padding={{ top: 16, right: 8, bottom: 28, left: 8 }}
+    tooltip={{ mode: 'bisect-x' }}
+    let:xScale
+    let:yScale
+    let:height
+  >
+    <Svg>
+      <!-- Hold-period background shading -->
+      {#if holdData.length}
+        <Area
+          data={holdData}
+          x="date"
+          y1="value"
+          fill="var(--chart-hold)"
+          stroke="none"
+        />
+      {/if}
 
-  <!-- Impact window end: dashed amber vertical overlay -->
-  {#if windowLineX !== null}
-  <div
-    class="window-line"
-    style:left="{windowLineX}px"
-    aria-hidden="true"
-  ></div>
-  {/if}
+      <!-- SPY benchmark line (dashed) -->
+      {#if spyData.length}
+        <Spline
+          data={spyData}
+          x="date"
+          y="value"
+          fill="none"
+          stroke="var(--chart-bench)"
+          strokeWidth={1}
+          style="stroke-dasharray: 4 4"
+        />
+      {/if}
+
+      <!-- Ticker price line -->
+      <Spline fill="none" stroke="var(--chart-line)" strokeWidth={1.5} />
+
+      <!-- Date axis -->
+      <Axis placement="bottom" ticks={5} format={(d: string) => d.slice(5)} />
+
+      <!-- Crosshair -->
+      <Highlight lines axis="x" points={false} />
+
+      <!-- Impact window end: dashed amber vertical line -->
+      {@const wx = xScale(impact_window_end)}
+      {#if wx != null}
+        <line
+          x1={wx} y1={0}
+          x2={wx} y2={height}
+          stroke="var(--accent-amber)"
+          stroke-width="1"
+          stroke-dasharray="4 4"
+          pointer-events="none"
+        />
+      {/if}
+
+      <!-- Entry arrow marker (green upward triangle) -->
+      {#if entryPoint}
+        {@const ex = xScale(entryPoint.date)}
+        {@const ey = yScale(entryPoint.value)}
+        {#if ex != null && ey != null}
+          <polygon
+            points="{ex},{ey + OFFSET} {ex - HALF},{ey + OFFSET + HALF * 1.6} {ex + HALF},{ey + OFFSET + HALF * 1.6}"
+            fill="var(--chart-entry)"
+            opacity="0.9"
+          />
+        {/if}
+      {/if}
+
+      <!-- Exit arrow marker (red downward triangle) -->
+      {#if exitPoint}
+        {@const xx = xScale(exitPoint.date)}
+        {@const xy = yScale(exitPoint.value)}
+        {#if xx != null && xy != null}
+          <polygon
+            points="{xx},{xy - OFFSET} {xx - HALF},{xy - OFFSET - HALF * 1.6} {xx + HALF},{xy - OFFSET - HALF * 1.6}"
+            fill="var(--chart-exit)"
+            opacity="0.9"
+          />
+        {/if}
+      {/if}
+    </Svg>
+  </Chart>
 </div>
-
-<style>
-  .chart-wrap {
-    position: relative;
-    width: 100%;
-    height: 280px;
-    overflow: hidden;
-  }
-
-  .chart-container {
-    width: 100%;
-    height: 280px;
-  }
-
-  .window-line {
-    position: absolute;
-    top: 0;
-    width: 1px;
-    height: 100%;
-    pointer-events: none;
-    background: repeating-linear-gradient(
-      to bottom,
-      var(--accent-amber)  0px,
-      var(--accent-amber)  4px,
-      transparent          4px,
-      transparent          8px
-    );
-  }
-</style>

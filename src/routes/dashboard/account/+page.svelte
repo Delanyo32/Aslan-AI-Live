@@ -125,25 +125,33 @@
   }
 </script>
 
-<div class="page-wrap">
-  <a href="/dashboard" class="back-link">← Back to dashboard</a>
+<div class="max-w-[720px] px-6">
+  <a
+    href="/dashboard"
+    class="font-sans text-sm text-text-secondary no-underline inline-block mb-8 hover:text-text-primary transition-colors duration-100"
+  >← Back to dashboard</a>
 
-  <h1 class="page-heading">ACCOUNT SETTINGS</h1>
+  <h1 class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary m-0">
+    ACCOUNT SETTINGS
+  </h1>
 
   <!-- ─── SECTION 1: PROFILE ───────────────────────────────────────────────── -->
-  <section class="section">
-    <span class="section-label">PROFILE</span>
+  <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
+    <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">PROFILE</span>
 
-    <div class="field-row">
-      <span class="field-label">Display name</span>
-      <div class="field-right">
+    <div class="flex items-start gap-4">
+      <span class="font-sans text-sm text-text-secondary min-w-[140px] shrink-0 pt-0.5">Display name</span>
+      <div class="flex items-center gap-3 flex-wrap flex-1">
         {#if !editing}
-          <span class="field-value">{nameValue}</span>
-          <button class="text-link" onclick={() => { editing = true }}>Edit</button>
+          <span class="font-sans text-base text-text-primary">{nameValue}</span>
+          <button
+            class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
+            onclick={() => { editing = true }}
+          >Edit</button>
         {:else}
-          <div class="edit-group">
+          <div class="flex items-center gap-2 flex-wrap">
             <input
-              class="text-input"
+              class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary placeholder:text-text-muted placeholder:text-sm"
               type="text"
               bind:value={nameValue}
               style="width: 240px"
@@ -153,55 +161,58 @@
               }}
             />
             <button
-              class="outlined-btn"
+              class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-default"
               disabled={nameSaving}
               onclick={saveName}
             >{nameSaving ? "Saving…" : "Save"}</button>
-            <button class="text-link" onclick={cancelNameEdit}>Cancel</button>
+            <button
+              class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
+              onclick={cancelNameEdit}
+            >Cancel</button>
           </div>
           {#if nameError}
-            <span class="field-error">{nameError}</span>
+            <span class="font-sans text-sm text-accent-loss block">{nameError}</span>
           {/if}
         {/if}
       </div>
     </div>
 
-    <div class="field-row">
-      <span class="field-label">Email address</span>
-      <span class="field-value mono">{data.user.email}</span>
+    <div class="flex items-start gap-4">
+      <span class="font-sans text-sm text-text-secondary min-w-[140px] shrink-0 pt-0.5">Email address</span>
+      <span class="font-mono text-sm text-text-primary">{data.user.email}</span>
     </div>
   </section>
 
   <!-- ─── SECTION 2: PASSWORD ───────────────────────────────────────────────── -->
   {#if data.has_password}
-    <section class="section">
-      <span class="section-label">PASSWORD</span>
+    <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
+      <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">PASSWORD</span>
 
-      <div class="pw-fields">
-        <div class="pw-field-group">
-          <label class="field-label" for="pw-current">Current password</label>
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="font-sans text-sm text-text-secondary" for="pw-current">Current password</label>
           <input
             id="pw-current"
-            class="text-input pw-input"
+            class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary max-w-xs w-full"
             type="password"
             bind:value={pwCurrent}
           />
         </div>
-        <div class="pw-field-group">
-          <label class="field-label" for="pw-new">New password</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="font-sans text-sm text-text-secondary" for="pw-new">New password</label>
           <input
             id="pw-new"
-            class="text-input pw-input"
+            class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary max-w-xs w-full placeholder:text-text-muted placeholder:text-sm"
             type="password"
             placeholder="8 characters minimum"
             bind:value={pwNew}
           />
         </div>
-        <div class="pw-field-group">
-          <label class="field-label" for="pw-confirm">Confirm password</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="font-sans text-sm text-text-secondary" for="pw-confirm">Confirm password</label>
           <input
             id="pw-confirm"
-            class="text-input pw-input"
+            class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary max-w-xs w-full"
             type="password"
             bind:value={pwConfirm}
           />
@@ -209,312 +220,88 @@
       </div>
 
       <button
-        class="outlined-btn"
+        class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-default"
         disabled={pwSaving}
         onclick={changePassword}
       >{pwSaving ? "Updating…" : "Change password →"}</button>
 
       {#if pwError}
-        <span class="field-error">{pwError}</span>
+        <span class="font-sans text-sm text-accent-loss block">{pwError}</span>
       {/if}
       {#if pwSuccess}
-        <span class="pw-success">Password updated.</span>
+        <span class="font-sans text-sm text-text-secondary block">Password updated.</span>
       {/if}
     </section>
   {/if}
 
   <!-- ─── SECTION 3: SESSIONS ──────────────────────────────────────────────── -->
-  <section class="section">
-    <span class="section-label">SESSIONS</span>
+  <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
+    <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">SESSIONS</span>
 
-    <p class="body-text">
+    <p class="font-sans text-sm text-text-secondary m-0">
       You have {data.active_sessions} active session{data.active_sessions === 1 ? "" : "s"} across all devices.
     </p>
 
     {#if !revokeConfirming}
       <div>
         <button
-          class="outlined-btn"
+          class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-default"
           onclick={() => { revokeConfirming = true }}
         >Sign out of all other devices →</button>
       </div>
     {:else}
-      <div class="confirm-block">
-        <p class="confirm-text">This will sign you out everywhere except this browser. Confirm?</p>
-        <div class="confirm-actions">
+      <div class="flex flex-col gap-3">
+        <p class="font-sans text-sm text-text-secondary m-0 max-w-[480px]">This will sign you out everywhere except this browser. Confirm?</p>
+        <div class="flex items-center gap-4">
           <button
-            class="outlined-btn danger"
+            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[rgba(248,113,113,0.06)] disabled:opacity-40 disabled:cursor-default"
             disabled={revokeLoading}
             onclick={revokeSessions}
           >{revokeLoading ? "Signing out…" : "Yes, sign out"}</button>
           <button
-            class="text-link"
+            class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
             onclick={() => { revokeConfirming = false; revokeError = "" }}
           >Cancel</button>
         </div>
         {#if revokeError}
-          <span class="field-error">{revokeError}</span>
+          <span class="font-sans text-sm text-accent-loss block">{revokeError}</span>
         {/if}
       </div>
     {/if}
   </section>
 
   <!-- ─── SECTION 4: DANGER ZONE ───────────────────────────────────────────── -->
-  <section class="section">
-    <span class="section-label danger-label">DANGER ZONE</span>
+  <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
+    <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-accent-loss border-b border-accent-loss pb-2">DANGER ZONE</span>
 
     {#if !deleteConfirming}
       <div>
         <button
-          class="outlined-btn danger"
+          class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[rgba(248,113,113,0.06)] disabled:opacity-40 disabled:cursor-default"
           onclick={() => { deleteConfirming = true }}
         >Delete account →</button>
       </div>
     {:else}
-      <div class="confirm-block">
-        <p class="confirm-text">
+      <div class="flex flex-col gap-3">
+        <p class="font-sans text-sm text-text-secondary m-0 max-w-[480px]">
           This permanently deletes your account, all saved backtests, and all report access.
           This cannot be undone.
         </p>
-        <div class="confirm-actions">
+        <div class="flex items-center gap-4">
           <button
-            class="outlined-btn danger"
+            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[rgba(248,113,113,0.06)] disabled:opacity-40 disabled:cursor-default"
             disabled={deleteLoading}
             onclick={deleteAccount}
           >{deleteLoading ? "Deleting…" : "Delete my account"}</button>
           <button
-            class="text-link"
+            class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
             onclick={() => { deleteConfirming = false; deleteError = "" }}
           >Cancel</button>
         </div>
         {#if deleteError}
-          <span class="field-error">{deleteError}</span>
+          <span class="font-sans text-sm text-accent-loss block">{deleteError}</span>
         {/if}
       </div>
     {/if}
   </section>
 </div>
-
-<style>
-  .page-wrap {
-    max-width: 720px;
-    padding: 0 24px;
-  }
-
-  /* ── Back link ──────────────────────────────────────────────────────────── */
-  .back-link {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    text-decoration: none;
-    display: inline-block;
-    margin-bottom: 32px;
-  }
-
-  .back-link:hover { color: var(--text-primary); }
-
-  /* ── Page heading ───────────────────────────────────────────────────────── */
-  .page-heading {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin: 0 0 0 0;
-  }
-
-  /* ── Sections ───────────────────────────────────────────────────────────── */
-  .section {
-    border-top: 1px solid var(--bg-border);
-    margin-top: 24px;
-    padding-top: 24px;
-    padding-bottom: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .section-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xs);
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  /* ── Field rows ─────────────────────────────────────────────────────────── */
-  .field-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .field-label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    min-width: 140px;
-    flex-shrink: 0;
-    padding-top: 2px;
-  }
-
-  .field-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    flex: 1;
-  }
-
-  .field-value {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    color: var(--text-primary);
-  }
-
-  .mono {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: var(--text-sm);
-    color: var(--text-primary);
-  }
-
-  .edit-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  /* ── Inputs ─────────────────────────────────────────────────────────────── */
-  .text-input {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    color: var(--text-primary);
-    background: var(--bg-surface);
-    border: 1px solid var(--bg-border);
-    border-radius: 2px;
-    padding: 6px 10px;
-    outline: none;
-  }
-
-  .text-input:focus { border-color: var(--text-secondary); }
-
-  .text-input::placeholder {
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-  }
-
-  /* ── Buttons ────────────────────────────────────────────────────────────── */
-  .outlined-btn {
-    background: transparent;
-    border: 1px solid var(--bg-border);
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    padding: 6px 14px;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: background 100ms, border-color 100ms;
-    white-space: nowrap;
-  }
-
-  .outlined-btn:hover:not(:disabled) { background: var(--bg-elevated); }
-
-  .outlined-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
-  .outlined-btn.danger {
-    border-color: var(--accent-loss);
-    color: var(--accent-loss);
-  }
-
-  .outlined-btn.danger:hover:not(:disabled) {
-    background: rgba(248, 113, 113, 0.06);
-  }
-
-  .text-link {
-    background: none;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .text-link:hover { color: var(--text-primary); }
-
-  /* ── Error / Success ────────────────────────────────────────────────────── */
-  .field-error {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--accent-loss);
-    display: block;
-  }
-
-  .pw-success {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    display: block;
-  }
-
-  /* ── Password section ───────────────────────────────────────────────────── */
-  .pw-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .pw-field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .pw-input {
-    max-width: 320px;
-    width: 100%;
-  }
-
-  /* ── Body text ──────────────────────────────────────────────────────────── */
-  .body-text {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  /* ── Confirm block ──────────────────────────────────────────────────────── */
-  .confirm-block {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .confirm-text {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    margin: 0;
-    max-width: 480px;
-  }
-
-  .confirm-actions {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  /* ── Danger Zone ────────────────────────────────────────────────────────── */
-  .danger-label {
-    color: var(--accent-loss);
-    border-bottom: 1px solid var(--accent-loss);
-    padding-bottom: 8px;
-  }
-</style>

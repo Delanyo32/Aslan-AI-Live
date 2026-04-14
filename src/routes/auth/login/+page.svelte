@@ -29,159 +29,62 @@
   }
 </script>
 
-<main class="auth-page">
-  <div class="auth-card">
-    <a href="/" class="wordmark">Aslan Finance</a>
-    <h1 class="title">Log in</h1>
+<main class="min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-[360px] flex flex-col gap-5">
+    <a href="/" class="font-display italic font-normal text-[22px] text-black no-underline tracking-[-0.01em]">Aslan Finance</a>
+    <h1 class="font-sans text-xl font-medium text-black leading-tight">Log in</h1>
 
-    <form onsubmit={handleSubmit} class="form">
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" type="email" bind:value={email} required autocomplete="email" />
+    <form onsubmit={handleSubmit} class="flex flex-col gap-[14px]">
+      <div class="flex flex-col gap-1.5">
+        <label for="email" class="font-sans text-sm text-[#525252]">Email</label>
+        <input
+          id="email"
+          type="email"
+          bind:value={email}
+          required
+          autocomplete="email"
+          class="w-full py-3 px-3 bg-[#F5F5F5] border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA]"
+        />
       </div>
 
-      <div class="field">
-        <label for="password">Password</label>
-        <input id="password" type="password" bind:value={password} required autocomplete="current-password" />
+      <div class="flex flex-col gap-1.5">
+        <label for="password" class="font-sans text-sm text-[#525252]">Password</label>
+        <input
+          id="password"
+          type="password"
+          bind:value={password}
+          required
+          autocomplete="current-password"
+          class="w-full py-3 px-3 bg-[#F5F5F5] border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA]"
+        />
       </div>
 
       {#if error}
-        <p class="error-msg">{error}</p>
+        <p class="font-sans text-sm text-accent-loss">{error}</p>
       {/if}
 
-      <button type="submit" class="btn" disabled={loading}>
+      <button
+        type="submit"
+        disabled={loading}
+        class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] disabled:opacity-50 disabled:cursor-not-allowed border-0"
+      >
         {loading ? "Logging in…" : "Log in"}
       </button>
     </form>
 
     {#if data.googleEnabled}
-      <div class="divider">or</div>
-      <button type="button" class="btn" onclick={handleGoogle}>
+      <div class="font-sans text-sm text-[#AAAAAA] text-center">or</div>
+      <button
+        type="button"
+        onclick={handleGoogle}
+        class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] border-0"
+      >
         Continue with Google
       </button>
     {/if}
 
-    <p class="switch-link">
-      No account? <a href="/auth/register">Create one →</a>
+    <p class="font-sans text-sm text-[#525252]">
+      No account? <a href="/auth/register" class="text-black no-underline hover:underline">Create one →</a>
     </p>
   </div>
 </main>
-
-<style>
-  .auth-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-
-  .auth-card {
-    width: 100%;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .wordmark {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    font-weight: 500;
-    color: var(--text-primary);
-    text-decoration: none;
-  }
-
-  .title {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-xl);
-    font-weight: 500;
-    color: var(--text-primary);
-    line-height: 1.2;
-  }
-
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  label {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  input {
-    width: 100%;
-    padding: 12px;
-    background: var(--bg-surface);
-    border: 1px solid var(--bg-border);
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    border-radius: 2px;
-    outline: none;
-  }
-
-  input:focus {
-    border-color: var(--text-secondary);
-  }
-
-  .error-msg {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--accent-loss);
-  }
-
-  .btn {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--bg-border);
-    background: transparent;
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-base);
-    text-align: center;
-    border-radius: 0;
-    cursor: pointer;
-    transition: background 100ms;
-  }
-
-  .btn:hover:not(:disabled) {
-    background: var(--bg-elevated);
-  }
-
-  .btn:disabled {
-    color: var(--text-muted);
-    cursor: not-allowed;
-  }
-
-  .divider {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    text-align: center;
-  }
-
-  .switch-link {
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  .switch-link a {
-    color: var(--text-primary);
-    text-decoration: none;
-  }
-
-  .switch-link a:hover {
-    text-decoration: underline;
-  }
-</style>

@@ -32,89 +32,25 @@
   {/snippet}
 
   {#snippet children()}
-    <div class="edit-form">
+    <div class="flex flex-col gap-[10px] pt-1">
       <textarea
-        class="query-textarea"
+        class="w-full px-3 py-[9px] bg-bg-surface border border-black text-text-primary font-sans text-sm leading-[1.5] resize-y outline-none rounded-none box-border focus:border-[#525252]"
         bind:value={draft}
         rows={3}
       ></textarea>
-      <div class="form-actions">
-        <button class="save-btn" onclick={handleSave} disabled={!changed}>
+      <div class="flex items-center gap-[14px]">
+        <button
+          class="px-4 py-[7px] border border-black bg-transparent text-text-primary font-sans text-sm cursor-pointer rounded-none transition-colors duration-100 hover:bg-bg-elevated disabled:text-text-muted disabled:cursor-not-allowed"
+          onclick={handleSave}
+          disabled={!changed}
+        >
           Save
         </button>
-        <button class="cancel-btn" onclick={onCancel}>Cancel</button>
+        <button
+          class="bg-transparent border-none p-0 font-sans text-sm text-text-muted cursor-pointer underline decoration-black hover:text-text-secondary"
+          onclick={onCancel}
+        >Cancel</button>
       </div>
     </div>
   {/snippet}
 </StepCard>
-
-<style>
-  .edit-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 4px;
-  }
-
-  .query-textarea {
-    width: 100%;
-    padding: 9px 12px;
-    background: var(--bg-surface);
-    border: 1px solid var(--bg-border);
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    line-height: 1.5;
-    resize: vertical;
-    outline: none;
-    border-radius: 2px;
-    box-sizing: border-box;
-  }
-
-  .query-textarea:focus {
-    border-color: var(--text-secondary);
-  }
-
-  .form-actions {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .save-btn {
-    padding: 7px 16px;
-    border: 1px solid var(--bg-border);
-    background: transparent;
-    color: var(--text-primary);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    cursor: pointer;
-    border-radius: 2px;
-    transition: background 100ms;
-  }
-
-  .save-btn:hover:not(:disabled) {
-    background: var(--bg-elevated);
-  }
-
-  .save-btn:disabled {
-    color: var(--text-muted);
-    cursor: not-allowed;
-  }
-
-  .cancel-btn {
-    background: transparent;
-    border: none;
-    padding: 0;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    cursor: pointer;
-    text-decoration: underline;
-    text-decoration-color: var(--bg-border);
-  }
-
-  .cancel-btn:hover {
-    color: var(--text-secondary);
-  }
-</style>

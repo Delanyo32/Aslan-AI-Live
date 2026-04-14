@@ -56,33 +56,21 @@
   });
 </script>
 
-<div class="tchart-wrap" bind:clientWidth={cw}>
+<div class="relative w-full overflow-hidden" bind:clientWidth={cw}>
   <svg width={cw} height={H} aria-hidden="true">
     {#if linePath}
     <path d={linePath} fill="none" stroke="var(--chart-line)" stroke-width="1.5" />
     {/if}
   </svg>
   <!-- Gradient overlay: lower 60% fades to background -->
-  <div class="tchart-overlay" aria-hidden="true"></div>
+  <div
+    class="absolute w-full bottom-0 h-[60%] pointer-events-none"
+    style="background: linear-gradient(to bottom, transparent, var(--bg-base))"
+    aria-hidden="true"
+  ></div>
 </div>
 
 <style>
-  .tchart-wrap {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-  }
-
-  svg {
-    display: block;
-  }
-
-  .tchart-overlay {
-    position: absolute;
-    width: 100%;
-    bottom: 0;
-    height: 60%;
-    background: linear-gradient(to bottom, transparent, var(--bg-base));
-    pointer-events: none;
-  }
+  /* SVG element selector — cannot be targeted with Tailwind utilities */
+  svg { display: block; }
 </style>
