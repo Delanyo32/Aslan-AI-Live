@@ -386,13 +386,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				})
 
 				// ── Record credit transaction ─────────────────────────────────────────
-				db.insert(creditTransactions).values({
+				await db.insert(creditTransactions).values({
 					id:          crypto.randomUUID(),
 					user_id:     user.id,
 					amount:      -creditCost,
 					reason:      params.is_rerun === true ? "rerun" : "backtest",
 					backtest_id: report.id,
-				}).catch((e: unknown) => console.error("[pipeline/run] credit_transaction insert failed:", e))
+				})
 
 				// ── Generate research narrative (async, non-blocking) ──────────────────
 				log("Generating research narrative...")
