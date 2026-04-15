@@ -20,10 +20,11 @@
     position_size: number;
     sessionId: string;
     initialPreset?: Preset;
+    defaultDirection?: 'long' | 'short';
     onconfirmed: (preset: Preset) => void;
   }
 
-  let { suggestions, position_size, sessionId, initialPreset, onconfirmed }: Props = $props();
+  let { suggestions, position_size, sessionId, initialPreset, defaultDirection = 'long', onconfirmed }: Props = $props();
 
   const PRESETS: Preset[] = ['aggressive', 'moderate', 'conservative'];
 
@@ -43,7 +44,7 @@
 
     const rule: EntryExitRule = {
       ...PRESET_RULES[selected],
-      direction: 'long',
+      direction: defaultDirection,
       position_size,
     };
 

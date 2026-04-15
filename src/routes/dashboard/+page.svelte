@@ -122,10 +122,14 @@
       : 0
   )
 
-  // Default direction from research summary
-  const defaultDirection = $derived<'long' | 'short'>(
-    researchSummary?.direction_hint === 'short' ? 'short' : 'long'
-  )
+  // Default direction: majority of confirmed tickers, falling back to research summary hint
+  const defaultDirection = $derived.by<'long' | 'short'>(() => {
+    if (confirmedTickers && confirmedTickers.length > 0) {
+      const shorts = confirmedTickers.filter(t => t.direction === 'short').length
+      return shorts > confirmedTickers.length / 2 ? 'short' : 'long'
+    }
+    return researchSummary?.direction_hint === 'short' ? 'short' : 'long'
+  })
 
   // ── Auto-start from URL params (homepage handoff or rerun) ─────────────────
   onMount(() => {
@@ -617,6 +621,7 @@
           position_size={perTickerSize}
           sessionId={sessionId!}
           initialPreset={selectedPreset}
+          defaultDirection={defaultDirection}
           onconfirmed={handleRuleConfirmed}
         />
       {/if}
