@@ -1,12 +1,12 @@
 import { error } from "@sveltejs/kit"
-import { getReportBySlugUnfiltered, incrementViewCount } from "$lib/server/db/reports"
+import { getReportBySlugIfComplete, incrementViewCount } from "$lib/server/db/reports"
 import type { PageServerLoad } from "./$types"
 
 export const load: PageServerLoad = async ({ params, cookies, locals, url }) => {
 	const { db } = locals
 
 	// Fetch the report regardless of is_public so owners can view private reports
-	const report = await getReportBySlugUnfiltered(db, params.id)
+	const report = await getReportBySlugIfComplete(db, params.id)
 
 	if (!report) {
 		throw error(404, "Report not found")

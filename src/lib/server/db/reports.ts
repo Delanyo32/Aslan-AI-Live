@@ -69,8 +69,8 @@ export async function createReport(db: Db, data: {
 	throw new Error("Failed to generate a unique slug after 5 attempts")
 }
 
-// Returns the report regardless of is_public — used for owner access
-export async function getReportBySlugUnfiltered(db: Db, slug: string): Promise<BacktestReportRow | null> {
+// Returns the report only if status = "complete", regardless of is_public — used for public/owner viewing
+export async function getReportBySlugIfComplete(db: Db, slug: string): Promise<BacktestReportRow | null> {
 	const [row] = await db
 		.select()
 		.from(backtestReports)
@@ -80,6 +80,15 @@ export async function getReportBySlugUnfiltered(db: Db, slug: string): Promise<B
 				eq(backtestReports.status, "complete")
 			)
 		)
+	return (row as unknown as BacktestReportRow) ?? null
+}
+
+// Returns any report by slug regardless of status — used for management operations (delete, visibility)
+export async function getReportBySlug(db: Db, slug: string): Promise<BacktestReportRow | null> {
+	const [row] = await db
+		.select()
+		.from(backtestReports)
+		.where(eq(backtestReports.slug, slug))
 	return (row as unknown as BacktestReportRow) ?? null
 }
 

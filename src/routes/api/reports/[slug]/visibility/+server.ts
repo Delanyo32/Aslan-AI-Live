@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit"
 import { backtestReports } from "$lib/server/db/schema"
 import { eq, and } from "drizzle-orm"
-import { getReportBySlugUnfiltered } from "$lib/server/db/reports"
+import { getReportBySlug } from "$lib/server/db/reports"
 import type { RequestHandler } from "./$types"
 
 export const POST: RequestHandler = async ({ params, locals, request }) => {
@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
 	}
 
 	const { db } = locals
-	const report = await getReportBySlugUnfiltered(db, params.slug)
+	const report = await getReportBySlug(db, params.slug)
 	if (!report) return json({ error: "not_found" }, { status: 404 })
 	if (report.user_id !== locals.user.id) return json({ error: "forbidden" }, { status: 403 })
 
