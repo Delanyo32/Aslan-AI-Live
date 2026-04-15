@@ -77,7 +77,7 @@
             bind:value={name}
             required
             autocomplete="name"
-            class="w-full py-3 px-3 bg-[#F5F5F5] border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA]"
+            class="w-full py-3 px-3 bg-white border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA] placeholder:italic"
           />
         </div>
 
@@ -89,7 +89,7 @@
             bind:value={email}
             required
             autocomplete="email"
-            class="w-full py-3 px-3 bg-[#F5F5F5] border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA]"
+            class="w-full py-3 px-3 bg-white border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA] placeholder:italic"
           />
         </div>
 
@@ -102,7 +102,7 @@
             required
             autocomplete="new-password"
             minlength={8}
-            class="w-full py-3 px-3 bg-[#F5F5F5] border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA]"
+            class="w-full py-3 px-3 bg-white border-2 border-black font-sans text-base text-black rounded-none outline-none focus:border-[3px] focus:border-black placeholder:text-[#AAAAAA] placeholder:italic"
           />
         </div>
 
