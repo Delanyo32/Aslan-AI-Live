@@ -69,26 +69,24 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <hr class="border-none border-t border-bg-border m-0" />
-  <p class="text-xs font-medium tracking-[0.08em] uppercase text-text-secondary m-0">
-    SELECT TRADE PARAMETERS
-  </p>
+  <hr class="border-none border-t border-[#e5e5e5] m-0" />
+  <p class="mono-label text-[9px] text-gray-400 m-0">Select trade parameters</p>
 
   <RadioGroup.Root bind:value={selected} class="flex flex-col">
     {#each PRESETS as preset}
       <RadioGroup.Item
         value={preset}
-        class="group flex items-start gap-2.5 py-2.5 bg-transparent border-0 border-b border-b-bg-border text-left cursor-pointer w-full first:border-t first:border-t-bg-border"
+        class="group flex items-start gap-2.5 py-2.5 bg-transparent border-0 border-b border-b-[#e5e5e5] text-left cursor-pointer w-full first:border-t first:border-t-[#e5e5e5]"
       >
-        <span class="text-[11px] leading-[1.7] text-text-muted flex-shrink-0 transition-colors duration-100 group-data-[state=checked]:text-text-primary">
+        <span class="text-[11px] leading-[1.7] text-gray-400 flex-shrink-0 transition-colors duration-100 group-data-[state=checked]:text-[#4338ca]">
           <span class="group-data-[state=checked]:hidden">○</span>
           <span class="hidden group-data-[state=checked]:inline">●</span>
         </span>
         <div class="flex flex-col gap-[3px]">
-          <span class="font-sans text-base text-text-secondary transition-colors duration-100 group-data-[state=checked]:text-text-primary">
+          <span class="font-sans text-base text-gray-500 transition-colors duration-100 group-data-[state=checked]:text-[#171717]">
             {suggestions[preset].label}
           </span>
-          <span class="font-mono text-xs text-text-muted leading-[1.5]">
+          <span class="font-mono text-xs text-gray-400 leading-[1.5]">
             Entry: {suggestions[preset].entry_rule}.&nbsp; Exit: {suggestions[preset].exit_rule}.
           </span>
         </div>
@@ -98,20 +96,20 @@
 
   <div class="flex items-center gap-2.5 py-1">
     <span class="flex items-baseline gap-1.5">
-      <span class="font-sans text-xs text-text-muted uppercase tracking-[0.06em]">Per ticker</span>
-      <span class="font-mono text-sm text-text-secondary">${position_size.toLocaleString()}</span>
+      <span class="mono-label text-[9px] text-gray-400">Per ticker</span>
+      <span class="font-mono text-sm text-gray-600">${position_size.toLocaleString()}</span>
     </span>
   </div>
 
   {#if error}
-    <p class="font-sans text-sm text-accent-loss m-0">{error}</p>
+    <p class="font-sans text-sm text-red-500 m-0">{error}</p>
   {/if}
 
   <button
-    class="block w-full py-[11px] px-4 border border-bg-border bg-transparent text-text-primary font-sans text-base text-center cursor-pointer transition-[background] duration-100 hover:not-disabled:bg-bg-elevated disabled:text-text-muted disabled:cursor-not-allowed"
+    class="bg-[#171717] text-white px-8 py-3 rounded-full font-sans font-medium hover:bg-[#4338ca] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     onclick={handleConfirm}
     disabled={loading}
   >
-    {loading ? 'Starting simulation...' : 'Run simulation →'}
+    {loading ? 'Starting simulation…' : 'Run simulation →'}
   </button>
 </div>

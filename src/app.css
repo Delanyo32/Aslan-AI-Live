@@ -30,11 +30,18 @@
   --color-accent-loss:    #525252;
   --color-accent-neutral: #000000;
 
-  /* Font families → font-sans, font-mono, font-serif, font-display */
-  --font-sans:    'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono:    'IBM Plex Mono', monospace;
-  --font-serif:   'Source Serif 4', Georgia, serif;
-  --font-display: 'Playfair Display', Georgia, serif;
+  /* Organic Intelligence palette */
+  --color-bg-primary:      #fcfbf9;
+  --color-bg-dark:         #171717;
+  --color-accent-indigo:   #4338ca;
+
+  /* Font families → font-sans, font-mono, font-serif, font-display, font-inter, font-jetbrains */
+  --font-sans:      'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:      'IBM Plex Mono', monospace;
+  --font-serif:     'Source Serif 4', Georgia, serif;
+  --font-display:   'Playfair Display', Georgia, serif;
+  --font-inter:     'Inter', system-ui, sans-serif;
+  --font-jetbrains: 'JetBrains Mono', monospace;
 
   /* Type scale */
   --text-xs:   11px;
@@ -77,6 +84,12 @@
   --chart-entry:    #000000;
   --chart-exit:     #525252;
   --chart-window:   rgba(0, 0, 0, 0.06);
+
+  /* Organic Intelligence tokens */
+  --bg-primary:    #fcfbf9;
+  --bg-dark:       #171717;
+  --accent-indigo: #4338ca;
+  --ease-premium:  cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Display font */
   --font-display: 'Playfair Display', Georgia, serif;
@@ -141,4 +154,104 @@
     linear-gradient(#00000008 1px, transparent 1px),
     linear-gradient(90deg, #00000008 1px, transparent 1px);
   background-size: 40px 40px;
+}
+
+/* ── Organic Intelligence utilities ─────────────────────────────────────── */
+
+.serif-italic {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+}
+
+.mono-label {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-size: 0.75rem;
+}
+
+.premium-transition {
+  transition: all 1000ms var(--ease-premium);
+}
+
+.hover-lift:hover {
+  transform: scale(1.02) translateY(-16px);
+  box-shadow: 0 30px 60px -12px rgba(67, 56, 202, 0.12);
+}
+
+.nav-underline { position: relative; }
+.nav-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.4s var(--ease-premium);
+}
+.nav-underline:hover::after { width: 100%; }
+
+.pulse-status { animation: pulse-dot 2s infinite ease-in-out; }
+
+.wave-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+}
+.wave-curve {
+  position: absolute;
+  width: 140%;
+  height: 400%;
+  background: var(--bg-primary);
+  border-radius: 50% 50% 0 0;
+  left: -20%;
+  top: 150px;
+}
+
+.mesh-gradient {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(67, 56, 202, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(0.95); opacity: 0.8; }
+  50%       { transform: scale(1.1);  opacity: 1;   }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes glow {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%       { opacity: 0.25; transform: scale(1.1); }
+}
+.animate-glow {
+  animation: glow 8s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+.animate-slide-up {
+  animation: slideUp 1s var(--ease-premium) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s var(--ease-premium) forwards;
 }

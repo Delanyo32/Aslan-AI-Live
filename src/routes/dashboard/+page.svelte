@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
+  import { toast } from 'svelte-sonner'
   import { onMount } from 'svelte'
   import BacktestInput from '$lib/components/backtest/BacktestInput.svelte'
   import ResearchResults from '$lib/components/backtest/ResearchResults.svelte'
@@ -53,6 +54,7 @@
     }
     reports = reports.filter(r => r.slug !== slug)
     pendingDelete = null
+    toast.success('Report deleted.')
   }
 
   // ── Pipeline state machine ──────────────────────────────────────────────────
@@ -94,12 +96,9 @@
   let completedSteps = $state<Record<CompletedStep, boolean>>({
     query: false, understanding: false, tickers: false, rule: false
   })
-  // Which step is being edited (null = none)
   let editingStep = $state<'query' | 'tickers' | 'rule' | null>(null)
-  // Pending values saved but not yet rerun
   let pendingQuery = $state<string | null>(null)
   let pendingTickerPayload = $state<{ tickers: ConfirmedTickerWithDirection[]; totalPortfolioValue: number } | null>(null)
-  // Selected preset for rule summary card display
   type Preset = 'aggressive' | 'moderate' | 'conservative'
   let selectedPreset = $state<Preset>('moderate')
 
@@ -107,22 +106,18 @@
   const isFlowActive = $derived(view !== 'input')
   const isProcessing = $derived(view === 'processing' || view === 'confirming_rule')
 
-  // Stale: steps that are downstream of the step being edited
   const staleUnderstanding = $derived(editingStep === 'query')
   const staleTickers       = $derived(editingStep === 'query')
   const staleRule          = $derived(editingStep === 'query' || editingStep === 'tickers')
 
-  // Display query: pending edit takes precedence over confirmed query
   const displayQuery = $derived(pendingQuery ?? currentQuery)
 
-  // Per-ticker position size for RuleSelector display
   const perTickerSize = $derived(
     confirmedTickers && confirmedTickers.length > 0
       ? Math.floor(totalPortfolioValue / confirmedTickers.length)
       : 0
   )
 
-  // Default direction: majority of confirmed tickers, falling back to research summary hint
   const defaultDirection = $derived.by<'long' | 'short'>(() => {
     if (confirmedTickers && confirmedTickers.length > 0) {
       const shorts = confirmedTickers.filter(t => t.direction === 'short').length
@@ -131,14 +126,14 @@
     return researchSummary?.direction_hint === 'short' ? 'short' : 'long'
   })
 
-  // ── Auto-start from URL params (homepage handoff or rerun) ─────────────────
+  // ── Auto-start from URL params ─────────────────────────────────────────────
   onMount(() => {
     if (data.pendingQuery) {
       handleRun(data.pendingQuery)
     }
   })
 
-  // ── Step 1 → Step 2: Agentic research via SSE ─────────────────────────────
+  // ── Handlers ────────────────────────────────────────────────────────────────
   function handleRun(query: string) {
     currentQuery          = query
     pendingQuery          = null
@@ -184,13 +179,11 @@
     })
   }
 
-  // ── Step 2 → Step 3: User confirmed research results ──────────────────────
   function handleResearchContinue() {
     completedSteps = { ...completedSteps, understanding: true }
     view = 'confirming_tickers'
   }
 
-  // ── Step 3 → Processing: Tickers + direction + portfolio confirmed ──────────
   async function handleTickersConfirmed(payload: { tickers: ConfirmedTickerWithDirection[]; totalPortfolioValue: number }) {
     confirmedTickers    = payload.tickers
     totalPortfolioValue = payload.totalPortfolioValue
@@ -265,17 +258,13 @@
     view = 'input'
   }
 
-  // ── Cancel during processing ────────────────────────────────────────────────
   function handleProcessingCancelled() {
     completedSteps = { ...completedSteps, rule: false }
     editingStep = null
     view = 'reviewing'
   }
 
-  // ── Back-navigation: edit query ─────────────────────────────────────────────
-  function handleEditQuery() {
-    editingStep = 'query'
-  }
+  function handleEditQuery() { editingStep = 'query' }
 
   function handleSaveQuery(newQuery: string) {
     pendingQuery = newQuery
@@ -284,7 +273,6 @@
 
   function handleRerunFromQuery() {
     if (!pendingQuery) return
-    // Clear all downstream state
     researchEvents      = []
     lowConfidenceEvents = []
     researchSummary     = null
@@ -298,10 +286,7 @@
     handleRun(pendingQuery)
   }
 
-  // ── Back-navigation: edit tickers ───────────────────────────────────────────
-  function handleEditTickers() {
-    editingStep = 'tickers'
-  }
+  function handleEditTickers() { editingStep = 'tickers' }
 
   function handleSaveTickers(payload: { tickers: ConfirmedTickerWithDirection[]; totalPortfolioValue: number }) {
     pendingTickerPayload = payload
@@ -316,7 +301,6 @@
     handleTickersConfirmed(pendingTickerPayload)
   }
 
-  // ── Back-navigation: cancel edit ───────────────────────────────────────────
   function handleCancelEdit() {
     pendingQuery = null
     pendingTickerPayload = null
@@ -346,290 +330,309 @@
   />
 {/if}
 
-{#if !isFlowActive}
-<!-- ── My Backtests ─────────────────────────────────────────────────────────── -->
-<section class="flex flex-col gap-4 border-t-4 border-black pt-5 mb-12">
-  <div class="flex items-center justify-between flex-wrap gap-3">
-    <span class="font-display text-xl font-bold tracking-[-0.025em] text-black">MY BACKTESTS</span>
-    <div class="flex items-center gap-2">
-      <button
-        class="bg-transparent border-none p-0 font-mono text-xs tracking-[0.08em] uppercase cursor-pointer transition-colors duration-100"
-        class:text-black={sortKey === 'date'}
-        class:text-[#E5E5E5]={sortKey !== 'date'}
-        onclick={() => sortKey = 'date'}
-      >Date ↓</button>
-      <span class="text-xs text-[#E5E5E5] select-none" aria-hidden="true">|</span>
-      <button
-        class="bg-transparent border-none p-0 font-mono text-xs tracking-[0.08em] uppercase cursor-pointer transition-colors duration-100"
-        class:text-black={sortKey === 'return'}
-        class:text-[#E5E5E5]={sortKey !== 'return'}
-        onclick={() => sortKey = 'return'}
-      >Return</button>
-      <span class="text-xs text-[#E5E5E5] select-none" aria-hidden="true">|</span>
-      <button
-        class="bg-transparent border-none p-0 font-mono text-xs tracking-[0.08em] uppercase cursor-pointer transition-colors duration-100"
-        class:text-black={sortKey === 'ticker'}
-        class:text-[#E5E5E5]={sortKey !== 'ticker'}
-        onclick={() => sortKey = 'ticker'}
-      >Ticker</button>
-    </div>
-  </div>
+<div class="pt-8 pb-20 max-w-7xl mx-auto w-full px-8 lg:px-24 relative">
+  <div class="absolute inset-0 mesh-gradient pointer-events-none" aria-hidden="true"></div>
 
-  {#if sortedReports.length === 0}
-    <p class="font-sans text-sm text-text-secondary text-center py-8">No backtests yet. Run your first one below.</p>
-  {:else}
-    <div class="border-t border-black">
-      {#each sortedReports as report (report.slug)}
-        <div class="border-b border-[#E5E5E5]">
-          <div class="flex items-center gap-4 py-3 flex-wrap max-sm:gap-x-3 max-sm:gap-y-1.5">
-            <span class="flex-1 min-w-[180px] font-sans text-sm text-text-primary overflow-hidden text-ellipsis whitespace-nowrap max-sm:basis-full max-sm:min-w-0">{report.query}</span>
-            <span class="font-mono text-sm text-text-secondary whitespace-nowrap">{report.ticker_count} ticker{report.ticker_count !== 1 ? 's' : ''}</span>
-            <span
-              class="font-mono text-sm whitespace-nowrap min-w-[64px] text-right"
-              class:text-accent-gain={report.total_return_pct >= 0}
-              class:text-accent-loss={report.total_return_pct < 0}
-            >
-              {formatPct(report.total_return_pct)}
-            </span>
-            <span class="font-mono text-sm text-text-secondary whitespace-nowrap">{fmtMonthYear(report.date_from)}–{fmtMonthYear(report.date_to)}</span>
-            <div class="flex items-center gap-3 whitespace-nowrap ml-auto max-sm:ml-auto">
-              <a href="/backtest/{report.slug}" class="font-sans text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-100">↗ View</a>
-              <button
-                class="bg-transparent border-none font-sans text-sm text-text-secondary p-0 cursor-pointer hover:text-black transition-colors duration-100"
-                onclick={() => {
-                  pendingDelete = pendingDelete === report.slug ? null : report.slug
-                  deleteErrors = { ...deleteErrors, [report.slug]: '' }
-                }}
-              >Delete</button>
-            </div>
+  <div class="relative z-10 space-y-16">
+
+    <!-- ── Run New Backtest ──────────────────────────────────────────────────── -->
+    <section class="bg-white border border-[#e5e5e5] rounded-[3rem] p-10 lg:p-14 shadow-sm">
+      {#if !isFlowActive}
+        <span class="mono-label text-[#4338ca] block mb-2">Terminal</span>
+        <h2 class="serif-italic text-4xl lg:text-5xl text-[#171717] mb-10">Scale your conviction.</h2>
+      {/if}
+
+      <div class="flex flex-col gap-4">
+
+        <!-- Summary cards for completed steps -->
+        {#if completedSteps.query}
+          <div class="flex flex-col">
+            <QuerySummaryCard
+              query={displayQuery}
+              stale={false}
+              editable={!isProcessing}
+              expanded={editingStep === 'query'}
+              onEdit={handleEditQuery}
+              onSave={handleSaveQuery}
+              onCancel={handleCancelEdit}
+            />
+
+            {#if completedSteps.understanding && researchSummary}
+              <div class="py-3 px-0 flex flex-col gap-0.5" class:opacity-50={staleUnderstanding}>
+                <p class="mono-label text-[9px] text-gray-400 m-0">Research</p>
+                <p class="font-sans text-sm text-[#171717] m-0">{researchSummary.event_description}</p>
+                <p class="font-mono text-xs text-gray-400 m-0">{researchEvents.filter(e => e.condition_met).length} tradeable event{researchEvents.filter(e => e.condition_met).length !== 1 ? 's' : ''} found</p>
+              </div>
+            {/if}
+
+            {#if completedSteps.tickers && confirmedTickers && rankedTickers}
+              <TickerSummaryCard
+                tickers={confirmedTickers}
+                portfolioValue={totalPortfolioValue}
+                rankedTickers={rankedTickers}
+                {defaultDirection}
+                stale={staleTickers}
+                editable={!isProcessing}
+                expanded={editingStep === 'tickers'}
+                onEdit={handleEditTickers}
+                onSave={handleSaveTickers}
+                onCancel={handleCancelEdit}
+              />
+            {/if}
+
+            {#if completedSteps.rule && entryExitSuggestions}
+              <RuleSummaryCard
+                suggestions={entryExitSuggestions}
+                positionSize={perTickerSize}
+                sessionId={sessionId!}
+                {selectedPreset}
+                stale={staleRule}
+                editable={!isProcessing}
+                expanded={editingStep === 'rule'}
+                onEdit={() => editingStep = 'rule'}
+                onSave={(preset) => { selectedPreset = preset; completedSteps = { ...completedSteps, rule: true }; editingStep = null }}
+                onCancel={handleCancelEdit}
+              />
+            {/if}
           </div>
 
-          {#if pendingDelete === report.slug}
-            <div class="flex items-center gap-3 flex-wrap py-2.5 pb-3.5 font-sans text-sm text-text-secondary">
-              Delete this backtest? This cannot be undone.
+          <!-- Rerun banners -->
+          {#if pendingQuery !== null && editingStep === null}
+            <div class="flex items-center gap-4 flex-wrap px-5 py-4 bg-white border border-[#e5e5e5] border-l-2 border-l-[#4338ca] rounded-2xl">
+              <span class="font-sans text-sm text-gray-500 flex-1 min-w-[160px]">Query changed — downstream steps will rerun.</span>
               <button
-                class="bg-transparent border border-black text-text-secondary font-sans text-xs px-2.5 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-black hover:text-white disabled:opacity-50"
-                onclick={() => confirmDelete(report.slug)}
-                disabled={deleteLoading === report.slug}
-              >
-                {deleteLoading === report.slug ? 'Deleting…' : 'Confirm delete'}
-              </button>
+                class="bg-[#171717] text-white px-6 py-2 rounded-full font-sans text-sm font-medium hover:bg-[#4338ca] transition-all duration-300 cursor-pointer whitespace-nowrap"
+                onclick={handleRerunFromQuery}
+              >Rerun from Step 2 →</button>
               <button
-                class="bg-transparent border border-black text-[#525252] font-sans text-xs px-2.5 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-black hover:text-white disabled:opacity-50"
-                onclick={() => { pendingDelete = null }}
-                disabled={deleteLoading === report.slug}
-              >Cancel</button>
-              {#if deleteErrors[report.slug]}
-                <span class="text-xs text-accent-loss">{deleteErrors[report.slug]}</span>
-              {/if}
+                class="mono-label text-[10px] text-gray-400 hover:text-gray-600 underline cursor-pointer bg-transparent border-none"
+                onclick={handleCancelEdit}
+              >Discard</button>
+            </div>
+          {:else if pendingTickerPayload !== null && editingStep === null}
+            <div class="flex items-center gap-4 flex-wrap px-5 py-4 bg-white border border-[#e5e5e5] border-l-2 border-l-[#4338ca] rounded-2xl">
+              <span class="font-sans text-sm text-gray-500 flex-1 min-w-[160px]">Instruments changed — processing will rerun.</span>
+              <button
+                class="bg-[#171717] text-white px-6 py-2 rounded-full font-sans text-sm font-medium hover:bg-[#4338ca] transition-all duration-300 cursor-pointer whitespace-nowrap"
+                onclick={handleRerunFromTickers}
+              >Rerun from Step 5 →</button>
+              <button
+                class="mono-label text-[10px] text-gray-400 hover:text-gray-600 underline cursor-pointer bg-transparent border-none"
+                onclick={handleCancelEdit}
+              >Discard</button>
             </div>
           {/if}
-        </div>
-      {/each}
-    </div>
-  {/if}
-</section>
-{/if}
-
-<!-- ── Run New Backtest ─────────────────────────────────────────────────────── -->
-<section class="flex flex-col gap-4 border-t-4 border-black pt-5 mb-12">
-  {#if !isFlowActive}
-    <span class="font-display text-xl font-bold tracking-[-0.025em] text-black">RUN NEW BACKTEST</span>
-  {/if}
-
-  <div class="flex flex-col gap-3">
-
-    <!-- ── Summary cards: shown for every completed step ───────────────────── -->
-    {#if completedSteps.query}
-      <div class="border-t border-black flex flex-col">
-        <QuerySummaryCard
-          query={displayQuery}
-          stale={false}
-          editable={!isProcessing}
-          expanded={editingStep === 'query'}
-          onEdit={handleEditQuery}
-          onSave={handleSaveQuery}
-          onCancel={handleCancelEdit}
-        />
-
-        {#if completedSteps.understanding && researchSummary}
-          <div class="py-2 px-0 flex flex-col gap-0.5" class:opacity-50={staleUnderstanding}>
-            <p class="font-sans text-xs text-text-muted m-0 uppercase tracking-[0.08em]">RESEARCH</p>
-            <p class="font-sans text-sm text-text-secondary m-0">{researchSummary.event_description}</p>
-            <p class="font-mono text-xs text-text-muted m-0">{researchEvents.filter(e => e.condition_met).length} tradeable event{researchEvents.filter(e => e.condition_met).length !== 1 ? 's' : ''} found</p>
-          </div>
         {/if}
 
-        {#if completedSteps.tickers && confirmedTickers && rankedTickers}
-          <TickerSummaryCard
-            tickers={confirmedTickers}
-            portfolioValue={totalPortfolioValue}
-            rankedTickers={rankedTickers}
+        <!-- Active step -->
+        {#if view === 'input'}
+
+          {#if errorState.kind === 'no_events'}
+            <div class="flex flex-col gap-2 bg-[#faf5ff] border border-indigo-100 rounded-2xl p-5">
+              <p class="font-sans text-sm text-gray-600 m-0">No historical events found matching your hypothesis.</p>
+              <p class="font-sans text-sm text-gray-600 m-0">Try broadening the date range, adjusting the event description, or checking the ticker.</p>
+              <button
+                class="mono-label text-[10px] text-[#4338ca] cursor-pointer bg-transparent border-none text-left hover:text-indigo-700 transition-colors"
+                onclick={handleRefineQuery}
+              >Refine query →</button>
+            </div>
+
+          {:else if errorState.kind === 'no_trades'}
+            <div class="flex flex-col gap-2 bg-[#faf5ff] border border-indigo-100 rounded-2xl p-5">
+              <p class="font-sans text-sm text-gray-600 m-0">Events were found but no tradeable positions could be modelled.</p>
+              <p class="font-sans text-sm text-gray-600 m-0">Try a different ticker selection or broaden the event description.</p>
+              <button
+                class="mono-label text-[10px] text-[#4338ca] cursor-pointer bg-transparent border-none text-left hover:text-indigo-700 transition-colors"
+                onclick={handleRefineQuery}
+              >Refine query →</button>
+            </div>
+
+          {:else if errorState.kind === 'insufficient_credits'}
+            <div class="flex items-center gap-3 flex-wrap bg-[#171717] text-white rounded-2xl p-5 font-sans text-sm">
+              This backtest costs {errorState.required} credit{errorState.required !== 1 ? 's' : ''} — you have {errorState.available}. Buy more to continue.
+              <a href="/dashboard/credits" class="text-white underline underline-offset-2 hover:text-indigo-200 transition-colors">Buy credits →</a>
+            </div>
+            <BacktestInput onrun={handleRun} initialValue={currentQuery} />
+
+          {:else if errorState.kind === 'api_error'}
+            <div class="flex items-center gap-3 flex-wrap px-5 py-4 bg-white border border-[#e5e5e5] border-l-2 border-l-[#4338ca] rounded-2xl font-sans text-sm text-[#171717]">
+              Something went wrong retrieving {errorState.stage === 'detection' ? 'news data' : 'price data'}. Your credits were not deducted.
+              <button
+                class="mono-label text-[10px] text-[#4338ca] cursor-pointer bg-transparent border-none hover:text-indigo-700 transition-colors whitespace-nowrap"
+                onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}
+              >Try again →</button>
+            </div>
+            <BacktestInput onrun={handleRun} initialValue={currentQuery} />
+
+          {:else if errorState.kind === 'generic'}
+            <div class="flex items-center gap-3 flex-wrap px-5 py-4 bg-white border border-[#e5e5e5] border-l-2 border-l-[#4338ca] rounded-2xl font-sans text-sm text-[#171717]">
+              {errorState.message}
+              <button
+                class="mono-label text-[10px] text-[#4338ca] cursor-pointer bg-transparent border-none hover:text-indigo-700 transition-colors whitespace-nowrap"
+                onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}
+              >Try again →</button>
+            </div>
+            <BacktestInput onrun={handleRun} initialValue={currentQuery} />
+
+          {:else}
+            {#if understandError}
+              <p class="font-sans text-sm text-gray-500 m-0 px-1">{understandError}</p>
+            {/if}
+            <BacktestInput onrun={handleRun} initialValue={currentQuery} />
+          {/if}
+
+        {:else if view === 'researching'}
+          <div class="flex flex-col gap-3">
+            <span class="mono-label text-[10px] text-[#4338ca] block">Researching your hypothesis…</span>
+            {#if researchLogs.length > 0}
+              <div class="flex flex-col gap-0.5 border-l-2 border-indigo-100 pl-4">
+                {#each researchLogs as logLine}
+                  <p class="font-mono text-xs text-gray-400 m-0">{logLine}</p>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+        {:else if view === 'previewing_research'}
+          <ResearchResults
+            events={researchEvents}
+            lowConfidence={lowConfidenceEvents}
+            rankedTickers={rankedTickers ?? []}
+            oncontinue={handleResearchContinue}
+            onrefine={handleRefineQuery}
+          />
+
+        {:else if view === 'confirming_tickers' && rankedTickers}
+          <TickerConfirmation
+            ranked_tickers={rankedTickers}
             {defaultDirection}
-            stale={staleTickers}
-            editable={!isProcessing}
-            expanded={editingStep === 'tickers'}
-            onEdit={handleEditTickers}
-            onSave={handleSaveTickers}
-            onCancel={handleCancelEdit}
+            onconfirmed={handleTickersConfirmed}
           />
-        {/if}
 
-        {#if completedSteps.rule && entryExitSuggestions}
-          <RuleSummaryCard
-            suggestions={entryExitSuggestions}
-            positionSize={perTickerSize}
+        {:else if view === 'processing' || view === 'confirming_rule'}
+          <ProcessingLog
+            streamUrl={streamUrl!}
             sessionId={sessionId!}
-            {selectedPreset}
-            stale={staleRule}
-            editable={!isProcessing}
-            expanded={editingStep === 'rule'}
-            onEdit={() => editingStep = 'rule'}
-            onSave={(preset) => { selectedPreset = preset; completedSteps = { ...completedSteps, rule: true }; editingStep = null }}
-            onCancel={handleCancelEdit}
+            onentryexitsuggestions={handleEntryExitSuggestions}
+            oncomplete={handleComplete}
+            onerror={handleError}
+            ontickercandidates={() => {}}
+            oncancelled={handleProcessingCancelled}
           />
+
+          {#if view === 'confirming_rule' && entryExitSuggestions}
+            <RuleSelector
+              suggestions={entryExitSuggestions}
+              position_size={perTickerSize}
+              sessionId={sessionId!}
+              initialPreset={selectedPreset}
+              defaultDirection={defaultDirection}
+              onconfirmed={handleRuleConfirmed}
+            />
+          {/if}
+
+        {:else if view === 'reviewing'}
+          <p class="font-sans text-sm text-gray-400 m-0 py-1">Edit any step above to adjust your backtest, then rerun.</p>
+
         {/if}
+
+      </div>
+    </section>
+
+    <!-- ── My Backtests ──────────────────────────────────────────────────────── -->
+    {#if !isFlowActive}
+    <section>
+      <div class="flex items-end justify-between mb-8 flex-wrap gap-4">
+        <div>
+          <span class="mono-label text-[#4338ca] block mb-2">Archive</span>
+          <h2 class="serif-italic text-4xl text-[#171717]">My Backtests</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          {#each [['date', 'Date ↓'], ['return', 'Return'], ['ticker', 'Tickers']] as [key, label]}
+            <button
+              onclick={() => sortKey = key as SortKey}
+              class="px-4 py-1.5 rounded-full mono-label text-[10px] cursor-pointer transition-all duration-300 border
+                {sortKey === key
+                  ? 'border-[#171717] bg-[#171717] text-white'
+                  : 'border-[#e5e5e5] text-gray-400 hover:text-gray-600 hover:border-gray-300 bg-white'}"
+            >{label}</button>
+          {/each}
+        </div>
       </div>
 
-      <!-- ── Rerun banner: shown after saving an edit ─────────────────────── -->
-      {#if pendingQuery !== null && editingStep === null}
-        <div class="flex items-center gap-4 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black">
-          <span class="font-sans text-sm text-text-secondary flex-1 min-w-[160px]">Query changed — downstream steps will rerun.</span>
-          <button
-            class="bg-transparent border border-black rounded-none px-3.5 py-1.5 font-sans text-sm text-text-primary cursor-pointer whitespace-nowrap transition-colors duration-100 hover:bg-white"
-            onclick={handleRerunFromQuery}
-          >Rerun from Step 2 →</button>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-[#AAAAAA] cursor-pointer underline decoration-black hover:text-text-secondary transition-colors duration-100"
-            onclick={handleCancelEdit}
-          >Discard</button>
+      {#if sortedReports.length === 0}
+        <div class="bg-white border border-[#e5e5e5] rounded-3xl p-12 text-center">
+          <p class="serif-italic text-xl text-gray-400 mb-3">No backtests yet.</p>
+          <p class="mono-label text-[9px] text-gray-400">Run your first one above.</p>
         </div>
-      {:else if pendingTickerPayload !== null && editingStep === null}
-        <div class="flex items-center gap-4 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black">
-          <span class="font-sans text-sm text-text-secondary flex-1 min-w-[160px]">Instruments changed — processing will rerun.</span>
-          <button
-            class="bg-transparent border border-black rounded-none px-3.5 py-1.5 font-sans text-sm text-text-primary cursor-pointer whitespace-nowrap transition-colors duration-100 hover:bg-white"
-            onclick={handleRerunFromTickers}
-          >Rerun from Step 5 →</button>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-[#AAAAAA] cursor-pointer underline decoration-black hover:text-text-secondary transition-colors duration-100"
-            onclick={handleCancelEdit}
-          >Discard</button>
-        </div>
-      {/if}
-    {/if}
-
-    <!-- ── Active step ───────────────────────────────────────────────────────── -->
-    {#if view === 'input'}
-
-      {#if errorState.kind === 'no_events'}
-        <div class="flex flex-col gap-2 border-l-4 border-l-black pl-4">
-          <p class="font-sans text-sm text-[#525252] m-0">No historical events found matching your hypothesis.</p>
-          <p class="font-sans text-sm text-[#525252] m-0">Try broadening the date range, adjusting the event description, or checking the ticker.</p>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-[#525252] cursor-pointer underline decoration-[#E5E5E5] text-left hover:text-black hover:decoration-black transition-colors duration-100"
-            onclick={handleRefineQuery}
-          >Refine query →</button>
-        </div>
-
-      {:else if errorState.kind === 'no_trades'}
-        <div class="flex flex-col gap-2 border-l-4 border-l-black pl-4">
-          <p class="font-sans text-sm text-[#525252] m-0">Events were found but no tradeable positions could be modelled.</p>
-          <p class="font-sans text-sm text-[#525252] m-0">Try a different ticker selection or broaden the event description.</p>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-[#525252] cursor-pointer underline decoration-[#E5E5E5] text-left hover:text-black hover:decoration-black transition-colors duration-100"
-            onclick={handleRefineQuery}
-          >Refine query →</button>
-        </div>
-
-      {:else if errorState.kind === 'insufficient_credits'}
-        <div class="flex items-center gap-3 flex-wrap p-4 bg-black font-sans text-sm text-white">
-          This backtest costs {errorState.required} credit{errorState.required !== 1 ? 's' : ''} — you have {errorState.available}. Buy more to continue.
-          <a href="/dashboard/credits" class="text-white underline decoration-white/50 hover:decoration-white transition-colors duration-100">Buy credits →</a>
-        </div>
-        <BacktestInput onrun={handleRun} initialValue={currentQuery} />
-
-      {:else if errorState.kind === 'api_error'}
-        <div class="flex items-center gap-3 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black font-sans text-sm text-black">
-          Something went wrong retrieving {errorState.stage === 'detection' ? 'news data' : 'price data'}. Your credits were not deducted.
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-black cursor-pointer underline decoration-[#E5E5E5] whitespace-nowrap hover:decoration-black transition-colors duration-100"
-            onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}
-          >Try again →</button>
-        </div>
-        <BacktestInput onrun={handleRun} initialValue={currentQuery} />
-
-      {:else if errorState.kind === 'generic'}
-        <div class="flex items-center gap-3 flex-wrap px-3 py-2.5 border border-black border-l-4 border-l-black font-sans text-sm text-black">
-          {errorState.message}
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-black cursor-pointer underline decoration-[#E5E5E5] whitespace-nowrap hover:decoration-black transition-colors duration-100"
-            onclick={() => { errorState = { kind: 'none' }; handleRun(currentQuery) }}
-          >Try again →</button>
-        </div>
-        <BacktestInput onrun={handleRun} initialValue={currentQuery} />
-
       {:else}
-        {#if understandError}
-          <p class="font-sans text-sm text-accent-loss m-0">{understandError}</p>
-        {/if}
-        <BacktestInput onrun={handleRun} initialValue={currentQuery} />
+        <div class="flex flex-col gap-4">
+          {#each sortedReports as report (report.slug)}
+            <div class="bg-white border border-[#e5e5e5] rounded-3xl p-8 premium-transition hover:border-[#4338ca] hover:shadow-xl hover:shadow-indigo-500/5 group">
+              <div class="flex flex-col lg:flex-row justify-between gap-6">
+                <!-- Left: query + actions -->
+                <div class="flex-1 min-w-0">
+                  <h3 class="serif-italic text-2xl lg:text-3xl text-[#171717] leading-tight mb-4 group-hover:text-[#4338ca] transition-colors duration-300">
+                    {report.query}
+                  </h3>
+                  <div class="flex items-center gap-4">
+                    <a
+                      href="/backtest/{report.slug}"
+                      class="mono-label text-[10px] text-[#4338ca] flex items-center gap-1 no-underline border-b border-transparent hover:border-indigo-400 pb-0.5 transition-colors"
+                    >
+                      View result
+                      <iconify-icon icon="lucide:arrow-up-right" class="text-sm"></iconify-icon>
+                    </a>
+                    <button
+                      class="mono-label text-[10px] text-gray-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
+                      onclick={() => {
+                        pendingDelete = pendingDelete === report.slug ? null : report.slug
+                        deleteErrors = { ...deleteErrors, [report.slug]: '' }
+                      }}
+                    >Delete</button>
+                  </div>
+
+                  {#if pendingDelete === report.slug}
+                    <div class="mt-4 flex items-center gap-3 flex-wrap">
+                      <span class="font-sans text-sm text-gray-500">Delete this backtest?</span>
+                      <button
+                        class="px-4 py-1.5 bg-red-50 border border-red-200 text-red-600 mono-label text-[9px] rounded-full hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
+                        onclick={() => confirmDelete(report.slug)}
+                        disabled={deleteLoading === report.slug}
+                      >{deleteLoading === report.slug ? 'Deleting…' : 'Confirm'}</button>
+                      <button
+                        class="px-4 py-1.5 bg-white border border-[#e5e5e5] text-gray-400 mono-label text-[9px] rounded-full hover:border-gray-300 transition-colors cursor-pointer"
+                        onclick={() => { pendingDelete = null }}
+                        disabled={deleteLoading === report.slug}
+                      >Cancel</button>
+                      {#if deleteErrors[report.slug]}
+                        <span class="mono-label text-[9px] text-red-500">{deleteErrors[report.slug]}</span>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+
+                <!-- Right: stats -->
+                <div class="flex gap-8 items-start lg:border-l lg:border-gray-100 lg:pl-8 shrink-0">
+                  <div>
+                    <span class="mono-label text-gray-400 text-[9px] mb-2 block">Return</span>
+                    <span class="font-mono text-2xl font-bold {report.total_return_pct >= 0 ? 'text-[#4338ca]' : 'text-gray-400'}">
+                      {formatPct(report.total_return_pct)}
+                    </span>
+                  </div>
+                  <div>
+                    <span class="mono-label text-gray-400 text-[9px] mb-2 block">Details</span>
+                    <span class="block font-mono text-xs text-gray-600 mb-1">{report.ticker_count} TICKER{report.ticker_count !== 1 ? 'S' : ''}</span>
+                    <span class="block mono-label text-[9px] text-gray-400">{fmtMonthYear(report.date_from)}–{fmtMonthYear(report.date_to)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
       {/if}
-
-    {:else if view === 'researching'}
-      <div class="flex flex-col gap-2">
-        <p class="font-sans text-sm text-[#AAAAAA] m-0">Researching your hypothesis…</p>
-        {#if researchLogs.length > 0}
-          <div class="flex flex-col gap-0.5 border-l-2 border-[#E5E5E5] pl-3">
-            {#each researchLogs as logLine}
-              <p class="font-mono text-xs text-text-muted m-0">{logLine}</p>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-    {:else if view === 'previewing_research'}
-      <ResearchResults
-        events={researchEvents}
-        lowConfidence={lowConfidenceEvents}
-        rankedTickers={rankedTickers ?? []}
-        oncontinue={handleResearchContinue}
-        onrefine={handleRefineQuery}
-      />
-
-    {:else if view === 'confirming_tickers' && rankedTickers}
-      <TickerConfirmation
-        ranked_tickers={rankedTickers}
-        {defaultDirection}
-        onconfirmed={handleTickersConfirmed}
-      />
-
-    {:else if view === 'processing' || view === 'confirming_rule'}
-      <ProcessingLog
-        streamUrl={streamUrl!}
-        sessionId={sessionId!}
-        onentryexitsuggestions={handleEntryExitSuggestions}
-        oncomplete={handleComplete}
-        onerror={handleError}
-        ontickercandidates={() => {}}
-        oncancelled={handleProcessingCancelled}
-      />
-
-      {#if view === 'confirming_rule' && entryExitSuggestions}
-        <RuleSelector
-          suggestions={entryExitSuggestions}
-          position_size={perTickerSize}
-          sessionId={sessionId!}
-          initialPreset={selectedPreset}
-          defaultDirection={defaultDirection}
-          onconfirmed={handleRuleConfirmed}
-        />
-      {/if}
-
-    {:else if view === 'reviewing'}
-      <p class="font-sans text-sm text-[#AAAAAA] m-0 py-1">Edit any step above to adjust your backtest, then rerun.</p>
-
+    </section>
     {/if}
 
   </div>
-</section>
+</div>

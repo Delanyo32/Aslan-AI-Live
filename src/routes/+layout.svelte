@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
-  import Container from '$lib/components/layout/Container.svelte';
   import favicon from '$lib/assets/favicon.svg';
+  import { Toaster } from 'svelte-sonner';
 
   let { children } = $props();
 </script>
@@ -10,6 +10,12 @@
   <link rel="icon" href={favicon} />
 </svelte:head>
 
-<Container>
-  {@render children()}
-</Container>
+<Toaster
+  position="bottom-right"
+  theme="light"
+  toastOptions={{
+    style: 'font-family: var(--font-sans, sans-serif); background: #fcfbf9; border: 1px solid #e5e5e5; color: #171717;'
+  }}
+/>
+
+{@render children()}

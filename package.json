@@ -47,6 +47,7 @@
 		"exa-js": "^2.11.0",
 		"layerchart": "^1.0.13",
 		"resend": "^6.10.0",
+		"svelte-sonner": "^1.1.0",
 		"tailwindcss": "^4.2.2",
 		"wrangler": "^4.81.1"
 	}

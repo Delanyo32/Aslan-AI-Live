@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types"
   import { goto } from "$app/navigation"
+  import { toast } from 'svelte-sonner'
 
   let { data }: { data: PageData } = $props()
 
@@ -23,6 +24,7 @@
       })
       if (!res.ok) throw new Error("failed")
       editing = false
+      toast.success('Name updated.')
     } catch {
       nameError = "Failed to save. Try again."
     } finally {
@@ -125,183 +127,220 @@
   }
 </script>
 
-<div class="max-w-[720px] px-6">
-  <a
-    href="/dashboard"
-    class="font-sans text-sm text-text-secondary no-underline inline-block mb-8 hover:text-text-primary transition-colors duration-100"
-  >← Back to dashboard</a>
+<div class="min-h-screen bg-bg-primary relative">
+  <div class="absolute inset-0 mesh-gradient pointer-events-none" aria-hidden="true"></div>
 
-  <h1 class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary m-0">
-    ACCOUNT SETTINGS
-  </h1>
+  <main class="pt-32 pb-24 relative z-10">
+    <div class="max-w-4xl mx-auto px-8">
 
-  <!-- ─── SECTION 1: PROFILE ───────────────────────────────────────────────── -->
-  <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
-    <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">PROFILE</span>
+      <!-- ─── Back link ────────────────────────────────────────────────────── -->
+      <div class="mb-12">
+        <a
+          href="/dashboard"
+          class="inline-flex items-center gap-2 px-6 py-2.5 border border-[#e5e5e5] rounded-full mono-label text-text-secondary hover:text-text-primary hover:border-black transition-all no-underline"
+        >← Back to Dashboard</a>
+      </div>
 
-    <div class="flex items-start gap-4">
-      <span class="font-sans text-sm text-text-secondary min-w-[140px] shrink-0 pt-0.5">Display name</span>
-      <div class="flex items-center gap-3 flex-wrap flex-1">
-        {#if !editing}
-          <span class="font-sans text-base text-text-primary">{nameValue}</span>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
-            onclick={() => { editing = true }}
-          >Edit</button>
-        {:else}
-          <div class="flex items-center gap-2 flex-wrap">
-            <input
-              class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary placeholder:text-text-muted placeholder:text-sm"
-              type="text"
-              bind:value={nameValue}
-              style="width: 240px"
-              onkeydown={(e) => {
-                if (e.key === "Enter") saveName()
-                if (e.key === "Escape") cancelNameEdit()
-              }}
-            />
-            <button
-              class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-default"
-              disabled={nameSaving}
-              onclick={saveName}
-            >{nameSaving ? "Saving…" : "Save"}</button>
-            <button
-              class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
-              onclick={cancelNameEdit}
-            >Cancel</button>
-          </div>
-          {#if nameError}
-            <span class="font-sans text-sm text-accent-loss block">{nameError}</span>
+      <!-- ─── Page header ──────────────────────────────────────────────────── -->
+      <header class="mb-16">
+        <span class="mono-label text-accent-indigo mb-4 block">Account Control</span>
+        <h1 class="serif-italic text-[4rem] lg:text-[5.5rem] leading-[0.9] tracking-tighter text-text-primary">
+          Account Settings
+        </h1>
+      </header>
+
+      <div class="flex flex-col gap-8">
+
+        <!-- ─── SECTION 1: PROFILE ─────────────────────────────────────────── -->
+        <section class="bg-white border border-[#e5e5e5] rounded-[2.5rem] p-8 md:p-12 premium-transition hover-lift">
+          <span class="mono-label text-text-secondary mb-10 block">Profile</span>
+
+          {#if !editing}
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span class="mono-label text-[10px] text-text-muted mb-1 block">Display Name</span>
+                <p class="font-sans text-xl text-text-primary">{nameValue}</p>
+              </div>
+              <button
+                class="inline-flex items-center px-6 py-2 border border-[#e5e5e5] rounded-full mono-label text-[10px] text-text-secondary hover:text-text-primary hover:border-black transition-all cursor-pointer bg-transparent whitespace-nowrap self-start md:self-auto"
+                onclick={() => { editing = true }}
+              >Edit Name</button>
+            </div>
+          {:else}
+            <div class="flex flex-col gap-4">
+              <div>
+                <span class="mono-label text-[10px] text-text-muted mb-1 block">Display Name</span>
+                <input
+                  class="bg-bg-primary border border-[#e5e5e5] rounded-2xl py-4 px-5 outline-none focus:border-accent-indigo transition-colors w-full max-w-sm font-sans text-base text-text-primary"
+                  type="text"
+                  bind:value={nameValue}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter") saveName()
+                    if (e.key === "Escape") cancelNameEdit()
+                  }}
+                />
+              </div>
+              {#if nameError}
+                <span class="font-sans text-sm text-accent-loss">{nameError}</span>
+              {/if}
+              <div class="flex items-center gap-4">
+                <button
+                  class="bg-accent-indigo text-white px-8 py-3 rounded-full mono-label hover:bg-[#171717] transition-all duration-500 disabled:opacity-40 cursor-pointer"
+                  disabled={nameSaving}
+                  onclick={saveName}
+                >{nameSaving ? "Saving…" : "Save →"}</button>
+                <button
+                  class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer hover:text-text-primary transition-colors duration-100"
+                  onclick={cancelNameEdit}
+                >Cancel</button>
+              </div>
+            </div>
           {/if}
+
+          <div class="border-t border-[#f5f5f5] pt-8 mt-8">
+            <span class="mono-label text-[10px] text-text-muted mb-1 block">Email Address</span>
+            <p class="font-mono text-lg text-text-primary">{data.user.email}</p>
+          </div>
+        </section>
+
+        <!-- ─── SECTION 2: PASSWORD ────────────────────────────────────────── -->
+        {#if data.has_password}
+          <section class="bg-white border border-[#e5e5e5] rounded-[2.5rem] p-8 md:p-12 premium-transition hover-lift">
+            <span class="mono-label text-text-secondary mb-10 block">Security</span>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+              <div class="flex flex-col gap-2">
+                <label class="mono-label text-[10px] text-text-muted" for="pw-current">Current Password</label>
+                <input
+                  id="pw-current"
+                  class="bg-bg-primary border border-[#e5e5e5] rounded-2xl py-4 px-5 outline-none focus:border-accent-indigo transition-colors w-full font-sans text-base text-text-primary"
+                  type="password"
+                  bind:value={pwCurrent}
+                />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="mono-label text-[10px] text-text-muted" for="pw-new">New Password</label>
+                <input
+                  id="pw-new"
+                  class="bg-bg-primary border border-[#e5e5e5] rounded-2xl py-4 px-5 outline-none focus:border-accent-indigo transition-colors w-full font-sans text-base text-text-primary placeholder:text-text-muted placeholder:text-sm"
+                  type="password"
+                  placeholder="8+ characters"
+                  bind:value={pwNew}
+                />
+              </div>
+              <div class="flex flex-col gap-2 md:col-span-2">
+                <label class="mono-label text-[10px] text-text-muted" for="pw-confirm">Confirm New Password</label>
+                <input
+                  id="pw-confirm"
+                  class="bg-bg-primary border border-[#e5e5e5] rounded-2xl py-4 px-5 outline-none focus:border-accent-indigo transition-colors w-full font-sans text-base text-text-primary"
+                  type="password"
+                  bind:value={pwConfirm}
+                />
+              </div>
+            </div>
+
+            {#if pwError}
+              <span class="font-sans text-sm text-accent-loss block mb-4">{pwError}</span>
+            {/if}
+            {#if pwSuccess}
+              <span class="font-sans text-sm text-text-secondary block mb-4">Password updated.</span>
+            {/if}
+
+            <button
+              class="bg-accent-indigo text-white px-10 py-4 rounded-full mono-label hover:bg-[#171717] transition-all duration-500 disabled:opacity-40 cursor-pointer"
+              disabled={pwSaving}
+              onclick={changePassword}
+            >{pwSaving ? "Updating…" : "Change password →"}</button>
+          </section>
         {/if}
+
+        <!-- ─── SECTION 3: SESSIONS ────────────────────────────────────────── -->
+        <section class="bg-white border border-[#e5e5e5] rounded-[2.5rem] p-8 md:p-12 premium-transition hover-lift">
+          <span class="mono-label text-text-secondary mb-10 block">Active Sessions</span>
+
+          {#if !revokeConfirming}
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-accent-indigo font-mono text-lg shrink-0">●</div>
+                <div>
+                  <p class="font-sans text-lg text-text-primary">
+                    {data.active_sessions} active session{data.active_sessions === 1 ? "" : "s"}
+                  </p>
+                  <p class="font-sans text-sm text-text-muted">Across all your devices</p>
+                </div>
+              </div>
+              <button
+                class="bg-accent-indigo text-white px-10 py-4 rounded-full mono-label hover:bg-[#171717] transition-all duration-500 whitespace-nowrap cursor-pointer self-start md:self-auto"
+                onclick={() => { revokeConfirming = true }}
+              >Sign out of others →</button>
+            </div>
+          {:else}
+            <div class="flex flex-col gap-6">
+              <p class="font-serif italic text-text-secondary leading-relaxed max-w-md">
+                This will sign you out everywhere except this browser. Confirm?
+              </p>
+              <div class="flex items-center gap-4">
+                <button
+                  class="bg-accent-indigo text-white px-10 py-4 rounded-full mono-label hover:bg-[#171717] transition-all duration-500 disabled:opacity-40 cursor-pointer whitespace-nowrap"
+                  disabled={revokeLoading}
+                  onclick={revokeSessions}
+                >{revokeLoading ? "Signing out…" : "Yes, sign out →"}</button>
+                <button
+                  class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer hover:text-text-primary transition-colors duration-100"
+                  onclick={() => { revokeConfirming = false; revokeError = "" }}
+                >Cancel</button>
+              </div>
+              {#if revokeError}
+                <span class="font-sans text-sm text-accent-loss">{revokeError}</span>
+              {/if}
+            </div>
+          {/if}
+        </section>
+
+        <!-- ─── SECTION 4: DANGER ZONE ─────────────────────────────────────── -->
+        <section class="bg-white border border-[#e5e5e5] rounded-[2.5rem] p-8 md:p-12 premium-transition hover-lift">
+          <div class="flex items-center gap-3 mb-10">
+            <span class="mono-label text-red-500">Danger Zone</span>
+            <div class="h-[1px] flex-1 bg-red-100"></div>
+          </div>
+
+          {#if !deleteConfirming}
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-8">
+              <div class="max-w-md">
+                <p class="font-sans text-lg text-text-primary mb-2">Permanently delete account</p>
+                <p class="font-serif italic text-text-secondary leading-relaxed">
+                  All your backtest data, reports, and credit balance will be erased forever. This cannot be undone.
+                </p>
+              </div>
+              <button
+                class="bg-[#171717] text-white px-10 py-4 rounded-full mono-label hover:bg-red-600 transition-all duration-500 whitespace-nowrap cursor-pointer self-start md:self-auto"
+                onclick={() => { deleteConfirming = true }}
+              >Delete account →</button>
+            </div>
+          {:else}
+            <div class="flex flex-col gap-6">
+              <p class="font-serif italic text-text-secondary leading-relaxed max-w-md">
+                This permanently deletes your account, all saved backtests, and all report access. This cannot be undone.
+              </p>
+              <div class="flex items-center gap-4">
+                <button
+                  class="bg-[#171717] text-white px-10 py-4 rounded-full mono-label hover:bg-red-600 transition-all duration-500 disabled:opacity-40 cursor-pointer whitespace-nowrap"
+                  disabled={deleteLoading}
+                  onclick={deleteAccount}
+                >{deleteLoading ? "Deleting…" : "Delete my account →"}</button>
+                <button
+                  class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer hover:text-text-primary transition-colors duration-100"
+                  onclick={() => { deleteConfirming = false; deleteError = "" }}
+                >Cancel</button>
+              </div>
+              {#if deleteError}
+                <span class="font-sans text-sm text-accent-loss">{deleteError}</span>
+              {/if}
+            </div>
+          {/if}
+        </section>
+
       </div>
     </div>
-
-    <div class="flex items-start gap-4">
-      <span class="font-sans text-sm text-text-secondary min-w-[140px] shrink-0 pt-0.5">Email address</span>
-      <span class="font-mono text-sm text-text-primary">{data.user.email}</span>
-    </div>
-  </section>
-
-  <!-- ─── SECTION 2: PASSWORD ───────────────────────────────────────────────── -->
-  {#if data.has_password}
-    <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
-      <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">PASSWORD</span>
-
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-col gap-1.5">
-          <label class="font-sans text-sm text-text-secondary" for="pw-current">Current password</label>
-          <input
-            id="pw-current"
-            class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary max-w-xs w-full"
-            type="password"
-            bind:value={pwCurrent}
-          />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="font-sans text-sm text-text-secondary" for="pw-new">New password</label>
-          <input
-            id="pw-new"
-            class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary max-w-xs w-full placeholder:text-text-muted placeholder:text-sm"
-            type="password"
-            placeholder="8 characters minimum"
-            bind:value={pwNew}
-          />
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="font-sans text-sm text-text-secondary" for="pw-confirm">Confirm password</label>
-          <input
-            id="pw-confirm"
-            class="font-sans text-base text-text-primary bg-bg-surface border border-black rounded-none py-1.5 px-2.5 outline-none focus:border-text-secondary max-w-xs w-full"
-            type="password"
-            bind:value={pwConfirm}
-          />
-        </div>
-      </div>
-
-      <button
-        class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-default"
-        disabled={pwSaving}
-        onclick={changePassword}
-      >{pwSaving ? "Updating…" : "Change password →"}</button>
-
-      {#if pwError}
-        <span class="font-sans text-sm text-accent-loss block">{pwError}</span>
-      {/if}
-      {#if pwSuccess}
-        <span class="font-sans text-sm text-text-secondary block">Password updated.</span>
-      {/if}
-    </section>
-  {/if}
-
-  <!-- ─── SECTION 3: SESSIONS ──────────────────────────────────────────────── -->
-  <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
-    <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-text-secondary">SESSIONS</span>
-
-    <p class="font-sans text-sm text-text-secondary m-0">
-      You have {data.active_sessions} active session{data.active_sessions === 1 ? "" : "s"} across all devices.
-    </p>
-
-    {#if !revokeConfirming}
-      <div>
-        <button
-          class="bg-transparent border border-black text-text-primary font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-bg-elevated disabled:opacity-40 disabled:cursor-default"
-          onclick={() => { revokeConfirming = true }}
-        >Sign out of all other devices →</button>
-      </div>
-    {:else}
-      <div class="flex flex-col gap-3">
-        <p class="font-sans text-sm text-text-secondary m-0 max-w-[480px]">This will sign you out everywhere except this browser. Confirm?</p>
-        <div class="flex items-center gap-4">
-          <button
-            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[#F5F5F5] disabled:opacity-40 disabled:cursor-default"
-            disabled={revokeLoading}
-            onclick={revokeSessions}
-          >{revokeLoading ? "Signing out…" : "Yes, sign out"}</button>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
-            onclick={() => { revokeConfirming = false; revokeError = "" }}
-          >Cancel</button>
-        </div>
-        {#if revokeError}
-          <span class="font-sans text-sm text-accent-loss block">{revokeError}</span>
-        {/if}
-      </div>
-    {/if}
-  </section>
-
-  <!-- ─── SECTION 4: DANGER ZONE ───────────────────────────────────────────── -->
-  <section class="border-t border-black mt-6 pt-6 pb-2 flex flex-col gap-4">
-    <span class="font-sans text-xs font-medium tracking-[0.08em] uppercase text-accent-loss border-b border-accent-loss pb-2">DANGER ZONE</span>
-
-    {#if !deleteConfirming}
-      <div>
-        <button
-          class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[#F5F5F5] disabled:opacity-40 disabled:cursor-default"
-          onclick={() => { deleteConfirming = true }}
-        >Delete account →</button>
-      </div>
-    {:else}
-      <div class="flex flex-col gap-3">
-        <p class="font-sans text-sm text-text-secondary m-0 max-w-[480px]">
-          This permanently deletes your account, all saved backtests, and all report access.
-          This cannot be undone.
-        </p>
-        <div class="flex items-center gap-4">
-          <button
-            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[#F5F5F5] disabled:opacity-40 disabled:cursor-default"
-            disabled={deleteLoading}
-            onclick={deleteAccount}
-          >{deleteLoading ? "Deleting…" : "Delete my account"}</button>
-          <button
-            class="bg-transparent border-none p-0 font-sans text-sm text-text-secondary cursor-pointer whitespace-nowrap hover:text-text-primary transition-colors duration-100"
-            onclick={() => { deleteConfirming = false; deleteError = "" }}
-          >Cancel</button>
-        </div>
-        {#if deleteError}
-          <span class="font-sans text-sm text-accent-loss block">{deleteError}</span>
-        {/if}
-      </div>
-    {/if}
-  </section>
+  </main>
 </div>

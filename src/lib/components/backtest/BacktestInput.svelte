@@ -21,53 +21,57 @@
   ];
 </script>
 
-<div class="flex flex-col gap-6">
-  {#if readOnly}
-    <div class="py-3 px-3 bg-bg-surface border border-bg-border text-text-secondary font-sans text-base leading-[1.6]">
-      {initialValue}
-    </div>
-  {:else}
+{#if readOnly}
+  <div class="px-5 py-4 bg-[#fcfbf9] border border-[#e5e5e5] rounded-2xl text-[#171717] font-sans text-base leading-relaxed">
+    {initialValue}
+  </div>
+{:else}
+  <!-- Input card with action bar -->
+  <div class="relative bg-[#fcfbf9] border border-[#e5e5e5] rounded-2xl overflow-hidden focus-within:border-[#4338ca] transition-all duration-300">
     <textarea
-      rows={3}
-      class="w-full py-3 px-3 bg-bg-surface border-2 border-[#000000] text-text-primary font-sans text-base leading-[1.6] rounded-none resize-none outline-none focus:border-[3px] focus:border-[#000000] placeholder:text-text-muted"
+      rows={4}
+      class="w-full px-6 py-5 bg-transparent outline-none text-lg text-[#171717] font-sans leading-relaxed resize-none border-none placeholder:text-gray-300"
       placeholder="Buy Nvidia every time the US announces new AI chip restrictions on China"
       bind:value={query}
     ></textarea>
 
-    <div class="flex flex-wrap items-center max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:[-webkit-overflow-scrolling:touch] max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
-      <span class="font-sans text-sm text-text-primary border-b border-b-text-primary pb-[2px] select-none cursor-default">
-        US Stocks
-      </span>
+    <!-- Bottom action bar -->
+    <div class="px-4 py-3 flex items-center justify-between gap-3 border-t border-[#e5e5e5] bg-white/60 flex-wrap">
+      <!-- Market pills -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-mono text-[10px] tracking-wider px-3 py-1.5 bg-[#171717] text-white rounded-full select-none">
+          US STOCKS
+        </span>
+        {#each COMING_SOON as market}
+          <Tooltip.Provider delayDuration={0}>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                class="font-mono text-[10px] tracking-wider px-3 py-1.5 bg-gray-50 text-gray-400 border border-[#e5e5e5] rounded-full cursor-not-allowed select-none"
+              >
+                {market.label.toUpperCase()}
+              </Tooltip.Trigger>
+              <Tooltip.Content
+                class="bg-white border border-[#e5e5e5] text-gray-500 text-xs py-1 px-2 rounded-lg whitespace-nowrap z-10 shadow-sm"
+                sideOffset={8}
+              >
+                {market.tip}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+        {/each}
+      </div>
 
-      {#each COMING_SOON as market}
-        <span class="font-sans text-sm text-text-muted mx-2.5 select-none" aria-hidden="true">|</span>
-        <Tooltip.Provider delayDuration={0}>
-          <Tooltip.Root>
-            <Tooltip.Trigger
-              class="font-sans text-sm text-text-muted cursor-not-allowed select-none bg-transparent border-none p-0"
-            >
-              {market.label}
-            </Tooltip.Trigger>
-            <Tooltip.Content
-              class="bg-bg-elevated border border-bg-border text-text-secondary text-xs leading-[1.4] py-1 px-2 rounded-none whitespace-nowrap z-10"
-              sideOffset={8}
-            >
-              {market.tip}
-            </Tooltip.Content>
-          </Tooltip.Root>
-        </Tooltip.Provider>
-      {/each}
+      {#if !hideButton}
+        <button
+          type="button"
+          class="bg-[#171717] text-white px-7 py-2.5 rounded-full font-sans font-medium text-sm hover:bg-[#4338ca] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap cursor-pointer"
+          onclick={() => onrun(query)}
+          disabled={!query.trim()}
+        >
+          Analyze
+          <iconify-icon icon="lucide:arrow-right" class="text-base"></iconify-icon>
+        </button>
+      {/if}
     </div>
-
-    {#if !hideButton}
-      <button
-        type="button"
-        class="block w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-widest text-center cursor-pointer transition-colors duration-100 hover:bg-neutral-800 disabled:bg-neutral-400 disabled:cursor-not-allowed"
-        onclick={() => onrun(query)}
-        disabled={!query.trim()}
-      >
-        Run Backtest →
-      </button>
-    {/if}
-  {/if}
-</div>
+  </div>
+{/if}

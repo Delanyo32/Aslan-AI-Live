@@ -31,39 +31,42 @@
   }
 </script>
 
-<main class="min-h-screen flex items-center justify-center p-6">
+<main class="min-h-screen flex items-center justify-center p-8 bg-bg-primary">
   <div class="w-full max-w-[360px] flex flex-col gap-8">
-    <div class="font-sans text-base font-medium text-black">Aslan Finance</div>
 
-    <div class="flex flex-col gap-4">
-      <p class="font-sans text-xs font-medium uppercase tracking-[0.08em] text-[#525252] m-0">VERIFY YOUR EMAIL</p>
+    <a href="/" class="serif-italic text-2xl text-bg-dark no-underline tracking-[-0.01em]">Aslan Finance</a>
 
-      <p class="font-sans text-base text-[#525252] m-0">
-        Before accessing your dashboard, please verify your email address.
-      </p>
-
-      {#if userEmail}
-        <p class="font-sans text-sm text-[#525252] m-0">We sent a link to {userEmail}.</p>
-      {/if}
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-col gap-3">
+        <span class="mono-label text-[#4338ca] block">Verify Your Email</span>
+        <h1 class="serif-italic text-4xl text-bg-dark leading-tight">Check your inbox</h1>
+        <p class="font-sans text-sm text-text-secondary">
+          Before accessing your dashboard, please verify your email address.
+        </p>
+        {#if userEmail}
+          <p class="font-sans text-sm text-text-secondary">We sent a link to {userEmail}.</p>
+        {/if}
+      </div>
 
       <button
         onclick={handleResend}
         disabled={resendLoading || resendSent}
-        class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] disabled:opacity-50 disabled:cursor-not-allowed border-0"
+        class="w-full py-3 px-8 bg-[#4338ca] text-white font-sans text-sm font-medium rounded-full cursor-pointer transition-all duration-300 hover:bg-[#3730a3] shadow-lg shadow-black/5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {resendSent ? "Email sent ✓" : resendLoading ? "Sending…" : "Resend verification email →"}
+        {resendSent ? 'Email sent ✓' : resendLoading ? 'Sending…' : 'Resend verification email →'}
       </button>
 
       {#if resendError}
-        <p class="font-sans text-sm text-accent-loss m-0">{resendError}</p>
+        <p class="font-sans text-sm text-accent-loss">{resendError}</p>
       {/if}
 
       <button
         onclick={handleSignOut}
-        class="bg-transparent border-0 p-0 font-sans text-sm text-[#525252] cursor-pointer text-left mt-2 hover:text-black"
+        class="bg-transparent border-0 p-0 mono-label text-gray-400 hover:text-[#4338ca] transition-colors cursor-pointer text-left"
       >
         Sign out →
       </button>
     </div>
+
   </div>
 </main>

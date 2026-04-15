@@ -16,6 +16,6 @@
   <meta name="twitter:description" content={data.meta.description} />
 </svelte:head>
 
-<div class="bg-white">
+<div class="bg-[#fcfbf9]">
   <BacktestReport report={data.report} viewContext={data.viewContext} backTo={data.backTo} low_confidence_events={data.low_confidence_events} userCredits={data.userCredits} />
 </div>

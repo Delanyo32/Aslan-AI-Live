@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { toast } from 'svelte-sonner';
   import type { BacktestReportRow, RawExaEvent } from '$lib/types/pipeline';
   import EventChart from '$lib/components/charts/EventChart.svelte';
   import PortfolioChart from '$lib/components/charts/PortfolioChart.svelte';
@@ -80,6 +81,10 @@
   function fmtMonth(iso: string): string {
     const d = new Date(iso + 'T00:00:00Z');
     return d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  }
+
+  function fmtDate(iso: string): string {
+    return iso.replace(/-/g, '.');
   }
 
   // ── Derived data ──────────────────────────────────────────────────────────
@@ -246,6 +251,42 @@
     return [...confirmed, ...low].sort((a, b) => a.date.localeCompare(b.date))
   })
 
+  // ── Chart time filter ─────────────────────────────────────────────────────
+  let chartFilter = $state<'all' | '1y'>('all');
+
+  const filteredSeries = $derived.by(() => {
+    if (chartFilter === 'all') return report.backtest_result.portfolio_series;
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const cutoff = oneYearAgo.toISOString().slice(0, 10);
+    const series = report.backtest_result.portfolio_series.filter(p => p.date >= cutoff);
+    return series.length > 0 ? series : report.backtest_result.portfolio_series;
+  });
+
+  const filteredClosePoints = $derived.by(() => {
+    const seriesDates = new Set(filteredSeries.map(p => p.date));
+    return tradeClosePoints.filter(p => seriesDates.has(p.date));
+  });
+
+  // ── Secondary metric derivations ──────────────────────────────────────────
+  const avgWin = $derived.by(() => {
+    const wins = allTrades.filter(t => t.pnl_dollars > 0);
+    if (wins.length === 0) return null;
+    return wins.reduce((s, t) => s + t.pnl_pct * 100, 0) / wins.length;
+  });
+
+  const avgLoss = $derived.by(() => {
+    const losses = allTrades.filter(t => t.pnl_dollars < 0);
+    if (losses.length === 0) return null;
+    return losses.reduce((s, t) => s + t.pnl_pct * 100, 0) / losses.length;
+  });
+
+  const profitFactor = $derived.by(() => {
+    const gross = allTrades.filter(t => t.pnl_dollars > 0).reduce((s, t) => s + t.pnl_dollars, 0);
+    const loss  = Math.abs(allTrades.filter(t => t.pnl_dollars < 0).reduce((s, t) => s + t.pnl_dollars, 0));
+    return loss === 0 ? null : gross / loss;
+  });
+
   // ── Sort helpers ──────────────────────────────────────────────────────────
   function sortBy(col: string) {
     if (sortCol === col) {
@@ -305,11 +346,11 @@
   async function copyShareLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
+      shareText = 'Copied!';
+      setTimeout(() => { shareText = 'Copy share link  ↗'; }, 1500);
     } catch {
-      // clipboard unavailable
+      toast.error(`Clipboard unavailable — copy this link manually: ${window.location.href}`, { duration: 8000 });
     }
-    shareText = 'Copied!';
-    setTimeout(() => { shareText = 'Copy share link  ↗'; }, 1500);
   }
 
   // ── Owner controls ────────────────────────────────────────────────────────
@@ -380,53 +421,70 @@
   }
 </script>
 
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- TOP NAV — unified navigation bar                                       -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div class="flex items-center justify-between gap-3 py-[14px] border-b-4 border-black bg-white">
-  <div class="flex items-center gap-3 flex-wrap">
-    {#if viewContext === 'owner'}
-      <a href={backTo} class="font-sans text-xs uppercase tracking-[0.08em] text-[#525252] no-underline transition-colors duration-100 hover:text-black">← {backTo === '/dashboard' ? 'Dashboard' : 'Home'}</a>
-    {:else}
-      <a href="/" class="font-display italic text-[20px] font-normal text-black no-underline">Aslan Finance</a>
-    {/if}
-  </div>
-  <div class="flex items-center gap-3 flex-wrap">
-    {#if viewContext === 'owner'}
-      <button
-        class="bg-transparent border border-black text-black font-sans text-xs tracking-[0.05em] px-3 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-black hover:text-white"
-        onclick={copyShareLink}
-      >{shareText}</button>
-      <span class="text-[#CCCCCC]" aria-hidden="true">·</span>
-      <span class="font-sans text-xs tracking-[0.05em] text-[#525252]">
-        {currentIsPublic ? 'Public' : 'Private'}
-      </span>
-      <button
-        class="bg-transparent border-none p-0 font-sans text-xs tracking-[0.05em] text-[#525252] cursor-pointer transition-colors duration-100 hover:text-black hover:underline disabled:opacity-50 disabled:cursor-default"
-        onclick={toggleVisibility}
-        disabled={visibilityLoading}
-      >{visibilityLoading ? 'Updating…' : (currentIsPublic ? 'Make private' : 'Make public')} →</button>
-      <span class="text-[#CCCCCC]" aria-hidden="true">·</span>
-      <button
-        class="bg-transparent border-none p-0 font-sans text-xs tracking-[0.05em] text-accent-loss cursor-pointer hover:underline"
-        onclick={() => { deleteConfirming = true; deleteError = ''; }}
-      >Delete</button>
-    {:else}
-      <a href="/" class="font-sans text-xs uppercase tracking-[0.08em] text-[#525252] no-underline transition-colors duration-100 hover:text-black">Run your own backtest — free →</a>
-    {/if}
-  </div>
-</div>
+<div class="min-h-screen bg-[#fcfbf9]">
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- DISCLAIMER — informational notice, separate from navigation            -->
+<!-- FIXED HEADER                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<header class="fixed top-0 left-0 w-full z-[100] h-20 bg-[#fcfbf9]/90 backdrop-blur-md border-b border-[#e5e5e5] px-8 lg:px-12 flex items-center justify-between">
+  <div class="flex items-center gap-8">
+    {#if viewContext === 'owner'}
+      <a href={backTo} class="mono-label text-[10px] text-gray-500 no-underline hover:text-black transition-colors flex items-center gap-2">
+        ← {backTo === '/dashboard' ? 'Dashboard' : 'Home'}
+      </a>
+    {:else}
+      <a href="/" class="serif-italic text-2xl font-bold tracking-tight text-gray-900 no-underline">Aslan Finance</a>
+      <div class="hidden md:block h-4 w-px bg-[#e5e5e5]"></div>
+      <a href="/" class="hidden md:flex items-center gap-2 mono-label text-[10px] text-gray-500 no-underline hover:text-black transition-colors">
+        ← Back to Terminal
+      </a>
+    {/if}
+  </div>
+
+  <div class="flex items-center gap-4 flex-wrap justify-end">
+    {#if !teaserMode}
+      <div class="hidden lg:flex items-center gap-2 px-4 py-2 bg-white border border-[#e5e5e5] rounded-full">
+        <span class="w-2 h-2 bg-green-500 rounded-full pulse-status"></span>
+        <span class="mono-label text-[10px] tracking-widest text-gray-500">Analysis Complete</span>
+      </div>
+    {/if}
+
+    {#if viewContext === 'owner'}
+      <button onclick={copyShareLink} class="mono-label text-[10px] text-gray-500 hover:text-black transition-colors cursor-pointer bg-transparent border-none">{shareText}</button>
+      <span class="text-[#CCCCCC]" aria-hidden="true">·</span>
+      <span class="mono-label text-[10px] text-gray-500">{currentIsPublic ? 'Public' : 'Private'}</span>
+      <button onclick={toggleVisibility} disabled={visibilityLoading}
+        class="mono-label text-[10px] text-gray-500 hover:text-black transition-colors cursor-pointer bg-transparent border-none disabled:opacity-50">
+        {visibilityLoading ? 'Updating…' : (currentIsPublic ? 'Make private' : 'Make public')} →
+      </button>
+      <span class="text-[#CCCCCC]" aria-hidden="true">·</span>
+      <button onclick={() => { deleteConfirming = true; deleteError = ''; }}
+        class="mono-label text-[10px] text-red-400 hover:text-red-600 cursor-pointer bg-transparent border-none">
+        Delete
+      </button>
+      <span class="text-[#CCCCCC]" aria-hidden="true">·</span>
+    {/if}
+
+    <button onclick={() => window.print()}
+      class="hidden sm:block bg-white border border-[#e5e5e5] text-black px-5 py-2 rounded-full mono-label text-[10px] hover:border-black transition-colors duration-300 cursor-pointer">
+      Export PDF
+    </button>
+    <a href={viewContext === 'owner' ? '/dashboard' : '/auth/register'}
+      class="bg-[#171717] text-white px-6 py-2.5 rounded-full mono-label text-[10px] hover:bg-[#4338ca] transition-colors duration-500 no-underline">
+      New Query →
+    </a>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DISCLAIMER (sticky below fixed header)                                 -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div
-  class="sticky top-0 z-50 w-full px-5 py-3 bg-[#FAFAFA] border-l-[3px] border-black font-sans text-sm text-[#525252] leading-relaxed
+  class="sticky top-20 z-40 w-full px-8 lg:px-12 py-2.5 bg-[#fcfbf9]/95 backdrop-blur-sm border-b border-[#e5e5e5] font-sans text-sm text-[#525252] leading-relaxed
          sm:block
          max-sm:flex max-sm:items-center max-sm:gap-1"
   class:max-sm:flex-col={disclaimerExpanded}
   class:max-sm:items-start={disclaimerExpanded}
-  class:max-sm:gap-1-5={disclaimerExpanded}
 >
   <span
     class="flex-1 min-w-0"
@@ -446,15 +504,14 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- TEASER STATE                                                           -->
+<!-- CONTENT                                                                -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 {#if teaserMode}
-<div class="py-12 pb-16 flex flex-col gap-6">
+<!-- ─── TEASER STATE ─────────────────────────────────────────────────── -->
+<div class="pt-32 pb-16 px-8 lg:px-12 max-w-[1440px] mx-auto flex flex-col gap-6">
 
-  <!-- Editorial label -->
   <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252]">Backtest Result · {report.query.slice(0, 60)}{report.query.length > 60 ? '…' : ''}</p>
 
-  <!-- Headline P&L -->
   <h1
     class="font-display italic text-6xl max-md:text-5xl max-sm:text-4xl font-normal leading-[1.1] tracking-tighter"
     class:text-accent-gain={summary.total_return_pct >= 0}
@@ -463,15 +520,12 @@
     {teaserReturnStr}
   </h1>
 
-  <!-- Sub-stats -->
   <p class="font-mono text-sm text-[#525252]">
     Date range: {teaserDateRange}&nbsp;&nbsp;·&nbsp;&nbsp;{summary.trade_count} trades simulated&nbsp;&nbsp;·&nbsp;&nbsp;{summary.ticker_count} tickers
   </p>
 
-  <!-- Teaser chart -->
   <TeaserChart portfolio_series={report.backtest_result.portfolio_series} />
 
-  <!-- Blurred trade log preview -->
   <div class="flex flex-col">
     <div class="overflow-x-auto">
       <table class="w-full border-collapse font-mono text-sm text-black whitespace-nowrap">
@@ -509,7 +563,6 @@
         </tbody>
       </table>
     </div>
-    <!-- Blurred remaining rows -->
     {#if viewTrades.length > 2}
     <div class="blurred-rows" aria-hidden="true">
       <div class="overflow-x-auto">
@@ -541,367 +594,250 @@
   <div class="flex flex-col items-center gap-3 pt-8 pb-2">
     {#if alreadyUsed}
       <p class="font-display italic text-lg text-black">You've already run a free backtest.</p>
-      <p class="font-sans text-sm text-[#525252] m-0">
-        Create a free account to run more backtests and save your reports.
-      </p>
-      <a href="/auth/register" class="bg-black border-2 border-black text-white font-sans text-xs uppercase tracking-[0.1em] px-6 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black">Create free account →</a>
+      <p class="font-sans text-sm text-[#525252] m-0">Create a free account to run more backtests and save your reports.</p>
+      <a href="/auth/register" class="bg-black border-2 border-black text-white font-sans text-xs uppercase tracking-[0.1em] px-6 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black no-underline">Create free account →</a>
       <p class="font-sans text-sm text-text-muted m-0">Already have an account? <a href="/auth/login" class="text-[#525252] underline decoration-[#E5E5E5] hover:text-black hover:decoration-black transition-colors duration-100">Log in →</a></p>
     {:else}
-    <p class="font-display italic text-lg text-black">See the full report — free</p>
-    <form class="flex gap-0 w-full max-w-[420px] border-2 border-black" onsubmit={handleEmailSubmit}>
-      <div class="flex-1 flex flex-col">
-        <input
-          class="w-full bg-white border-none border-r border-black text-black font-sans text-sm px-[14px] py-[10px] rounded-none outline-none placeholder:text-[#BBBBBB] placeholder:italic focus:bg-[#F5F5F5]"
-          class:border-accent-loss={!!emailError}
-          type="email"
-          bind:value={email}
-          placeholder="your@email.com"
-          autocomplete="email"
-        />
-        {#if emailError}
-          <p class="font-sans text-xs text-accent-loss mt-1 mb-0 px-[14px] w-full max-w-[420px] text-left">{emailError}</p>
-        {/if}
-      </div>
-      <button
-        class="whitespace-nowrap bg-black border-none text-white font-sans text-xs uppercase tracking-[0.1em] px-5 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-default"
-        type="submit"
-        disabled={gateBtn !== 'Unlock Report →'}
-      >{gateBtn}</button>
-    </form>
-    <p class="font-sans text-sm text-text-muted">{report.view_count.toLocaleString()} traders have viewed this backtest</p>
+      <p class="font-display italic text-lg text-black">See the full report — free</p>
+      <form class="flex gap-0 w-full max-w-[420px] border-2 border-black" onsubmit={handleEmailSubmit}>
+        <div class="flex-1 flex flex-col">
+          <input
+            class="w-full bg-white border-none border-r border-black text-black font-sans text-sm px-[14px] py-[10px] rounded-none outline-none placeholder:text-[#BBBBBB] placeholder:italic focus:bg-[#F5F5F5]"
+            class:border-accent-loss={!!emailError}
+            type="email"
+            bind:value={email}
+            placeholder="your@email.com"
+            autocomplete="email"
+          />
+          {#if emailError}
+            <p class="font-sans text-xs text-accent-loss mt-1 mb-0 px-[14px] w-full max-w-[420px] text-left">{emailError}</p>
+          {/if}
+        </div>
+        <button
+          class="whitespace-nowrap bg-black border-none text-white font-sans text-xs uppercase tracking-[0.1em] px-5 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-default"
+          type="submit"
+          disabled={gateBtn !== 'Unlock Report →'}
+        >{gateBtn}</button>
+      </form>
+      <p class="font-sans text-sm text-text-muted">{report.view_count.toLocaleString()} traders have viewed this backtest</p>
     {/if}
   </div>
 
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- FULL REPORT STATE                                                      -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
 {:else}
-<div class="pb-16">
+<!-- ─── FULL REPORT STATE ──────────────────────────────────────────────── -->
 
-  <!-- OWNER STATE NOTICES ─────────────────────────────────────────────── -->
-  {#if viewContext === 'owner'}
-  {#if justMadePrivate}
-  <div class="border-l-[3px] border-[#E5E5E5] px-3 py-1.5 font-sans text-sm text-[#525252]">
-    This report is now private — only you can view it.
+<!-- MAIN: Hero + KPIs + Chart + Secondary metrics -->
+<main class="pt-32 pb-24 px-8 lg:px-12 max-w-[1440px] mx-auto">
+
+  {#if viewContext === 'owner' && (justMadePrivate || visibilityError)}
+    <div class="mb-6 border-l-[3px] border-[#e5e5e5] px-3 py-1.5 font-sans text-sm text-[#525252]">
+      {#if justMadePrivate}This report is now private — only you can view it.{/if}
+      {#if visibilityError}<span class="text-red-400">{visibilityError}</span>{/if}
+    </div>
+  {/if}
+
+  <!-- Report Hero -->
+  <div class="mb-16 opacity-0 animate-slide-up">
+    <div class="flex items-center gap-4 mb-6 flex-wrap">
+      <span class="mono-label text-[#4338ca] text-[10px]">Report #{report.slug.slice(0, 8).toUpperCase()}</span>
+      {#if highCount >= 3}
+        <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-mono uppercase tracking-widest rounded">High Conviction</span>
+      {:else if highCount >= 1}
+        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-[10px] font-mono uppercase tracking-widest rounded">Medium Conviction</span>
+      {/if}
+      <span class="text-gray-400 font-mono text-xs">{fmtMonth(String(report.created_at))}</span>
+    </div>
+    <div class="max-w-4xl">
+      <h1 class="serif-italic text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tight text-gray-900">
+        {report.query}
+      </h1>
+    </div>
   </div>
-  {/if}
 
-  {#if visibilityError}
-  <p class="font-sans text-sm text-accent-loss mt-1">{visibilityError}</p>
-  {/if}
-
-  {#if deleteConfirming}
-  <div class="flex items-center gap-2 flex-wrap py-2.5 font-sans text-sm text-[#525252]">
-    Delete this report? This cannot be undone.
-    <button
-      class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm px-[10px] py-1 cursor-pointer rounded-none disabled:opacity-50 disabled:cursor-default"
-      onclick={handleDelete}
-      disabled={deleteLoading}
-    >{deleteLoading ? 'Deleting…' : 'Confirm delete'}</button>
-    <button
-      class="bg-transparent border-none p-0 font-sans text-sm text-[#525252] cursor-pointer disabled:opacity-50 disabled:cursor-default"
-      onclick={() => { deleteConfirming = false; deleteError = ''; }}
-      disabled={deleteLoading}
-    >Cancel</button>
-    {#if deleteError}<span class="font-sans text-sm text-accent-loss">{deleteError}</span>{/if}
-  </div>
-  {/if}
-  {/if}
-
-  <!-- ② Query & Parameters ─────────────────────────────────────────────── -->
-  <section class="py-8">
-    <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">Query &amp; Parameters</p>
-    <div class="bg-[#F5F5F5] border-l-4 border-black px-4 py-3 font-serif italic text-base text-black mb-5" style="font-family:'Source Serif 4',Georgia,serif;">{report.query}</div>
-    <div class="grid gap-x-4 gap-y-2 items-start" style="grid-template-columns:140px 1fr;">
-      <span class="font-sans text-sm text-[#525252] pt-px">Entry</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">{ENTRY_LABELS[report.rule.entry] ?? report.rule.entry}</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Exit</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">{EXIT_LABELS[report.rule.exit] ?? report.rule.exit}</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Direction</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">{report.rule.direction === 'long' ? 'Long' : 'Short'}</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Position size</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">${report.rule.position_size.toLocaleString('en-US')} per trade</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Date range</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">{paramsDateRange}</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Confidence filter</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">High and Medium only</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Tickers</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">{report.confirmed_tickers.join(', ')}</span>
-
-      <span class="font-sans text-sm text-[#525252] pt-px">Events found</span>
-      <span class="font-mono text-sm text-black leading-[1.8]">{report.occurrences.length} (High: {highCount}, Medium: {medCount})</span>
+  <!-- Primary KPIs Grid -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12 opacity-0 animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="bg-white border border-[#e5e5e5] p-6 rounded-2xl premium-transition hover-lift">
+      <span class="mono-label text-[10px] text-gray-400 block mb-4">Total Return</span>
+      <span class="text-3xl lg:text-4xl font-mono tracking-tighter {summary.total_return_pct >= 0 ? 'text-[#171717]' : 'text-red-500'}">
+        {fmtPnlPct(summary.total_return_pct * 100)}
+      </span>
     </div>
-
-    {#if !teaserMode}
-      {#if userCredits === null}
-        <!-- unauthenticated — show nothing -->
-      {:else if userCredits === 0}
-        <div class="mt-4 flex items-center gap-3 flex-wrap">
-          <span class="text-sm text-[#525252] font-sans">Re-run requires 1 credit.</span>
-          <a href="/dashboard/credits" class="text-sm text-black font-sans underline decoration-[#E5E5E5] hover:decoration-black transition-colors duration-100">Buy credits →</a>
-        </div>
-      {:else}
-        <div class="mt-4 flex items-center gap-3 flex-wrap">
-          <a
-            href={`/dashboard?rerun=${report.slug}&query=${encodeURIComponent(report.query)}`}
-            class="text-sm text-[#525252] font-sans no-underline hover:underline transition-colors duration-100"
-          >Re-run with adjusted parameters →</a>
-        </div>
-      {/if}
-    {/if}
-  </section>
-
-  <hr class="border-none border-t-4 border-black m-0" />
-
-  <!-- ③ Research Narrative ─────────────────────────────────────────────── -->
-  <section class="py-8">
-    <div class="flex items-center gap-2.5 mb-4">
-      <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-0">AI-Generated Research Narrative</p>
-      <span class="font-mono text-[10px] uppercase tracking-widest bg-black text-white px-2 py-px leading-[1.6]">AI Generated</span>
-    </div>
-    <div class="max-w-[720px] flex flex-col gap-4">
-      {#if report.research_narrative}
-        {#each report.research_narrative.split('\n\n').filter(p => p.trim()) as para}
-          <p class="text-lg text-black leading-[1.75]" style="font-family:'Source Serif 4',Georgia,serif;">{para}</p>
-        {/each}
-      {:else}
-        <p class="text-lg leading-[1.75] text-text-muted italic" style="font-family:'Source Serif 4',Georgia,serif;">Research narrative is being generated…</p>
-      {/if}
-    </div>
-  </section>
-
-  <hr class="border-none border-t-4 border-black m-0" />
-
-  <!-- ④ Historical Occurrences ──────────────────────────────────────────── -->
-  <section class="py-8">
-    <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">Historical Occurrences</p>
-
-    <!-- Low-confidence toggle -->
-    {#if low_confidence_events.length > 0}
-    <div class="mb-6">
-      {#if !showLow}
-      <button
-        class="bg-transparent border border-black text-[#525252] font-sans text-sm px-[10px] py-1 cursor-pointer rounded-none transition-colors duration-100 hover:text-black hover:border-black"
-        onclick={() => showLow = true}
-      >{low_confidence_events.length} low-confidence event{low_confidence_events.length !== 1 ? 's' : ''} excluded — Show →</button>
-      {:else}
-      <button
-        class="bg-transparent border border-black text-[#525252] font-sans text-sm px-[10px] py-1 cursor-pointer rounded-none transition-colors duration-100 hover:text-black"
-        onclick={() => showLow = false}
-      >← Hide low-confidence events</button>
-      {/if}
-    </div>
-    {/if}
-
-    {#each mergedViewEvents as item, idx}
-    {#if idx > 0}
-    <hr class="border-none border-t-4 border-black my-8" />
-    {/if}
-
-    {#if item.kind === 'low'}
-    <!-- Low-confidence row — no charts, no trade data -->
-    <div>
-      <div class="flex items-center gap-3 mb-2">
-        <span class="font-mono text-sm text-[#525252]">{item.date}</span>
-        <span class="font-mono text-xs uppercase tracking-[0.05em] text-text-muted border border-[#E5E5E5] px-[5px] py-px">LOW</span>
-        <span class="font-sans text-xs text-text-muted">excluded from simulation</span>
+    <div class="bg-white border border-[#e5e5e5] p-6 rounded-2xl premium-transition hover-lift">
+      <span class="mono-label text-[10px] text-gray-400 block mb-4">Win Rate</span>
+      <div class="flex items-baseline gap-2 flex-wrap">
+        <span class="text-3xl lg:text-4xl font-mono tracking-tighter text-[#171717]">{(summary.win_rate * 100).toFixed(0)}%</span>
+        <span class="text-sm font-mono text-gray-400">{summary.trade_count} Trades</span>
       </div>
-      <div class="border-l-2 border-[#E5E5E5] pl-3 my-2 font-sans text-base text-[#525252] max-w-[720px] leading-[1.6]">{item.description}</div>
-      {#each item.sources as src}
-      <p class="font-sans text-sm text-[#525252] mb-2">
-        {extractPub(src.url)}&nbsp;&nbsp;·&nbsp;&nbsp;"{src.title}"&nbsp;&nbsp;·&nbsp;&nbsp;<a href={src.url} target="_blank" rel="noopener noreferrer" class="text-[#525252] no-underline hover:text-black">↗</a>
-      </p>
+    </div>
+    <div class="bg-white border border-[#e5e5e5] p-6 rounded-2xl premium-transition hover-lift">
+      <span class="mono-label text-[10px] text-gray-400 block mb-4">Max Drawdown</span>
+      <span class="text-3xl lg:text-4xl font-mono tracking-tighter text-[#171717]">
+        −{(summary.max_drawdown * 100).toFixed(1)}%
+      </span>
+    </div>
+    <div class="bg-white border border-[#e5e5e5] p-6 rounded-2xl premium-transition hover-lift">
+      <span class="mono-label text-[10px] text-gray-400 block mb-4">Events Found</span>
+      <div class="flex items-baseline gap-2 flex-wrap">
+        <span class="text-3xl lg:text-4xl font-mono tracking-tighter text-[#171717]">{summary.event_count}</span>
+        <span class="text-sm font-mono text-gray-400">{summary.ticker_count} ticker{summary.ticker_count !== 1 ? 's' : ''}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equity Curve Section -->
+  <div class="bg-white border border-[#e5e5e5] rounded-[2rem] p-8 mb-12 opacity-0 animate-slide-up" style="animation-delay: 0.2s;">
+    <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
+      <h3 class="serif-italic text-2xl">Cumulative Equity Curve</h3>
+      <div class="flex gap-2">
+        <button
+          onclick={() => chartFilter = 'all'}
+          class="px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-widest transition-colors cursor-pointer border-none
+            {chartFilter === 'all' ? 'bg-gray-100 text-black' : 'bg-transparent text-gray-500 hover:text-black'}"
+        >All Time</button>
+        <button
+          onclick={() => chartFilter = '1y'}
+          class="px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-widest transition-colors cursor-pointer border-none
+            {chartFilter === '1y' ? 'bg-gray-100 text-black' : 'bg-transparent text-gray-500 hover:text-black'}"
+        >1Y</button>
+      </div>
+    </div>
+    <PortfolioChart portfolio_series={filteredSeries} trade_close_points={filteredClosePoints} />
+  </div>
+
+  <!-- Secondary Metrics Row -->
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 border-t border-[#e5e5e5] pt-10 pb-4 mb-8 opacity-0 animate-slide-up" style="animation-delay: 0.3s;">
+    <div>
+      <span class="mono-label text-[9px] text-gray-400 block mb-2">Avg Win</span>
+      <span class="font-mono text-lg {avgWin != null && avgWin >= 0 ? 'text-green-600' : 'text-gray-900'}">
+        {avgWin != null ? fmtPnlPct(avgWin) : '—'}
+      </span>
+    </div>
+    <div>
+      <span class="mono-label text-[9px] text-gray-400 block mb-2">Avg Loss</span>
+      <span class="font-mono text-lg {avgLoss != null && avgLoss < 0 ? 'text-red-500' : 'text-gray-900'}">
+        {avgLoss != null ? fmtPnlPct(avgLoss) : '—'}
+      </span>
+    </div>
+    <div>
+      <span class="mono-label text-[9px] text-gray-400 block mb-2">Hold Period</span>
+      <span class="font-mono text-lg text-gray-900">{summary.avg_hold_days.toFixed(0)} days</span>
+    </div>
+    <div>
+      <span class="mono-label text-[9px] text-gray-400 block mb-2">Profit Factor</span>
+      <span class="font-mono text-lg text-gray-900">{profitFactor != null ? profitFactor.toFixed(2) : '—'}</span>
+    </div>
+    <div>
+      <span class="mono-label text-[9px] text-gray-400 block mb-2">Final Value</span>
+      <span class="font-mono text-lg text-gray-900">${summary.final_portfolio_value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+    </div>
+    <div>
+      <span class="mono-label text-[9px] text-gray-400 block mb-2">Data Quality</span>
+      <span class="font-mono text-lg {highCount > 0 ? 'text-[#4338ca]' : 'text-gray-900'}">{highCount > 0 ? 'Tier 1' : 'Tier 2'}</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- PHASE 01 — Analysis -->
+<section class="py-16 px-8 lg:px-12 border-t-4 border-black bg-[#fcfbf9]">
+  <div class="max-w-[1440px] mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+      <!-- Left sidebar label -->
+      <div class="lg:col-span-3">
+        <span class="mono-label text-[10px] text-[#4338ca]">Phase 01 — Analysis</span>
+        <p class="serif-italic text-2xl mt-4 text-gray-900">Research Narrative</p>
+      </div>
+
+      <!-- Right content column -->
+      <div class="lg:col-span-9 border-l-4 border-black pl-8 lg:pl-16 py-4">
+        <span class="mono-label text-[10px] bg-black text-white px-2 py-1 inline-block mb-8">AI Generated</span>
+
+        {#if report.research_narrative}
+          {#each report.research_narrative.split('\n\n').filter(p => p.trim()) as para, i}
+            {#if i === 0}
+              <p class="text-2xl font-serif text-gray-900 leading-relaxed italic mb-8">{para}</p>
+            {:else}
+              <p class="text-xl font-serif text-gray-700 leading-relaxed mb-4">{para}</p>
+            {/if}
+          {/each}
+        {:else}
+          <p class="text-xl font-serif text-gray-700 leading-relaxed italic">Research narrative is being generated…</p>
+        {/if}
+
+        <!-- Thesis Configuration card -->
+        <div class="mt-16 bg-[#F5F5F5] p-10 rounded-2xl border border-[#e5e5e5]">
+          <span class="mono-label text-[10px] text-gray-500 block mb-6">Thesis Configuration</span>
+          <p class="font-serif italic text-base text-black mb-6">{report.query}</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <span class="text-xs text-gray-500 uppercase font-mono block mb-1">Signal Confirmation</span>
+              <span class="text-sm font-mono">{ENTRY_LABELS[report.rule.entry] ?? report.rule.entry}</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 uppercase font-mono block mb-1">Exit Logic</span>
+              <span class="text-sm font-mono">{EXIT_LABELS[report.rule.exit] ?? report.rule.exit}</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 uppercase font-mono block mb-1">Positioning</span>
+              <span class="text-sm font-mono">{report.rule.direction === 'long' ? 'Long' : 'Short'} · ${report.rule.position_size.toLocaleString('en-US')} per trade</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 uppercase font-mono block mb-1">Time Horizon</span>
+              <span class="text-sm font-mono">{paramsDateRange}</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 uppercase font-mono block mb-1">Tickers</span>
+              <span class="text-sm font-mono">{report.confirmed_tickers.join(', ')}</span>
+            </div>
+            <div>
+              <span class="text-xs text-gray-500 uppercase font-mono block mb-1">Events Found</span>
+              <span class="text-sm font-mono">{report.occurrences.length} (High: {highCount}, Medium: {medCount})</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHASE 02 — Data -->
+<section class="py-24 px-8 lg:px-24 bg-[#171717] text-[#fcfbf9] border-t border-white/5">
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Section header -->
+    <div class="mb-16 border-b border-[#fcfbf9]/10 pb-10 flex flex-col md:flex-row justify-between items-end gap-8">
+      <div class="flex flex-col gap-3">
+        <span class="mono-label text-[10px] tracking-[0.4em] text-indigo-400">Phase 02 — Data</span>
+        <h2 class="serif-italic text-4xl md:text-5xl tracking-tight">
+          Asset <span class="opacity-40">Breakdown</span>
+        </h2>
+      </div>
+    </div>
+
+    <!-- Compact ticker metrics row -->
+    {#if tickerStats.length > 1}
+    <div class="flex gap-12 overflow-x-auto pb-8 mb-8">
+      {#each tickerStats as ts}
+        <div class="shrink-0">
+          <span class="mono-label text-[10px] opacity-40 block mb-2">{ts.symbol}</span>
+          <span class="font-mono text-xl {ts.totalPnl >= 0 ? 'text-indigo-400 font-bold' : 'text-gray-600'}">
+            {ts.returnPct >= 0 ? '+' : ''}{ts.returnPct.toFixed(1)}%
+          </span>
+          <span class="font-mono text-[10px] opacity-30 block mt-1 tracking-widest uppercase">{ts.winRate.toFixed(0)}% WR · {ts.tradeCount} trades</span>
+        </div>
       {/each}
     </div>
-
-    {:else}
-    <!-- Confirmed event -->
-    <div class="flex items-center gap-3 mb-2">
-      <span class="font-mono text-sm text-black">{item.date}</span>
-      {#if item.confidence === 'HIGH'}
-        <span class="font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-px bg-black text-white border border-black">{item.confidence}</span>
-      {:else}
-        <span class="font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-px text-[#525252] border border-[#525252]">{item.confidence}</span>
-      {/if}
-    </div>
-    <p class="text-base text-black max-w-[720px] mb-2 leading-[1.6]" style="font-family:'Source Serif 4',Georgia,serif;">{item.description}</p>
-
-    <!-- Source -->
-    {#if item.source.headline}
-    <p class="font-sans text-sm text-[#525252] mb-2">
-      {item.source.pub}&nbsp;&nbsp;·&nbsp;&nbsp;"<a href={item.source.url} target="_blank" rel="noopener noreferrer" class="text-[#525252] no-underline hover:text-black">{item.source.headline}</a>"&nbsp;&nbsp;·&nbsp;&nbsp;<a href={item.source.url} target="_blank" rel="noopener noreferrer" class="text-[#525252] no-underline hover:text-black">↗</a>
-    </p>
     {/if}
 
-    <!-- Impact window summary -->
-    <p class="font-mono text-sm text-[#525252] mb-5">
-      Duration: {item.impactDuration} days&nbsp;&nbsp;·&nbsp;&nbsp;Peak CAR: {item.peakCAR}&nbsp;&nbsp;·&nbsp;&nbsp;Window end: {item.windowEnd}
-    </p>
-
-    <!-- Per-ticker subsections -->
-    {#each item.tickers as tkr, tkrIdx}
-    {#if tkrIdx > 0}<hr class="border-none border-t border-[#E5E5E5] m-0" />{/if}
-    <div class="py-4">
-      <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-0">{tkr.ticker}</p>
-      {#if tkr.ohlcv.length > 0}
-        <div class="my-3">
-          <EventChart
-            ohlcv={tkr.ohlcv}
-            entry_date={tkr.entry}
-            entry_price={tkr.entryPrice}
-            exit_date={tkr.exit}
-            exit_price={tkr.exitPrice}
-            impact_window_end={tkr.impact_window_end}
-            direction={tkr.direction_raw}
-          />
-        </div>
-      {:else}
-        <div class="chart-ph h-[280px] my-3">
-          <span class="font-sans text-sm text-text-muted">No chart data</span>
-        </div>
-      {/if}
-      <p class="font-mono text-sm text-black mt-2">
-        Entry {tkr.entry}&nbsp;&nbsp;{fmtPrice(tkr.entryPrice)}
-        &nbsp;&nbsp;·&nbsp;&nbsp;
-        Exit {tkr.exit}&nbsp;&nbsp;{fmtPrice(tkr.exitPrice)}
-        &nbsp;&nbsp;·&nbsp;&nbsp;
-        {tkr.dir}
-        &nbsp;&nbsp;·&nbsp;&nbsp;
-        <span class:text-accent-gain={tkr.pnlPct >= 0} class:text-accent-loss={tkr.pnlPct < 0}>{fmtPnlPct(tkr.pnlPct)}</span>
-        &nbsp;&nbsp;·&nbsp;&nbsp;
-        <span class:text-accent-gain={tkr.pnlDollar >= 0} class:text-accent-loss={tkr.pnlDollar < 0}>{fmtPnlDollar(tkr.pnlDollar)}</span>
-      </p>
-    </div>
-    {/each}
-    {/if}
-
-    {/each}
-  </section>
-
-  <hr class="border-none border-t-4 border-black m-0" />
-
-  <!-- ⑤ Aggregate Performance ──────────────────────────────────────────── -->
-  <section class="py-8">
-    <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">Aggregate Performance</p>
-
-    <p class="font-display italic text-5xl max-sm:text-4xl font-normal text-black leading-[1.1] mb-1 tracking-tighter">Final portfolio value: ${summary.final_portfolio_value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-    <p class="font-sans text-sm text-[#525252] mb-6">(started at ${summary.starting_capital.toLocaleString('en-US')})</p>
-
-    <div class="grid grid-cols-4 max-md:grid-cols-2 max-sm:grid-cols-2 gap-px bg-black border border-black mb-6">
-      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Total return</Tooltip.Trigger>
-            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Net P&L as a percentage of starting capital</Tooltip.Content>
-          </Tooltip.Root>
-        </Tooltip.Provider>
-        <span class="font-mono text-lg leading-[1.3] group-hover:text-white transition-colors duration-100" class:text-accent-gain={summary.total_return_pct >= 0} class:text-accent-loss={summary.total_return_pct < 0}>
-          {fmtPnlPct(summary.total_return_pct * 100)}
-        </span>
-      </div>
-      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Win rate</Tooltip.Trigger>
-            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Percentage of trades that closed profitably</Tooltip.Content>
-          </Tooltip.Root>
-        </Tooltip.Provider>
-        <span class="font-mono text-lg leading-[1.3] text-black group-hover:text-white transition-colors duration-100">{(summary.win_rate * 100).toFixed(0)}%</span>
-      </div>
-      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Max drawdown</Tooltip.Trigger>
-            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Largest peak-to-trough portfolio decline</Tooltip.Content>
-          </Tooltip.Root>
-        </Tooltip.Provider>
-        <span class="font-mono text-lg leading-[1.3] text-accent-loss group-hover:text-white transition-colors duration-100">−{(summary.max_drawdown * 100).toFixed(1)}%</span>
-      </div>
-      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Avg hold</Tooltip.Trigger>
-            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Mean number of calendar days per trade</Tooltip.Content>
-          </Tooltip.Root>
-        </Tooltip.Provider>
-        <span class="font-mono text-lg leading-[1.3] text-black group-hover:text-white transition-colors duration-100">{summary.avg_hold_days.toFixed(0)} days</span>
-      </div>
-    </div>
-
-    {#if summary.best_trade && summary.worst_trade}
-    <div class="flex flex-col gap-1.5">
-      <p class="flex items-baseline gap-3 text-sm">
-        <span class="font-sans text-[#525252] min-w-[44px]">Best:</span>
-        <span class="font-mono text-accent-gain">{summary.best_trade.ticker} — {summary.best_trade.event_date}&nbsp;&nbsp;{fmtPnlDollar(summary.best_trade.pnl_dollars)}&nbsp;&nbsp;({fmtPnlPct(summary.best_trade.pnl_pct * 100)})</span>
-      </p>
-      <p class="flex items-baseline gap-3 text-sm">
-        <span class="font-sans text-[#525252] min-w-[44px]">Worst:</span>
-        <span class="font-mono text-accent-loss">{summary.worst_trade.ticker} — {summary.worst_trade.event_date}&nbsp;&nbsp;{fmtPnlDollar(summary.worst_trade.pnl_dollars)}&nbsp;&nbsp;({fmtPnlPct(summary.worst_trade.pnl_pct * 100)})</span>
-      </p>
-    </div>
-    {/if}
-
-    <div class="mt-6">
-      <PortfolioChart
-        portfolio_series={report.backtest_result.portfolio_series}
-        trade_close_points={tradeClosePoints}
-      />
-    </div>
-  </section>
-
-  <hr class="border-none border-t-4 border-black m-0" />
-
-  <!-- ⑥ Performance by Asset ──────────────────────────────────────────── -->
-  {#if tickerStats.length > 1}
-    <section class="py-8">
-      <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">Performance by Asset</p>
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse font-mono text-sm text-black whitespace-nowrap">
-          <thead>
-            <tr>
-              <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">TICKER</th>
-              <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-right px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">TOTAL P&amp;L</th>
-              <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-right px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">RETURN</th>
-              <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-right px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">WIN RATE</th>
-              <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-right px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">TRADES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each tickerStats as ts, i}
-              <tr>
-                <td class="px-3 py-2 border-b border-[#E5E5E5] font-mono font-medium" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{ts.symbol}</td>
-                <td class="px-3 py-2 border-b border-[#E5E5E5] text-right" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={ts.totalPnl >= 0} class:text-accent-loss={ts.totalPnl < 0}>
-                  {ts.totalPnl >= 0 ? '+' : ''}${ts.totalPnl.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                </td>
-                <td class="px-3 py-2 border-b border-[#E5E5E5] text-right" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={ts.returnPct >= 0} class:text-accent-loss={ts.returnPct < 0}>
-                  {ts.returnPct >= 0 ? '+' : ''}{ts.returnPct.toFixed(1)}%
-                </td>
-                <td class="px-3 py-2 border-b border-[#E5E5E5] text-right" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{ts.winRate.toFixed(0)}%</td>
-                <td class="px-3 py-2 border-b border-[#E5E5E5] text-right" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{ts.tradeCount}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </section>
-    <hr class="border-none border-t-4 border-black m-0" />
-  {/if}
-
-  <!-- ⑦ Trade Log Table ────────────────────────────────────────────────── -->
-  <section class="py-8">
-    <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">All Trades</p>
-    <div class="overflow-x-auto border border-black">
-      <table class="w-full border-collapse font-mono text-sm text-black">
+    <!-- All Trades table (Intelligence Output style) -->
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse font-mono text-sm">
         <thead>
-          <tr class="bg-[#F5F5F5] border-b border-black">
+          <tr class="border-b border-[#fcfbf9]/10 text-left">
             {#each [
               ['id',         '#'],
               ['date',       'DATE'],
@@ -917,70 +853,253 @@
               ['vsSpy',      'vs SPY'],
             ] as [col, label]}
             <th
-              class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2.5 font-normal whitespace-nowrap cursor-pointer select-none hover:text-black transition-colors duration-100"
+              class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase opacity-30 px-3 whitespace-nowrap cursor-pointer select-none hover:opacity-60 transition-opacity duration-100"
+              class:text-right={col === 'pnlDollar' || col === 'pnlPct' || col === 'vsSpy'}
               onclick={() => sortBy(col)}
               title="Sort by {label}"
             >{label}{sortIndicator(col)}</th>
             {/each}
           </tr>
         </thead>
-        <tbody class="divide-y divide-black">
+        <tbody class="divide-y divide-[#fcfbf9]/5">
           {#each sortedTrades as t}
-          <tr class="transition-colors duration-100 hover:bg-[#F5F5F5]">
-            <td class="px-3 py-2 whitespace-nowrap">{t.id}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{t.date}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{t.ticker}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{t.dir}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{t.entryDate}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{fmtPrice(t.entryPrice)}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{t.exitDate}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{fmtPrice(t.exitPrice)}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{t.days}</td>
-            <td class="px-3 py-2 whitespace-nowrap" class:text-accent-gain={t.pnlDollar >= 0} class:text-accent-loss={t.pnlDollar < 0}>{fmtPnlDollar(t.pnlDollar)}</td>
-            <td class="px-3 py-2 whitespace-nowrap" class:text-accent-gain={t.pnlPct >= 0} class:text-accent-loss={t.pnlPct < 0}>{fmtPnlPct(t.pnlPct)}</td>
-            <td class="px-3 py-2 whitespace-nowrap" class:text-accent-gain={t.vsSpy >= 0} class:text-accent-loss={t.vsSpy < 0}>{fmtPnlPct(t.vsSpy)}</td>
+          <tr class="hover:bg-white/[0.03] transition-colors duration-300">
+            <td class="py-5 px-3 text-gray-600">{t.id}</td>
+            <td class="py-5 px-3 text-gray-500">{fmtDate(t.date)}</td>
+            <td class="py-5 px-3 text-indigo-400 font-bold">{t.ticker}</td>
+            <td class="py-5 px-3 text-gray-500 text-[11px] tracking-widest uppercase">{t.dir}</td>
+            <td class="py-5 px-3 text-gray-500">{fmtDate(t.entryDate)}</td>
+            <td class="py-5 px-3 text-gray-400">{fmtPrice(t.entryPrice)}</td>
+            <td class="py-5 px-3 text-gray-500">{fmtDate(t.exitDate)}</td>
+            <td class="py-5 px-3 text-gray-400">{fmtPrice(t.exitPrice)}</td>
+            <td class="py-5 px-3 text-gray-500">{t.days}</td>
+            <td class="py-5 px-3 text-right"
+              class:text-indigo-400={t.pnlDollar >= 0} class:font-bold={t.pnlDollar >= 0}
+              class:text-gray-600={t.pnlDollar < 0}>{fmtPnlDollar(t.pnlDollar)}</td>
+            <td class="py-5 px-3 text-right"
+              class:text-indigo-400={t.pnlPct >= 0} class:font-bold={t.pnlPct >= 0}
+              class:text-gray-600={t.pnlPct < 0}>{fmtPnlPct(t.pnlPct)}</td>
+            <td class="py-5 px-3 text-right"
+              class:text-indigo-400={t.vsSpy >= 0} class:font-bold={t.vsSpy >= 0}
+              class:text-gray-600={t.vsSpy < 0}>{fmtPnlPct(t.vsSpy)}</td>
           </tr>
           {/each}
         </tbody>
       </table>
     </div>
-  </section>
 
-  <hr class="border-none border-t-4 border-black m-0" />
+    <!-- Intelligence Feed / Sources -->
+    <div class="mt-20 pt-10 border-t border-white/5">
+      <span class="mono-label text-[10px] opacity-40 block mb-6">Intelligence Feed / Sources Cited</span>
+      <ul class="list-none flex flex-col gap-4 p-0 m-0">
+        {#each allSources as src, i}
+          <li class="font-sans text-[13px] text-[#fcfbf9]/60 flex items-start gap-4">
+            <span class="opacity-40 uppercase tracking-widest text-[9px] mt-1 shrink-0">Source {String.fromCharCode(65 + i)}</span>
+            <span>{src.pub}&nbsp;&nbsp;·&nbsp;&nbsp;"{src.title}"&nbsp;&nbsp;·&nbsp;&nbsp;<a href={src.url} target="_blank" rel="noopener noreferrer" class="text-indigo-400/60 no-underline hover:text-indigo-400 transition-colors duration-100">↗ {extractDomain(src.url)}</a></span>
+          </li>
+        {/each}
+      </ul>
+    </div>
 
-  <!-- ⑦ Sources ───────────────────────────────────────────────────────── -->
-  <section class="py-8">
-    <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">Sources</p>
-    <ul class="list-none flex flex-col gap-2 p-0 m-0">
-      {#each allSources as src}
-      <li class="font-sans text-sm text-[#525252]">
-        {src.pub}&nbsp;&nbsp;·&nbsp;&nbsp;"{src.title}"&nbsp;&nbsp;·&nbsp;&nbsp;<a href={src.url} target="_blank" rel="noopener noreferrer" class="text-[#525252] no-underline hover:text-black transition-colors duration-100">↗ {extractDomain(src.url)}</a>
-      </li>
-      {/each}
-    </ul>
-  </section>
+    <!-- Re-run / action footer -->
+    {#if userCredits === 0}
+      <div class="mt-16 pt-10 border-t border-white/5 text-center">
+        <p class="text-[13px] text-[#fcfbf9]/40 font-sans">Re-run requires 1 credit.&nbsp;&nbsp;<a href="/dashboard/credits" class="text-indigo-400/60 hover:text-indigo-400 transition-colors duration-100">Buy credits →</a></p>
+      </div>
+    {:else if userCredits != null && userCredits > 0}
+      <div class="mt-16 pt-10 border-t border-white/5 text-center">
+        <a href={`/dashboard?rerun=${report.slug}&query=${encodeURIComponent(report.query)}`}
+          class="inline-flex items-center gap-4 group text-[#fcfbf9]/40 hover:text-[#fcfbf9] transition-all duration-500 no-underline">
+          <span class="mono-label text-[11px] border-b border-transparent group-hover:border-[#fcfbf9] pb-1 tracking-[0.2em]">Re-run Terminal Analysis</span>
+          <iconify-icon icon="lucide:arrow-right" class="group-hover:translate-x-2 transition-transform duration-500 text-indigo-400"></iconify-icon>
+        </a>
+      </div>
+    {/if}
 
-  <hr class="border-none border-t-4 border-black m-0" />
+  </div>
+</section>
 
-  <!-- ⑧ Footer CTAs ────────────────────────────────────────────────────── -->
-  <section class="py-8 flex flex-col gap-4">
-    <button
-      class="self-start bg-black border-2 border-black text-white font-sans text-xs uppercase tracking-[0.1em] px-6 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black"
-      onclick={copyShareLink}
-    >{shareText}</button>
-
-    <p class="font-sans text-sm text-[#525252]">
+<!-- CTA BAR -->
+<div class="border-t-4 border-black bg-[#fcfbf9]">
+  <div class="py-24 px-8 lg:px-12 max-w-[1440px] mx-auto">
+    <h2 class="serif-italic text-4xl mb-4">Ready to refine your edge?</h2>
+    <p class="text-gray-500 font-serif text-lg mb-10">Adjust your parameters, tighten your thesis, or explore a new signal.</p>
+    <div class="flex items-center gap-4 flex-wrap">
+      <button
+        class="bg-white border-2 border-black text-black px-8 py-4 mono-label text-[10px] hover:bg-black hover:text-white transition-colors duration-300 cursor-pointer"
+        onclick={copyShareLink}
+      >{shareText}</button>
+      <a
+        href={viewContext === 'owner' ? '/dashboard' : '/auth/register'}
+        class="bg-black text-white px-10 py-4 mono-label text-[10px] hover:bg-[#4338ca] transition-colors duration-300 no-underline"
+      >Run New Thesis →</a>
+    </div>
+    <p class="font-sans text-sm text-[#525252] mt-6">
       Set a live alert for this event — <span class="text-[#525252]">Coming Soon.</span>
       <!-- svelte-ignore a11y_invalid_attribute -->
       <a href="#" class="text-black underline decoration-[#E5E5E5] hover:decoration-black transition-colors duration-100" onclick={(e) => { e.preventDefault(); openWaitlist('Live alerts — coming soon', 'live-alerts'); }}>Join the waitlist →</a>
     </p>
+  </div>
+</div>
 
-    <p class="font-sans text-sm">
-      <a href="/" class="text-black no-underline hover:underline transition-colors duration-100">Run your own backtest — free →</a>
-    </p>
-  </section>
+<!-- APPENDIX — Historical Event Log -->
+<section class="py-24 px-8 lg:px-12 bg-[#171717] text-[#fcfbf9]">
+  <div class="max-w-[1440px] mx-auto">
+
+    <div class="flex flex-col md:flex-row justify-between items-end border-b border-[#fcfbf9]/10 pb-8 mb-12 gap-8">
+      <div class="flex flex-col gap-3">
+        <span class="mono-label text-indigo-400 text-[10px]">Appendix — Evidence</span>
+        <h2 class="serif-italic text-5xl tracking-tight">Historical Event Log</h2>
+      </div>
+      {#if low_confidence_events.length > 0}
+        <button
+          onclick={() => showLow = !showLow}
+          class="mono-label text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer bg-transparent border-none self-start md:self-end"
+        >{showLow ? '← Hide' : 'Show →'} low-confidence ({low_confidence_events.length})</button>
+      {/if}
+    </div>
+
+    <div class="flex flex-col gap-8">
+      {#each mergedViewEvents as item, idx (item.date + idx)}
+
+        {#if item.kind === 'low'}
+        <div class="bg-white/[0.01] border border-white/5 rounded-2xl p-6 opacity-60">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="mono-label text-[10px] text-gray-500">Low Confidence</span>
+            <span class="font-mono text-xs text-gray-600">{item.date}</span>
+          </div>
+          <p class="text-gray-500 text-sm leading-relaxed">{item.description}</p>
+          {#each item.sources.slice(0, 1) as src}
+            <a href={src.url} target="_blank" rel="noopener noreferrer"
+              class="mono-label text-[10px] text-gray-600 hover:text-gray-400 flex items-center gap-1 transition-colors no-underline mt-2 w-fit">
+              ↗ {extractPub(src.url)}
+            </a>
+          {/each}
+        </div>
+
+        {:else}
+        <div class="bg-white/[0.02] border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300 group">
+
+          <!-- Date badge + vertical line -->
+          <div class="flex flex-col items-start mb-6">
+            <span class="px-3 py-1 font-mono text-xs rounded {item.confidence === 'HIGH' ? 'bg-indigo-500/10 text-indigo-300' : 'bg-white/10 text-gray-400'}">
+              {item.date} · {item.confidence}
+            </span>
+            <div class="w-px h-12 bg-white/10 ml-4 mt-2"></div>
+          </div>
+
+          <!-- Title (serif italic) -->
+          <h4 class="serif-italic text-2xl text-white mb-4 leading-snug">{item.description}</h4>
+
+          {#if item.source.headline}
+            <a href={item.source.url} target="_blank" rel="noopener noreferrer"
+              class="mono-label text-[10px] text-gray-500 hover:text-[#4338ca] flex items-center gap-1 transition-colors no-underline w-fit mb-4">
+              ↗ {item.source.pub} · "{item.source.headline.slice(0, 60)}{item.source.headline.length > 60 ? '…' : ''}"
+            </a>
+          {/if}
+          <p class="font-mono text-xs text-gray-600 mb-6">
+            Duration: {item.impactDuration}d · Peak CAR: {item.peakCAR} · {item.windowEnd}
+          </p>
+
+          {#each item.tickers as tkr, tkrIdx}
+            <div class="mt-6 pt-6 border-t {tkrIdx === 0 ? 'border-white/5' : 'border-white/[0.03]'}">
+              <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <span class="mono-label text-[9px] text-gray-500 block mb-1">Entry</span>
+                      <span class="font-mono text-white text-sm">{tkr.entry}</span>
+                      <span class="font-mono text-gray-400 text-xs block">{fmtPrice(tkr.entryPrice)}</span>
+                    </div>
+                    <div>
+                      <span class="mono-label text-[9px] text-gray-500 block mb-1">Exit</span>
+                      <span class="font-mono text-white text-sm">{tkr.exit}</span>
+                      <span class="font-mono text-gray-400 text-xs block">{fmtPrice(tkr.exitPrice)}</span>
+                    </div>
+                    <div>
+                      <span class="mono-label text-[9px] text-gray-500 block mb-1">Ticker</span>
+                      <span class="font-mono text-white text-sm font-bold">{tkr.ticker}</span>
+                    </div>
+                    <div>
+                      <span class="mono-label text-[9px] text-gray-500 block mb-1">Direction</span>
+                      <span class="font-mono text-white text-sm">{tkr.dir}</span>
+                    </div>
+                  </div>
+                  {#if tkr.ohlcv.length > 0}
+                    <div class="h-[280px] rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden group-hover:border-white/10 transition-colors">
+                      <EventChart
+                        ohlcv={tkr.ohlcv}
+                        entry_date={tkr.entry}
+                        entry_price={tkr.entryPrice}
+                        exit_date={tkr.exit}
+                        exit_price={tkr.exitPrice}
+                        impact_window_end={tkr.impact_window_end}
+                        direction={tkr.direction_raw}
+                      />
+                    </div>
+                  {:else}
+                    <div class="chart-ph h-44">
+                      <span class="font-sans text-sm text-gray-600">No chart data</span>
+                    </div>
+                  {/if}
+                </div>
+                <!-- P&L sidebar pill -->
+                <div class="bg-white/5 p-4 rounded-xl shrink-0 self-start min-w-[120px]">
+                  <span class="mono-label text-[9px] text-gray-500 block mb-2">P&L</span>
+                  <span class="font-mono text-lg {tkr.pnlPct >= 0 ? 'text-green-400' : 'text-red-400'}">{fmtPnlPct(tkr.pnlPct)}</span>
+                  <span class="font-mono text-xs text-gray-400 block">{fmtPnlDollar(tkr.pnlDollar)}</span>
+                </div>
+              </div>
+            </div>
+          {/each}
+
+        </div>
+        {/if}
+
+      {/each}
+    </div>
+
+    <!-- Dark footer -->
+    <div class="mt-24 pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-start gap-8">
+      <div>
+        <span class="serif-italic text-2xl text-white">Aslan Finance</span>
+        <p class="font-mono text-xs text-gray-500 mt-2">AI-powered event-driven backtesting</p>
+      </div>
+      <div class="flex gap-8 flex-wrap">
+        <a href="/" class="mono-label text-[10px] text-gray-500 hover:text-white transition-colors no-underline">Terminal</a>
+        <a href="/backtests" class="mono-label text-[10px] text-gray-500 hover:text-white transition-colors no-underline">Gallery</a>
+        <a href="/auth/register" class="mono-label text-[10px] text-gray-500 hover:text-white transition-colors no-underline">Sign Up</a>
+      </div>
+      <p class="mono-label text-[10px] text-gray-600">© {new Date().getFullYear()} Aslan Finance</p>
+    </div>
+
+  </div>
+</section>
+
+{/if}
 
 </div>
+
+<!-- Delete confirmation overlay -->
+{#if deleteConfirming}
+  <div class="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center px-4">
+    <div class="bg-white p-8 rounded-2xl max-w-sm w-full border border-[#e5e5e5]">
+      <p class="font-sans text-sm text-[#525252] mb-4">Delete this report? This cannot be undone.</p>
+      <div class="flex items-center gap-3 flex-wrap">
+        <button
+          class="bg-transparent border border-red-400 text-red-400 font-sans text-sm px-4 py-2 cursor-pointer rounded-none disabled:opacity-50 disabled:cursor-default hover:bg-red-50 transition-colors"
+          onclick={handleDelete}
+          disabled={deleteLoading}
+        >{deleteLoading ? 'Deleting…' : 'Confirm delete'}</button>
+        <button
+          class="bg-transparent border-none p-0 font-sans text-sm text-[#525252] cursor-pointer disabled:opacity-50 hover:text-black transition-colors"
+          onclick={() => { deleteConfirming = false; deleteError = ''; }}
+          disabled={deleteLoading}
+        >Cancel</button>
+        {#if deleteError}<span class="font-sans text-sm text-red-400">{deleteError}</span>{/if}
+      </div>
+    </div>
+  </div>
 {/if}
 
 {#if waitlistOpen}
@@ -992,29 +1111,19 @@
 {/if}
 
 <style>
-  /* ── Blurred teaser rows (filter: blur cannot be done with Tailwind arbitrary safely in scoped) */
   .blurred-rows {
     filter: blur(4px);
     pointer-events: none;
     user-select: none;
   }
 
-  /* ── Chart placeholder (shared base for flex centering) */
   .chart-ph {
-    background: #F5F5F5;
-    border: 1px solid #000000;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-  }
-
-  /* ── Disclaimer responsive flex direction on mobile expansion */
-  @media (max-width: 640px) {
-    .disclaimer-expanded {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-    }
   }
 </style>

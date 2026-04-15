@@ -38,36 +38,56 @@
   }
 </script>
 
-<nav class="flex items-center py-4 border-b-2 border-black relative">
-  <a href="/dashboard" class="font-display italic text-lg font-normal text-black no-underline tracking-[-0.01em]">Aslan Finance</a>
+<!-- Fixed header -->
+<header class="fixed top-0 left-0 w-full z-[100] h-20 bg-[#fcfbf9] border-b border-[#e5e5e5] px-8 lg:px-24 flex items-center justify-between">
+  <a href="/dashboard" class="serif-italic text-2xl tracking-tight text-[#171717] no-underline">Aslan Finance</a>
 
-  <div class="ml-auto flex items-center gap-6">
-    <a href="/backtests" class="max-sm:hidden font-sans text-xs tracking-[0.08em] uppercase text-[#525252] no-underline hover:text-black transition-colors duration-100">Explore</a>
-    <a href="/dashboard/credits" class="font-mono text-xs tracking-[0.05em] uppercase tracking-[0.08em] text-black no-underline hover:underline">{credits} {creditsLabel}</a>
-    <a href="/dashboard/account" class="max-sm:hidden font-sans text-xs tracking-[0.08em] uppercase text-[#525252] no-underline hover:text-black transition-colors duration-100">Account</a>
+  <!-- Desktop nav -->
+  <nav class="hidden md:flex items-center gap-10">
+    <a href="/backtests" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Explore</a>
+
+    <div class="flex items-center gap-2 px-4 py-1.5 bg-white border border-[#e5e5e5] rounded-full">
+      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full shrink-0"></span>
+      <a href="/dashboard/credits" class="font-mono text-xs tracking-wide font-medium text-[#171717] no-underline hover:text-[#4338ca] transition-colors whitespace-nowrap">
+        {credits} {creditsLabel.toUpperCase()}
+      </a>
+    </div>
+
+    <a href="/dashboard/account" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Account</a>
 
     <button
-      class="hidden max-sm:block bg-transparent border border-black text-black text-base cursor-pointer py-1 px-2 leading-none hover:bg-black hover:text-white transition-colors duration-100"
-      onclick={() => menuOpen = !menuOpen}
-      aria-label="Toggle menu"
-    >☰</button>
-  </div>
+      onclick={handleSignOut}
+      class="flex items-center gap-1.5 mono-label text-gray-400 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none p-0"
+      aria-label="Sign out"
+    >
+      <iconify-icon icon="lucide:log-out" class="text-base"></iconify-icon>
+    </button>
+  </nav>
+
+  <!-- Mobile hamburger -->
+  <button
+    class="hidden max-sm:flex items-center justify-center w-9 h-9 bg-transparent border border-[#e5e5e5] rounded-xl text-gray-600 hover:bg-white hover:text-black transition-colors cursor-pointer"
+    onclick={() => menuOpen = !menuOpen}
+    aria-label="Toggle menu"
+  >☰</button>
 
   {#if menuOpen}
-    <div class="absolute top-full right-0 bg-white border border-black min-w-[140px] z-50">
+    <div class="absolute top-full right-4 mt-2 bg-white border border-[#e5e5e5] rounded-2xl min-w-[160px] z-50 shadow-lg overflow-hidden">
       <a
         href="/dashboard/account"
         onclick={() => menuOpen = false}
-        class="block px-4 py-3 font-sans text-xs tracking-[0.08em] uppercase text-black no-underline w-full text-left hover:bg-black hover:text-white transition-colors duration-100"
+        class="block px-5 py-3 mono-label text-gray-600 hover:bg-[#fcfbf9] no-underline transition-colors"
       >Account</a>
+      <div class="border-t border-[#e5e5e5]"></div>
       <button
-        class="block px-4 py-3 font-sans text-xs tracking-[0.08em] uppercase text-black w-full text-left bg-transparent border-none cursor-pointer hover:bg-black hover:text-white transition-colors duration-100"
+        class="block w-full text-left px-5 py-3 mono-label text-gray-400 hover:bg-[#fcfbf9] hover:text-red-500 bg-transparent border-none cursor-pointer transition-colors"
         onclick={handleSignOut}
       >Log out</button>
     </div>
   {/if}
-</nav>
+</header>
 
-<div class="pt-10 pb-16">
+<!-- Page content offset by fixed header height -->
+<div class="bg-[#fcfbf9] min-h-screen pt-20">
   {@render children()}
 </div>

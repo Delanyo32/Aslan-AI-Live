@@ -7,7 +7,6 @@
 
 	let heroQuery = $state('')
 
-	// ── Run: redirect logged-in users to dashboard, anon to register ──────────
 	function handleRun(query: string) {
 		if (data.user) {
 			goto('/dashboard?query=' + encodeURIComponent(query))
@@ -17,7 +16,6 @@
 		}
 	}
 
-	// ── Coming soon waitlist modal ────────────────────────────────────────────
 	let comingSoonOpen     = $state(false)
 	let comingSoonTitle    = $state('')
 	let comingSoonInterest = $state('')
@@ -27,240 +25,382 @@
 		comingSoonInterest = interest
 		comingSoonOpen     = true
 	}
-
-	// ── Waitlist form ─────────────────────────────────────────────────────────
-	let waitlistEmail  = $state('')
-	let waitlistStatus = $state<'idle' | 'submitting' | 'success' | 'error'>('idle')
-
-	async function handleWaitlistSubmit(e: SubmitEvent) {
-		e.preventDefault()
-		if (!waitlistEmail || waitlistStatus === 'submitting') return
-		waitlistStatus = 'submitting'
-		try {
-			const res = await fetch('/api/waitlist', {
-				method:  'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body:    JSON.stringify({ email: waitlistEmail, interest: 'alerts' }),
-			})
-			waitlistStatus = res.ok ? 'success' : 'error'
-		} catch {
-			waitlistStatus = 'error'
-		}
-	}
 </script>
 
-<!-- ── Nav ───────────────────────────────────────────────────────────────── -->
-<nav class="flex items-center py-5 border-b-2 border-black bg-white">
-	<a href="/" class="font-display italic font-normal text-[22px] text-black no-underline tracking-[-0.01em]">Aslan Finance</a>
-	<div class="ml-auto flex items-center gap-7 max-sm:gap-4">
-		<a href="#how-it-works" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">How it works</a>
-		<a href="/pricing" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">Pricing</a>
-		<a href="/backtests" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">Backtests</a>
+<!-- ── Header (fixed) ────────────────────────────────────────────────────── -->
+<header class="fixed top-0 left-0 w-full z-[100] h-20 bg-[#fcfbf9] border-b border-[#e5e5e5] px-8 lg:px-12 flex items-center justify-between">
+	<a href="/" class="serif-italic text-2xl font-bold tracking-tight text-gray-900 no-underline">Aslan Finance</a>
+
+	<nav class="hidden md:flex items-center gap-12">
+		<a href="#how-it-works" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Methodology</a>
+		<a href="/backtests"    class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Backtests</a>
+		<a href="#pricing"      class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Pricing</a>
+	</nav>
+
+	<div class="flex items-center gap-4">
+		<div class="hidden lg:flex items-center gap-2 px-4 py-2 bg-white border border-[#e5e5e5] rounded-full">
+			<span class="w-2 h-2 bg-green-500 rounded-full pulse-status"></span>
+			<span class="mono-label text-[10px] tracking-widest text-gray-500">System Online</span>
+		</div>
 		{#if data.user}
-			<a href="/dashboard" class="font-sans text-xs tracking-[0.1em] uppercase bg-black text-white px-[18px] py-2 border-2 border-black no-underline transition-colors duration-100 hover:bg-white hover:text-black">Dashboard →</a>
+			<a href="/dashboard" class="bg-[#171717] text-white px-6 py-2.5 rounded-full mono-label hover:bg-[#4338ca] transition-colors duration-500 no-underline">
+				Dashboard →
+			</a>
 		{:else}
-			<a href="/auth/login" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">Login</a>
-			<a href="/auth/register" class="font-sans text-xs tracking-[0.1em] uppercase bg-black text-white px-[18px] py-2 border-2 border-black no-underline transition-colors duration-100 hover:bg-white hover:text-black">Register →</a>
+			<a href="/auth/login"    class="mono-label text-gray-600 hover:text-black no-underline hidden md:block">Login</a>
+			<a href="/auth/register" class="bg-[#171717] text-white px-6 py-2.5 rounded-full mono-label hover:bg-[#4338ca] transition-colors duration-500 no-underline">
+				Initialize
+			</a>
 		{/if}
 	</div>
-</nav>
+</header>
 
-<!-- ── Main ──────────────────────────────────────────────────────────────── -->
-<main class="bg-white text-black pb-20" id="top">
-	<div class="flex flex-col">
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="relative min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden bg-white">
+	<!-- Mesh gradient background -->
+	<div class="absolute inset-0 mesh-gradient pointer-events-none" aria-hidden="true"></div>
 
-		<!-- ── Hero ──────────────────────────────────────────────────────────── -->
-		<div class="pt-20 pb-16">
-			<h1 class="font-display italic font-normal text-[clamp(3.5rem,8vw,8rem)] leading-none tracking-[-0.025em] text-black mb-10 max-sm:text-[3rem]">Does your thesis hold?</h1>
-			<div class="flex items-center gap-3 mb-10">
-				<div class="flex-1 h-1 bg-black"></div>
-				<div class="w-4 h-4 border-2 border-black shrink-0"></div>
+	<div class="relative z-10 text-center max-w-6xl px-6">
+		<span class="mono-label text-[#4338ca] mb-8 block opacity-0" style="animation: fadeIn 1s var(--ease-premium) forwards;">
+			Institutional Grade Analysis
+		</span>
+		<h1
+			class="serif-italic text-[7vw] lg:text-[10vw] leading-[0.85] tracking-tighter mb-12 text-[#171717] opacity-0"
+			style="animation: slideUp 1.2s var(--ease-premium) 0.2s forwards;"
+		>
+			Discover Trends. Trade Smarter.
+		</h1>
+
+		<div class="max-w-4xl mx-auto opacity-0" style="animation: slideUp 1.2s var(--ease-premium) 0.4s forwards;">
+			<div class="relative bg-white border border-[#e5e5e5] rounded-full overflow-hidden shadow-xl shadow-gray-200/40 focus-within:border-[#4338ca] transition-all duration-500">
+				<div class="flex items-center p-2">
+					<input
+						type="text"
+						placeholder="Buy Nvidia every time the US announces new AI chip restrictions on China"
+						class="w-full px-8 py-4 bg-transparent outline-none text-lg text-gray-900 font-[Inter,system-ui,sans-serif] placeholder:text-gray-300"
+						bind:value={heroQuery}
+						onkeydown={(e) => e.key === 'Enter' && heroQuery.trim() && handleRun(heroQuery)}
+					/>
+					<button
+						class="bg-[#171717] text-white px-8 md:px-12 py-4 rounded-full font-[Inter,system-ui,sans-serif] font-medium hover:bg-[#4338ca] transition-all duration-300 whitespace-nowrap flex items-center gap-3 shadow-lg shadow-black/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+						onclick={() => handleRun(heroQuery)}
+						disabled={!heroQuery.trim()}
+					>
+						Analyze
+						<iconify-icon icon="lucide:arrow-right" class="text-xl"></iconify-icon>
+					</button>
+				</div>
 			</div>
-			<p class="text-[18px] leading-[1.6] text-[#525252] mb-8 max-w-[540px]" style="font-family: 'Source Serif 4', Georgia, serif;">
+			<p class="mt-8 text-gray-400 text-sm italic text-center leading-relaxed max-w-2xl mx-auto" style="font-family: 'Source Serif 4', Georgia, serif;">
 				Type a market thesis in plain English. Aslan finds every historical occurrence in 10+ years of financial news and shows you the P&amp;L. No Bloomberg required.
 			</p>
-
-			<div class="flex flex-col border-2 border-black">
-				<textarea
-					class="w-full min-h-[120px] px-6 py-5 bg-transparent border-none border-b border-[#E5E5E5] text-black text-[17px] leading-[1.65] resize-none outline-none rounded-none focus:border-b-black"
-					style="font-family: 'Source Serif 4', Georgia, serif;"
-					rows={4}
-					placeholder="Buy Nvidia every time the US announces new AI chip restrictions on China"
-					bind:value={heroQuery}
-				></textarea>
-				<div class="flex items-center flex-wrap gap-x-[10px] gap-y-[6px] px-6 py-3 border-b border-[#E5E5E5]">
-					<span class="font-mono text-[10px] tracking-[0.1em] uppercase bg-black text-white px-2 py-[3px]">US Stocks</span>
-					<span class="text-[#DDDDDD] text-xs select-none">·</span>
-					<button class="font-mono text-[10px] tracking-[0.1em] uppercase text-[#BBBBBB] bg-transparent border-none p-0 cursor-pointer transition-colors duration-100 hover:text-[#525252]" onclick={() => openComingSoon('Crypto markets — coming soon', 'crypto')}>Crypto</button>
-					<span class="text-[#DDDDDD] text-xs select-none">·</span>
-					<button class="font-mono text-[10px] tracking-[0.1em] uppercase text-[#BBBBBB] bg-transparent border-none p-0 cursor-pointer transition-colors duration-100 hover:text-[#525252]" onclick={() => openComingSoon('Forex markets — coming soon', 'forex')}>Forex</button>
-					<span class="text-[#DDDDDD] text-xs select-none">·</span>
-					<button class="font-mono text-[10px] tracking-[0.1em] uppercase text-[#BBBBBB] bg-transparent border-none p-0 cursor-pointer transition-colors duration-100 hover:text-[#525252]" onclick={() => openComingSoon('Futures & Commodities — coming soon', 'futures')}>Futures</button>
-					<span class="text-[#DDDDDD] text-xs select-none">·</span>
-					<button class="font-mono text-[10px] tracking-[0.1em] uppercase text-[#BBBBBB] bg-transparent border-none p-0 cursor-pointer transition-colors duration-100 hover:text-[#525252]" onclick={() => openComingSoon('Options — coming soon', 'options')}>Options</button>
-					<span class="text-[#DDDDDD] text-xs select-none">·</span>
-					<button class="font-mono text-[10px] tracking-[0.1em] uppercase text-[#BBBBBB] bg-transparent border-none p-0 cursor-pointer transition-colors duration-100 hover:text-[#525252]" onclick={() => openComingSoon('International equities — coming soon', 'international')}>International</button>
-				</div>
-				<button
-					class="w-full px-6 py-4 bg-black text-white border-2 border-black font-sans text-xs tracking-[0.15em] uppercase cursor-pointer transition-colors duration-100 rounded-none hover:enabled:bg-white hover:enabled:text-black disabled:opacity-35 disabled:cursor-not-allowed"
-					onclick={() => handleRun(heroQuery)}
-					disabled={!heroQuery.trim()}
-				>
-					Run Backtest →
-				</button>
-			</div>
 		</div>
-
-		<!-- ── Below-fold content ─────────────────────────────────────────────── -->
-
-		<!-- Recent backtests — only for anonymous visitors -->
-		{#if !data.user}
-		<div class="border-t-4 border-black py-16 flex flex-col gap-6" id="recent">
-			<span class="font-mono text-xs tracking-[0.1em] text-[#525252] uppercase">See It In Action</span>
-			<p class="text-[16px] text-[#525252] m-0" style="font-family: 'Source Serif 4', Georgia, serif;">Browse real backtests others have run — see the methodology, the matched events, and the P&amp;L.</p>
-			<a href="/backtests" class="font-sans text-sm text-black underline decoration-[#CCCCCC] hover:decoration-black transition-colors duration-100">Explore recent backtests →</a>
-		</div>
-		{/if}
-
-		<!-- How it works -->
-		<div class="border-t-4 border-black py-16 flex flex-col gap-6" id="how-it-works">
-			<span class="font-mono text-xs tracking-[0.1em] text-[#525252] uppercase">How It Works</span>
-			<div class="flex flex-col">
-				<div class="grid [grid-template-columns:72px_1fr] gap-6 py-7 border-t border-black first:border-t-0 first:pt-0 max-sm:[grid-template-columns:48px_1fr] max-sm:gap-4">
-					<span class="font-mono text-[40px] font-normal text-[#E5E5E5] leading-none pt-1 max-sm:text-[28px]">01</span>
-					<div class="flex flex-col gap-2">
-						<p class="font-display text-[20px] font-normal text-black m-0">Describe your hypothesis</p>
-						<p class="text-[15px] text-[#525252] leading-[1.6] m-0" style="font-family: 'Source Serif 4', Georgia, serif;">Type a plain-English trade idea. The more specific, the better.</p>
-					</div>
-				</div>
-				<div class="grid [grid-template-columns:72px_1fr] gap-6 py-7 border-t border-black max-sm:[grid-template-columns:48px_1fr] max-sm:gap-4">
-					<span class="font-mono text-[40px] font-normal text-[#E5E5E5] leading-none pt-1 max-sm:text-[28px]">02</span>
-					<div class="flex flex-col gap-2">
-						<p class="font-display text-[20px] font-normal text-black m-0">AI finds every historical instance</p>
-						<p class="text-[15px] text-[#525252] leading-[1.6] m-0" style="font-family: 'Source Serif 4', Georgia, serif;">We scan 10+ years of financial news to identify every time this event happened — with sources.</p>
-					</div>
-				</div>
-				<div class="grid [grid-template-columns:72px_1fr] gap-6 py-7 border-t border-black max-sm:[grid-template-columns:48px_1fr] max-sm:gap-4">
-					<span class="font-mono text-[40px] font-normal text-[#E5E5E5] leading-none pt-1 max-sm:text-[28px]">03</span>
-					<div class="flex flex-col gap-2">
-						<p class="font-display text-[20px] font-normal text-black m-0">Get a full backtest report</p>
-						<p class="text-[15px] text-[#525252] leading-[1.6] m-0" style="font-family: 'Source Serif 4', Georgia, serif;">Trade simulations, P&L charts, and a sourced event log — in minutes. All trades entered at next market open after news publication.</p>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Example report teaser -->
-		<div class="border-t-4 border-black py-16 flex flex-col gap-6" id="example">
-			<span class="font-mono text-xs tracking-[0.1em] text-[#525252] uppercase">Example Report</span>
-			<div class="pl-5 border-l-4 border-black">
-				<p class="font-display italic text-[22px] leading-[1.4] text-black m-0">"Buy semiconductor stocks every time the US restricts chip exports to China"</p>
-			</div>
-			<div class="flex flex-wrap items-center gap-2 font-mono text-sm">
-				<span class="text-accent-gain font-bold">+184% total return</span>
-				<span class="text-[#CCCCCC]">·</span>
-				<span class="text-[#525252]">6 events found</span>
-				<span class="text-[#CCCCCC]">·</span>
-				<span class="text-[#525252]">75% win rate</span>
-				<span class="text-[#CCCCCC]">·</span>
-				<span class="text-[#525252]">24 trades</span>
-			</div>
-			<div class="flex flex-col border border-black">
-				<div class="grid [grid-template-columns:1fr_60px_50px_80px_70px] px-[14px] py-[10px] font-sans text-[10px] tracking-[0.08em] text-[#525252] bg-bg-surface uppercase border-b border-black max-sm:[grid-template-columns:1fr_50px_40px_68px_62px] max-sm:text-xs max-sm:px-[10px] max-sm:py-2">
-					<span>DATE</span>
-					<span>TICKER</span>
-					<span>DIR</span>
-					<span class="text-right">P&L ($)</span>
-					<span class="text-right">P&L (%)</span>
-				</div>
-				<div class="grid [grid-template-columns:1fr_60px_50px_80px_70px] px-[14px] py-[10px] font-mono text-sm text-black border-b border-black max-sm:[grid-template-columns:1fr_50px_40px_68px_62px] max-sm:text-xs max-sm:px-[10px] max-sm:py-2">
-					<span>2022-10-07</span>
-					<span>NVDA</span>
-					<span>Long</span>
-					<span class="text-right text-accent-gain font-bold">+$2,240</span>
-					<span class="text-right text-accent-gain font-bold">+22.4%</span>
-				</div>
-				<div class="grid [grid-template-columns:1fr_60px_50px_80px_70px] px-[14px] py-[10px] font-mono text-sm text-black border-b border-black max-sm:[grid-template-columns:1fr_50px_40px_68px_62px] max-sm:text-xs max-sm:px-[10px] max-sm:py-2">
-					<span>2023-08-01</span>
-					<span>AMD</span>
-					<span>Long</span>
-					<span class="text-right text-accent-gain font-bold">+$1,180</span>
-					<span class="text-right text-accent-gain font-bold">+11.8%</span>
-				</div>
-				<div class="grid [grid-template-columns:1fr_60px_50px_80px_70px] px-[14px] py-[10px] font-mono text-sm text-black max-sm:[grid-template-columns:1fr_50px_40px_68px_62px] max-sm:text-xs max-sm:px-[10px] max-sm:py-2">
-					<span>2020-03-15</span>
-					<span>INTC</span>
-					<span>Long</span>
-					<span class="text-right text-accent-loss">−$490</span>
-					<span class="text-right text-accent-loss">−4.9%</span>
-				</div>
-			</div>
-			<a href="#top" class="font-sans text-sm text-[#525252] underline decoration-[#CCCCCC] hover:text-black hover:decoration-black">Try your own hypothesis →</a>
-		</div>
-
-		<!-- Roadmap note -->
-		<div class="border-t-4 border-black py-16 flex flex-col gap-3" id="coming-soon">
-			<span class="font-mono text-xs tracking-[0.1em] text-[#525252] uppercase">Roadmap</span>
-			<p class="text-[16px] text-[#525252] m-0" style="font-family: 'Source Serif 4', Georgia, serif;">US equities now. Crypto, Forex, live alerts, and trade execution in development.</p>
-		</div>
-
-		<!-- Pricing -->
-		<div class="border-t-4 border-black py-16 flex flex-col gap-6" id="pricing">
-			<span class="font-mono text-xs tracking-[0.1em] text-[#525252] uppercase">Pricing</span>
-			<p class="text-[18px] text-[#525252] m-0" style="font-family: 'Source Serif 4', Georgia, serif;">Free to start — 20 credits on signup, no card required.</p>
-
-			<div class="flex flex-col border border-black">
-				<div class="grid [grid-template-columns:1fr_80px_70px_90px] px-[14px] py-3 font-sans text-[10px] tracking-[0.08em] text-[#525252] bg-bg-surface uppercase border-b border-black max-sm:[grid-template-columns:1fr_60px_55px_72px] max-sm:text-xs max-sm:p-[10px]">
-					<span>Pack</span>
-					<span>Credits</span>
-					<span class="text-right">Price</span>
-					<span class="text-right">Per Credit</span>
-				</div>
-				<div class="grid [grid-template-columns:1fr_80px_70px_90px] px-[14px] py-3 font-mono text-sm text-black border-b border-black max-sm:[grid-template-columns:1fr_60px_55px_72px] max-sm:text-xs max-sm:p-[10px]">
-					<span>Starter</span>
-					<span>50</span>
-					<span class="text-right">$9</span>
-					<span class="text-right text-[#AAAAAA]">$0.18</span>
-				</div>
-				<div class="grid [grid-template-columns:1fr_80px_70px_90px] px-[14px] py-3 font-mono text-sm text-black border-b border-black max-sm:[grid-template-columns:1fr_60px_55px_72px] max-sm:text-xs max-sm:p-[10px]">
-					<span>Pro</span>
-					<span>200</span>
-					<span class="text-right">$19</span>
-					<span class="text-right text-[#AAAAAA]">$0.095</span>
-				</div>
-				<div class="grid [grid-template-columns:1fr_80px_70px_90px] px-[14px] py-3 font-mono text-sm bg-black text-white border-b border-[#333333] max-sm:[grid-template-columns:1fr_60px_55px_72px] max-sm:text-xs max-sm:p-[10px]">
-					<span>Power</span>
-					<span>600</span>
-					<span class="text-right">$49</span>
-					<span class="text-right">$0.082</span>
-				</div>
-			</div>
-
-			<div class="flex flex-col border border-black">
-				<span class="font-mono text-xs tracking-[0.1em] text-[#525252] uppercase px-[14px] py-3 border-b border-black bg-bg-surface">Credit Costs</span>
-				<div class="flex justify-between px-[14px] py-[10px] border-b border-[#E5E5E5] font-sans text-sm">
-					<span class="text-[#525252]">Per Exa search (usage-based)</span>
-					<span class="font-mono text-black whitespace-nowrap ml-4">1 credit</span>
-				</div>
-				<div class="flex justify-between px-[14px] py-[10px] border-b border-[#E5E5E5] font-sans text-sm">
-					<span class="text-[#525252]">AI baseline — 1 ticker</span>
-					<span class="font-mono text-black whitespace-nowrap ml-4">+1 credit</span>
-				</div>
-				<div class="flex justify-between px-[14px] py-[10px] border-b border-[#E5E5E5] font-sans text-sm">
-					<span class="text-[#525252]">AI baseline — 2–5 tickers</span>
-					<span class="font-mono text-black whitespace-nowrap ml-4">+2 credits</span>
-				</div>
-				<div class="flex justify-between px-[14px] py-[10px] font-sans text-sm">
-					<span class="text-[#525252]">AI baseline — 6+ tickers</span>
-					<span class="font-mono text-black whitespace-nowrap ml-4">+3 credits</span>
-				</div>
-			</div>
-
-			<a href="/auth/register" class="inline-block self-start px-6 py-[13px] bg-black text-white font-sans text-xs tracking-[0.1em] uppercase no-underline cursor-pointer transition-colors duration-100 border-2 border-black hover:bg-white hover:text-black">Get started free →</a>
-		</div>
-
 	</div>
-</main>
+
+	<!-- Scroll indicator -->
+	<div class="relative z-10 mt-16">
+		<a href="#how-it-works" class="group flex flex-col items-center gap-4 no-underline">
+			<div class="w-14 h-14 bg-[#4338ca] rounded-full flex items-center justify-center text-white shadow-xl shadow-indigo-200 group-hover:scale-110 transition-transform duration-500">
+				<iconify-icon icon="lucide:arrow-down" class="text-2xl"></iconify-icon>
+			</div>
+			<span class="mono-label text-[10px] text-gray-400">Scroll to Explore</span>
+		</a>
+	</div>
+
+	<!-- Wave transition -->
+	<div class="wave-container" aria-hidden="true">
+		<div class="wave-curve"></div>
+	</div>
+</section>
+
+<!-- ── Methodology ────────────────────────────────────────────────────────── -->
+<section id="how-it-works" class="py-32 px-8 lg:px-24 bg-[#fcfbf9]">
+	<div class="flex flex-col lg:flex-row gap-20 items-start">
+		<!-- Sticky left -->
+		<div class="lg:w-1/3 lg:sticky lg:top-32">
+			<span class="mono-label text-[#4338ca] mb-6 block">How It Works</span>
+			<h2 class="serif-italic text-5xl md:text-6xl mb-8 leading-tight text-[#171717]">
+				Synthesizing intuition<br>into rigid<br>performance data.
+			</h2>
+			<p class="text-gray-500 leading-relaxed mb-8 max-w-sm" style="font-family: 'Inter', sans-serif;">
+				Our engine translates abstract trading concepts into verifiable datasets, allowing you to backtest what others say is 'untestable'.
+			</p>
+			<a href="/backtests" class="inline-flex items-center gap-4 group no-underline">
+				<span class="mono-label border-b border-black pb-1 text-[#171717]">Explore Backtests</span>
+				<iconify-icon icon="lucide:arrow-right" class="group-hover:translate-x-2 transition-transform text-[#171717]"></iconify-icon>
+			</a>
+		</div>
+
+		<!-- Cards -->
+		<div class="lg:w-2/3 flex flex-col gap-8">
+			<div class="p-12 bg-white border border-[#e5e5e5] rounded-3xl premium-transition hover-lift cursor-default">
+				<div class="flex items-start gap-8">
+					<span class="serif-italic text-5xl text-gray-200 shrink-0">01</span>
+					<div>
+						<h3 class="serif-italic text-3xl mb-4 text-[#171717]">Describe your hypothesis</h3>
+						<p class="text-gray-500 leading-relaxed" style="font-family: 'Inter', sans-serif;">Type a plain-English trade idea. The more specific, the better.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="p-12 bg-white border border-[#e5e5e5] rounded-3xl premium-transition hover-lift cursor-default">
+				<div class="flex items-start gap-8">
+					<span class="serif-italic text-5xl text-gray-200 shrink-0">02</span>
+					<div>
+						<h3 class="serif-italic text-3xl mb-4 text-[#171717]">AI scans historical news</h3>
+						<p class="text-gray-500 leading-relaxed" style="font-family: 'Inter', sans-serif;">We scan 10+ years of financial news to identify every time this event happened — with sources.</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="p-12 bg-white border border-[#e5e5e5] rounded-3xl premium-transition hover-lift cursor-default">
+				<div class="flex items-start gap-8">
+					<span class="serif-italic text-5xl text-gray-200 shrink-0">03</span>
+					<div>
+						<h3 class="serif-italic text-3xl mb-4 text-[#171717]">Get a full backtest report</h3>
+						<p class="text-gray-500 leading-relaxed" style="font-family: 'Inter', sans-serif;">Trade simulations, P&amp;L charts, and a sourced event log — in minutes. All trades entered at next market open after news publication.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- ── Intelligence Output ────────────────────────────────────────────────── -->
+<section id="backtests" class="py-32 px-8 lg:px-24 bg-[#171717] text-[#fcfbf9] border-t border-white/5">
+	<div class="max-w-7xl mx-auto flex flex-col gap-12">
+		<!-- Header -->
+		<div class="flex flex-col md:flex-row justify-between items-end border-b border-[#fcfbf9]/10 pb-10 gap-8">
+			<div class="flex flex-col gap-3">
+				<span class="mono-label text-[#4338ca] text-[10px] tracking-[0.4em]">Intelligence Output</span>
+				<h2 class="serif-italic text-4xl md:text-5xl tracking-tight">
+					Strategic Semi-Conductor <span class="opacity-40">Restriction Thesis</span>
+				</h2>
+			</div>
+			<div class="flex gap-12 text-[10px] uppercase tracking-[0.4em] opacity-60" style="font-family: 'JetBrains Mono', monospace;">
+				<div class="flex flex-col">
+					<span class="opacity-30 mb-2">Confidence</span>
+					<span class="text-indigo-400 font-bold">0.94 / 1.0</span>
+				</div>
+				<div class="flex flex-col">
+					<span class="opacity-30 mb-2">Volatility</span>
+					<span>Medium</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+			<!-- Stats -->
+			<div class="lg:col-span-1 flex flex-col gap-8">
+				<div class="p-8 border border-[#fcfbf9]/10 bg-white/5 rounded-2xl">
+					<span class="mono-label text-[9px] opacity-40 block mb-3">Total Return</span>
+					<div class="text-4xl font-bold tracking-tighter" style="font-family: 'JetBrains Mono', monospace;">+184.2%</div>
+					<div class="mt-10 grid grid-cols-2 gap-6">
+						<div>
+							<span class="mono-label text-[9px] opacity-30 block mb-1">Win Rate</span>
+							<span class="text-sm text-indigo-400 font-bold" style="font-family: 'JetBrains Mono', monospace;">75.0%</span>
+						</div>
+						<div>
+							<span class="mono-label text-[9px] opacity-30 block mb-1">Events</span>
+							<span class="text-sm font-bold" style="font-family: 'JetBrains Mono', monospace;">6 FOUND</span>
+						</div>
+					</div>
+				</div>
+				<div class="p-8 border border-[#fcfbf9]/10 rounded-2xl bg-white/[0.02]">
+					<p class="text-[13px] italic opacity-60 leading-relaxed" style="font-family: 'Source Serif 4', Georgia, serif;">
+						"The correlation between trade restriction news and NVDA/AMD performance remains robust across cycle transitions."
+					</p>
+				</div>
+			</div>
+
+			<!-- Table -->
+			<div class="lg:col-span-3 overflow-x-auto">
+				<table class="w-full text-sm border-collapse" style="font-family: 'JetBrains Mono', monospace;">
+					<thead>
+						<tr class="border-b border-[#fcfbf9]/10 text-left opacity-30">
+							<th class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase">Timestamp</th>
+							<th class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase">Asset</th>
+							<th class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase">Position</th>
+							<th class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase text-right">P&amp;L ($)</th>
+							<th class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase text-right">P&amp;L (%)</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-[#fcfbf9]/5">
+						<tr class="hover:bg-white/[0.03] transition-colors duration-300">
+							<td class="py-6 text-gray-500">2022.10.07</td>
+							<td class="py-6 text-indigo-400 font-bold">NVDA</td>
+							<td class="py-6 text-gray-400 text-[11px] tracking-widest uppercase">Long</td>
+							<td class="py-6 text-right font-bold text-indigo-400">+2,240.00</td>
+							<td class="py-6 text-right font-bold text-indigo-400">+22.40%</td>
+						</tr>
+						<tr class="hover:bg-white/[0.03] transition-colors duration-300">
+							<td class="py-6 text-gray-500">2023.08.01</td>
+							<td class="py-6 text-indigo-400 font-bold">AMD</td>
+							<td class="py-6 text-gray-400 text-[11px] tracking-widest uppercase">Long</td>
+							<td class="py-6 text-right font-bold text-indigo-400">+1,180.50</td>
+							<td class="py-6 text-right font-bold text-indigo-400">+11.81%</td>
+						</tr>
+						<tr class="hover:bg-white/[0.03] transition-colors duration-300 opacity-40">
+							<td class="py-6 text-gray-600">2020.03.15</td>
+							<td class="py-6 text-indigo-900 font-bold">INTC</td>
+							<td class="py-6 text-gray-600 text-[11px] tracking-widest uppercase">Long</td>
+							<td class="py-6 text-right text-gray-600">-490.12</td>
+							<td class="py-6 text-right text-gray-600">-4.90%</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div class="mt-12 text-center pt-10 border-t border-[#fcfbf9]/5">
+			<a href="/auth/register" class="inline-flex items-center gap-4 group text-[#fcfbf9]/40 hover:text-[#fcfbf9] transition-all duration-500 no-underline">
+				<span class="mono-label text-[11px] border-b border-transparent group-hover:border-[#fcfbf9] pb-1 tracking-[0.2em]">Initialize Terminal Analysis</span>
+				<iconify-icon icon="lucide:arrow-right" class="group-hover:translate-x-2 transition-transform duration-500 text-[#4338ca]"></iconify-icon>
+			</a>
+		</div>
+	</div>
+</section>
+
+<!-- ── Pricing ────────────────────────────────────────────────────────────── -->
+<section id="pricing" class="py-32 px-8 lg:px-24 bg-[#fcfbf9]">
+	<div class="max-w-4xl mx-auto text-center mb-20">
+		<span class="mono-label text-[#4338ca] mb-4 block">Membership</span>
+		<h2 class="serif-italic text-5xl md:text-6xl mb-8 text-[#171717]">Scale your conviction.</h2>
+		<p class="text-gray-500 text-xl" style="font-family: 'Inter', sans-serif;">Free to start — 20 credits on signup, no card required.</p>
+	</div>
+
+	<div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+		<!-- Starter -->
+		<div class="bg-white border border-[#e5e5e5] p-12 rounded-3xl flex flex-col">
+			<span class="mono-label text-gray-400 block mb-8">Starter</span>
+			<div class="flex items-baseline gap-2 mb-8">
+				<span class="text-5xl font-bold tracking-tight text-[#171717]">$9</span>
+				<span class="text-gray-400" style="font-family: 'Inter', sans-serif;">/pack</span>
+			</div>
+			<ul class="space-y-4 mb-12 flex-1" style="font-family: 'Inter', sans-serif;">
+				<li class="flex items-center gap-3 text-gray-600">
+					<iconify-icon icon="lucide:check" class="text-green-500 shrink-0"></iconify-icon>
+					<span>50 backtest credits</span>
+				</li>
+				<li class="flex items-center gap-3 text-gray-600">
+					<iconify-icon icon="lucide:check" class="text-green-500 shrink-0"></iconify-icon>
+					<span>Natural language processing</span>
+				</li>
+				<li class="flex items-center gap-3 text-gray-600">
+					<iconify-icon icon="lucide:check" class="text-green-500 shrink-0"></iconify-icon>
+					<span>US equity datasets</span>
+				</li>
+			</ul>
+			<a href="/auth/register" class="block w-full text-center py-4 border border-[#171717] rounded-xl mono-label hover:bg-[#171717] hover:text-white transition-all duration-300 no-underline text-[#171717]">
+				Select Pack
+			</a>
+		</div>
+
+		<!-- Pro -->
+		<div class="bg-white border border-[#e5e5e5] p-10 rounded-3xl flex flex-col">
+			<span class="mono-label text-gray-400 block mb-8">Pro</span>
+			<div class="flex items-baseline gap-2 mb-8">
+				<span class="text-5xl font-bold tracking-tight text-[#171717]">$19</span>
+				<span class="text-gray-400" style="font-family: 'Inter', sans-serif;">/pack</span>
+			</div>
+			<ul class="space-y-4 mb-12 flex-1" style="font-family: 'Inter', sans-serif;">
+				<li class="flex items-center gap-3 text-gray-600">
+					<iconify-icon icon="lucide:check" class="text-green-500 shrink-0"></iconify-icon>
+					<span>200 backtest credits</span>
+				</li>
+				<li class="flex items-center gap-3 text-gray-600">
+					<iconify-icon icon="lucide:check" class="text-green-500 shrink-0"></iconify-icon>
+					<span>Full API search access</span>
+				</li>
+				<li class="flex items-center gap-3 text-gray-600">
+					<iconify-icon icon="lucide:check" class="text-green-500 shrink-0"></iconify-icon>
+					<span>Multi-ticker analysis</span>
+				</li>
+			</ul>
+			<a href="/auth/register" class="block w-full text-center py-4 border border-[#171717] rounded-xl mono-label hover:bg-[#171717] hover:text-white transition-all duration-300 no-underline text-[#171717]">
+				Select Pack
+			</a>
+		</div>
+
+		<!-- Power -->
+		<div class="bg-[#171717] text-white p-10 rounded-3xl relative overflow-hidden flex flex-col">
+			<div class="absolute top-0 right-0 p-8">
+				<span class="bg-[#4338ca] text-white text-[10px] mono-label px-3 py-1 rounded-full">Best Value</span>
+			</div>
+			<span class="mono-label text-gray-400 block mb-8">Power</span>
+			<div class="flex items-baseline gap-2 mb-8">
+				<span class="text-5xl font-bold tracking-tight">$49</span>
+				<span class="text-gray-400" style="font-family: 'Inter', sans-serif;">/pack</span>
+			</div>
+			<ul class="space-y-4 mb-12 flex-1" style="font-family: 'Inter', sans-serif;">
+				<li class="flex items-center gap-3 text-gray-300">
+					<iconify-icon icon="lucide:check" class="text-[#4338ca] shrink-0"></iconify-icon>
+					<span>600 backtest credits</span>
+				</li>
+				<li class="flex items-center gap-3 text-gray-300">
+					<iconify-icon icon="lucide:check" class="text-[#4338ca] shrink-0"></iconify-icon>
+					<span>Bulk processing mode</span>
+				</li>
+				<li class="flex items-center gap-3 text-gray-300">
+					<iconify-icon icon="lucide:check" class="text-[#4338ca] shrink-0"></iconify-icon>
+					<span>Priority support</span>
+				</li>
+			</ul>
+			<a href="/auth/register" class="block w-full text-center py-4 bg-[#4338ca] rounded-xl mono-label hover:bg-white hover:text-[#4338ca] transition-all duration-300 no-underline text-white">
+				Select Pack
+			</a>
+		</div>
+	</div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer class="bg-[#171717] text-white pt-32 pb-12 px-8 lg:px-24 relative mt-32 rounded-t-[5rem]">
+	<!-- Radial glow -->
+	<div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-indigo-500/20 blur-[100px] pointer-events-none" aria-hidden="true"></div>
+
+	<div class="max-w-6xl mx-auto">
+		<!-- Quote -->
+		<div class="mb-24 text-center">
+			<p class="serif-italic text-4xl md:text-5xl leading-tight mb-8">
+				"In the intersection of logic and intuition<br class="hidden md:block"> lies the truth of the market."
+			</p>
+			<p class="mono-label text-gray-500">— The Aslan Core</p>
+		</div>
+
+		<!-- 3-col grid -->
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-16 border-t border-white/10 pt-20 mb-16" style="font-family: 'Inter', sans-serif;">
+			<div>
+				<h5 class="mono-label text-xs mb-8 text-gray-500">Platform</h5>
+				<div class="flex flex-col gap-3 text-gray-400">
+					<a href="/#how-it-works" class="hover:text-white transition-colors no-underline">Methodology</a>
+					<a href="/backtests"     class="hover:text-white transition-colors no-underline">Backtests</a>
+					<a href="#pricing"       class="hover:text-white transition-colors no-underline">Pricing</a>
+				</div>
+			</div>
+			<div>
+				<h5 class="mono-label text-xs mb-8 text-gray-500">Legal</h5>
+				<div class="flex flex-col gap-3 text-gray-400">
+					<a href="/disclaimer" class="hover:text-white transition-colors no-underline">Disclaimer</a>
+					<a href="/terms"      class="hover:text-white transition-colors no-underline">Terms</a>
+					<a href="/privacy"    class="hover:text-white transition-colors no-underline">Privacy</a>
+				</div>
+			</div>
+			<div>
+				<h5 class="mono-label text-xs mb-8 text-gray-500">Account</h5>
+				<div class="flex flex-col gap-3 text-gray-400">
+					<a href="/auth/login"    class="hover:text-white transition-colors no-underline">Log in</a>
+					<a href="/auth/register" class="hover:text-white transition-colors no-underline">Create account</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- Bottom bar -->
+		<div class="flex flex-col md:flex-row justify-between items-center gap-6 border-t border-white/10 pt-8">
+			<span class="serif-italic text-2xl">Aslan Finance</span>
+			<span class="mono-label text-[10px] text-gray-500">© 2025 Aslan Finance. All rights reserved.</span>
+		</div>
+	</div>
+</footer>
 
 {#if comingSoonOpen}
 	<WaitlistModal
@@ -269,36 +409,3 @@
 		onclose={() => comingSoonOpen = false}
 	/>
 {/if}
-
-<!-- ── Footer ────────────────────────────────────────────────────────────── -->
-<footer class="border-t-4 border-black py-7 bg-white">
-	<div class="max-w-[1100px] mx-auto px-6 flex items-center gap-3 font-sans text-xs text-[#525252] flex-wrap">
-		<span>© 2025 Aslan Finance</span>
-		<span class="text-[#CCCCCC]">·</span>
-		<a href="/disclaimer" class="text-[#525252] no-underline hover:text-black hover:underline">Disclaimer</a>
-		<span class="text-[#CCCCCC]">·</span>
-		<a href="/terms" class="text-[#525252] no-underline hover:text-black hover:underline">Terms</a>
-		<span class="text-[#CCCCCC]">·</span>
-		<a href="/privacy" class="text-[#525252] no-underline hover:text-black hover:underline">Privacy</a>
-	</div>
-</footer>
-
-<style>
-	/* ── Textarea placeholder ─────────────────────────────────────────────── */
-	textarea::placeholder {
-		color: #BBBBBB;
-		font-style: italic;
-	}
-
-	/* ── Waitlist input placeholder ───────────────────────────────────────── */
-	input[type="email"]::placeholder {
-		color: #AAAAAA;
-		font-style: italic;
-	}
-
-	/* ── cs-grid trailing empty cell fill (odd card count) ───────────────── */
-	.cs-grid::after {
-		content: '';
-		background: #FFFFFF;
-	}
-</style>

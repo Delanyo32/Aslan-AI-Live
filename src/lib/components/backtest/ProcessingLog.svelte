@@ -137,16 +137,16 @@
   {#if oncancelled}
     <div class="flex justify-end">
       <button
-        class="bg-transparent border-none p-0 font-sans text-sm text-text-muted cursor-pointer underline decoration-[#E5E5E5] transition-colors duration-100 hover:text-text-secondary"
+        class="bg-transparent border-none p-0 mono-label text-[10px] text-gray-400 cursor-pointer hover:text-[#4338ca] transition-colors duration-100"
         onclick={handleCancel}
       >Cancel &amp; Edit</button>
     </div>
   {/if}
-  <div class="border-l-[3px] border-black pl-4 flex flex-col gap-1">
+  <div class="border-l-2 border-indigo-100 pl-4 flex flex-col gap-1">
     {#each visibleLines as line}
       <div class="flex gap-3 font-mono text-sm leading-[1.5]">
-        <span class="text-text-muted shrink-0 select-none">{line.time}</span>
-        <span class="text-text-secondary">{line.text}</span>
+        <span class="text-gray-400 shrink-0 select-none">{line.time}</span>
+        <span class="text-[#171717]">{line.text}</span>
       </div>
     {/each}
   </div>
