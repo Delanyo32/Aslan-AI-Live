@@ -30,6 +30,10 @@
 		"typescript": "^6.0.2",
 		"vite": "^8.0.7"
 	},
+	"optionalDependencies": {
+		"@rolldown/binding-linux-x64-gnu": "1.0.0-rc.15",
+		"@rolldown/binding-linux-x64-musl": "1.0.0-rc.15"
+	},
 	"dependencies": {
 		"@cloudflare/workers-types": "^4.20260410.1",
 		"@fontsource/ibm-plex-mono": "^5.2.7",
