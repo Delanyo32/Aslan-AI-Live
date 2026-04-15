@@ -3,7 +3,11 @@ import { confirmRule } from "$lib/server/pipeline-sessions"
 import type { EntryExitRule } from "$lib/types/pipeline"
 import type { RequestHandler } from "./$types"
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return json({ error: "unauthenticated" }, { status: 401 })
+	}
+
 	let body: unknown
 	try {
 		body = await request.json()
