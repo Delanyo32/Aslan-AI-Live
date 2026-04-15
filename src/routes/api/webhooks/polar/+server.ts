@@ -25,6 +25,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const pack    = metadata?.pack as string
 
 		if (userId && !isNaN(credits) && credits > 0) {
+			// Verify user exists before touching any records
+			const [user] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.id, userId)).limit(1)
+			if (!user) {
+				console.error("[polar webhook] unknown user_id:", userId)
+				return new Response(null, { status: 200 }) // ack to avoid Polar retries
+			}
+
 			await db
 				.update(authUser)
 				.set({ credits: sql`COALESCE(${authUser.credits}, 0) + ${credits}` })
