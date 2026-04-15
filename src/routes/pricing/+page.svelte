@@ -49,11 +49,11 @@
 					<span class="text-right">$19</span>
 					<span class="text-right text-text-muted">$0.095</span>
 				</div>
-				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary">
+				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm bg-black text-white">
 					<span>Power</span>
 					<span>600</span>
 					<span class="text-right">$49</span>
-					<span class="text-right text-text-muted">$0.082</span>
+					<span class="text-right text-[#AAAAAA]">$0.082</span>
 				</div>
 			</div>
 
