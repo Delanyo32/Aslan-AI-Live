@@ -102,7 +102,7 @@
 					<button class="font-mono text-[10px] tracking-[0.1em] uppercase text-[#BBBBBB] bg-transparent border-none p-0 cursor-pointer transition-colors duration-100 hover:text-[#525252]" onclick={() => openComingSoon('International equities — coming soon', 'international')}>International</button>
 				</div>
 				<button
-					class="w-full px-6 py-4 bg-black text-white border-none font-sans text-xs tracking-[0.15em] uppercase cursor-pointer transition-colors duration-100 rounded-none hover:enabled:bg-[#222222] disabled:opacity-35 disabled:cursor-not-allowed"
+					class="w-full px-6 py-4 bg-black text-white border-2 border-black font-sans text-xs tracking-[0.15em] uppercase cursor-pointer transition-colors duration-100 rounded-none hover:enabled:bg-white hover:enabled:text-black disabled:opacity-35 disabled:cursor-not-allowed"
 					onclick={() => handleRun(heroQuery)}
 					disabled={!heroQuery.trim()}
 				>

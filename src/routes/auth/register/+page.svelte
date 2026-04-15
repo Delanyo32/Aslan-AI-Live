@@ -58,7 +58,7 @@
         <button
           onclick={handleResend}
           disabled={resendLoading || resendSent}
-          class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] disabled:opacity-50 disabled:cursor-not-allowed border-0"
+          class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-not-allowed border-2 border-black"
         >
           {resendSent ? "Sent ✓" : resendLoading ? "Sending…" : "Resend verification →"}
         </button>
@@ -113,7 +113,7 @@
         <button
           type="submit"
           disabled={loading}
-          class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] disabled:opacity-50 disabled:cursor-not-allowed border-0"
+          class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-not-allowed border-2 border-black"
         >
           {loading ? "Creating account…" : "Create account →"}
         </button>
@@ -124,7 +124,7 @@
         <button
           type="button"
           onclick={handleGoogle}
-          class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-[#222222] border-0"
+          class="w-full py-4 px-8 bg-black text-white font-sans text-xs uppercase tracking-[0.1em] rounded-none cursor-pointer transition-colors duration-100 hover:bg-white hover:text-black border-2 border-black"
         >
           Continue with Google
         </button>
