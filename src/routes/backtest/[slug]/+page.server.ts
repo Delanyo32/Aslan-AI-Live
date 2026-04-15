@@ -6,7 +6,7 @@ export const load: PageServerLoad = async ({ params, cookies, locals, url }) => 
 	const { db } = locals
 
 	// Fetch the report regardless of is_public so owners can view private reports
-	const report = await getReportBySlugIfComplete(db, params.id)
+	const report = await getReportBySlugIfComplete(db, params.slug)
 
 	if (!report) {
 		throw error(404, "Report not found")
@@ -20,13 +20,13 @@ export const load: PageServerLoad = async ({ params, cookies, locals, url }) => 
 	}
 
 	// Determine view context
-	const hasCookie = cookies.get(`report_access_${params.id}`) === "1"
+	const hasCookie = cookies.get(`report_access_${params.slug}`) === "1"
 
 	type ViewContext = "owner" | "email_access" | "public_link"
 	let viewContext: ViewContext
-	if (isOwner || !!locals.user) {
+	if (isOwner) {
 		viewContext = "owner"
-	} else if (hasCookie) {
+	} else if (!!locals.user || hasCookie) {
 		viewContext = "email_access"
 	} else {
 		viewContext = "public_link"
