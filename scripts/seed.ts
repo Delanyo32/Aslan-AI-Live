@@ -2,6 +2,12 @@
 // Run with: bun run db:seed
 // Idempotent — safe to re-run without creating duplicate rows.
 // Bun auto-loads .env.local, so DATABASE_URL is available via process.env.
+//
+// NOTE: This script connects via the `postgres` npm package to a PostgreSQL
+// DATABASE_URL for local development only. It does NOT target Cloudflare D1
+// (the production database). To seed D1 directly, use:
+//   wrangler d1 execute <database-name> --file=<sql-file>
+// Do not run this script against a production D1 database.
 
 import postgres from "postgres"
 
