@@ -12,8 +12,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const { email, interest } = body as { email?: string; interest?: string }
 
-	if (!email) {
-		return json({ error: "email is required" }, { status: 400 })
+	const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+	if (!email || !EMAIL_RE.test(email)) {
+		return json({ error: "invalid_email" }, { status: 400 })
 	}
 
 	await locals.db.insert(waitlist).values({ id: crypto.randomUUID(), email, interest: interest ?? null })
