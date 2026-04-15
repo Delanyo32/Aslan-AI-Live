@@ -43,7 +43,7 @@
 
   <div class="ml-auto flex items-center gap-6">
     <a href="/backtests" class="max-sm:hidden font-sans text-xs tracking-[0.08em] uppercase text-[#525252] no-underline hover:text-black transition-colors duration-100">Explore</a>
-    <a href="/dashboard/credits" class="font-mono text-xs tracking-[0.05em] text-black no-underline hover:underline">⚡ {credits} {creditsLabel}</a>
+    <a href="/dashboard/credits" class="font-mono text-xs tracking-[0.05em] uppercase tracking-[0.08em] text-black no-underline hover:underline">{credits} {creditsLabel}</a>
     <a href="/dashboard/account" class="max-sm:hidden font-sans text-xs tracking-[0.08em] uppercase text-[#525252] no-underline hover:text-black transition-colors duration-100">Account</a>
 
     <button

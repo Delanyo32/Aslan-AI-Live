@@ -271,7 +271,7 @@
 {/if}
 
 <!-- ── Footer ────────────────────────────────────────────────────────────── -->
-<footer class="border-t border-black py-7 bg-white">
+<footer class="border-t-4 border-black py-7 bg-white">
 	<div class="max-w-[1100px] mx-auto px-6 flex items-center gap-3 font-sans text-xs text-[#525252] flex-wrap">
 		<span>© 2025 Aslan Finance</span>
 		<span class="text-[#CCCCCC]">·</span>

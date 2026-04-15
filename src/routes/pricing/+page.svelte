@@ -110,7 +110,7 @@
 	</div>
 </main>
 
-<footer class="border-t border-black py-6">
+<footer class="border-t-4 border-black py-6">
 	<div class="max-w-[1100px] mx-auto px-6 flex items-center gap-3 font-sans text-xs text-text-muted flex-wrap">
 		<span>© 2025 Aslan Finance</span>
 		<span>·</span>
