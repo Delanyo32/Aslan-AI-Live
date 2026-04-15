@@ -203,11 +203,16 @@
       is_rerun:              !!data.rerunSlug,
       source_report_slug:    data.rerunSlug ?? undefined,
     }
-    await fetch('/api/pipeline/run', {
+    const res = await fetch('/api/pipeline/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(paramsObj),
     })
+    if (!res.ok) {
+      errorState = { kind: 'generic', message: 'Failed to start pipeline. Please try again.' }
+      view = 'input'
+      return
+    }
     streamUrl = `/api/pipeline/run?session_id=${sessionId}`
     completedSteps = { ...completedSteps, tickers: true }
     view = 'processing'
