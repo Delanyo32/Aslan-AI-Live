@@ -5,7 +5,7 @@ compatibility_flags    = ["nodejs_compat"]
 
 [[d1_databases]]
 binding        = "DB"
-database_name  = "aslan-ai"
+database_name  = "aslan-ai-live"
 database_id    = "81f2a5e9-5864-41be-9870-19a36fc3b1d6"
 migrations_dir = "src/lib/server/db/migrations/drizzle"
 
