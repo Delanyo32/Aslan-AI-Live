@@ -395,7 +395,7 @@
             <div class="flex items-center gap-3 whitespace-nowrap ml-auto max-sm:ml-auto">
               <a href="/backtest/{report.slug}" class="font-sans text-sm text-text-secondary no-underline hover:text-text-primary transition-colors duration-100">↗ View</a>
               <button
-                class="bg-transparent border-none font-sans text-sm text-text-secondary p-0 cursor-pointer hover:text-accent-loss transition-colors duration-100"
+                class="bg-transparent border-none font-sans text-sm text-text-secondary p-0 cursor-pointer hover:text-black transition-colors duration-100"
                 onclick={() => {
                   pendingDelete = pendingDelete === report.slug ? null : report.slug
                   deleteErrors = { ...deleteErrors, [report.slug]: '' }
@@ -408,7 +408,7 @@
             <div class="flex items-center gap-3 flex-wrap py-2.5 pb-3.5 font-sans text-sm text-text-secondary">
               Delete this backtest? This cannot be undone.
               <button
-                class="bg-transparent border border-accent-loss text-accent-loss font-sans text-xs px-2.5 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-accent-loss hover:text-white disabled:opacity-50"
+                class="bg-transparent border border-black text-text-secondary font-sans text-xs px-2.5 py-1 cursor-pointer rounded-none transition-colors duration-100 hover:bg-black hover:text-white disabled:opacity-50"
                 onclick={() => confirmDelete(report.slug)}
                 disabled={deleteLoading === report.slug}
               >

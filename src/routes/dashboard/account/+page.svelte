@@ -254,7 +254,7 @@
         <p class="font-sans text-sm text-text-secondary m-0 max-w-[480px]">This will sign you out everywhere except this browser. Confirm?</p>
         <div class="flex items-center gap-4">
           <button
-            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[rgba(248,113,113,0.06)] disabled:opacity-40 disabled:cursor-default"
+            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[#F5F5F5] disabled:opacity-40 disabled:cursor-default"
             disabled={revokeLoading}
             onclick={revokeSessions}
           >{revokeLoading ? "Signing out…" : "Yes, sign out"}</button>
@@ -277,7 +277,7 @@
     {#if !deleteConfirming}
       <div>
         <button
-          class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[rgba(248,113,113,0.06)] disabled:opacity-40 disabled:cursor-default"
+          class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[#F5F5F5] disabled:opacity-40 disabled:cursor-default"
           onclick={() => { deleteConfirming = true }}
         >Delete account →</button>
       </div>
@@ -289,7 +289,7 @@
         </p>
         <div class="flex items-center gap-4">
           <button
-            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[rgba(248,113,113,0.06)] disabled:opacity-40 disabled:cursor-default"
+            class="bg-transparent border border-accent-loss text-accent-loss font-sans text-sm py-1.5 px-3.5 cursor-pointer rounded-none transition-colors duration-100 whitespace-nowrap hover:bg-[#F5F5F5] disabled:opacity-40 disabled:cursor-default"
             disabled={deleteLoading}
             onclick={deleteAccount}
           >{deleteLoading ? "Deleting…" : "Delete my account"}</button>

@@ -25,9 +25,9 @@
   --color-text-secondary: #525252;
   --color-text-muted:     #AAAAAA;
 
-  /* Accents — functional data indicators only */
-  --color-accent-gain:    #4ade80;
-  --color-accent-loss:    #f87171;
+  /* Accents — monochrome: bold black for positive, muted gray for negative */
+  --color-accent-gain:    #000000;
+  --color-accent-loss:    #525252;
   --color-accent-neutral: #000000;
 
   /* Font families → font-sans, font-mono, font-serif, font-display */
@@ -65,17 +65,17 @@
   --text-secondary: #525252;
   --text-muted:     #AAAAAA;   /* disabled text, hints, timestamps */
 
-  /* Accents — functional data indicators only, no decorative accent colors */
-  --accent-gain:    #4ade80;
-  --accent-loss:    #f87171;
+  /* Accents — monochrome: bold black for positive, muted gray for negative */
+  --accent-gain:    #000000;
+  --accent-loss:    #525252;
   --accent-neutral: #000000;
 
   /* Charts — adapted for white background */
   --chart-line:     #000000;
   --chart-bench:    #888888;
   --chart-hold:     rgba(0, 0, 0, 0.04);
-  --chart-entry:    #4ade80;
-  --chart-exit:     #f87171;
+  --chart-entry:    #000000;
+  --chart-exit:     #525252;
   --chart-window:   rgba(0, 0, 0, 0.06);
 
   /* Display font */
