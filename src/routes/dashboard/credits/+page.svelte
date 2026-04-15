@@ -31,9 +31,9 @@
   })
 
   const packs = [
-    { key: 'starter', label: 'Starter',  credits: 10,  price: '$9.00',  perCredit: '$0.90/credit' },
-    { key: 'pro',     label: 'Pro',       credits: 30,  price: '$19.00', perCredit: '$0.63/credit' },
-    { key: 'power',   label: 'Power',     credits: 100, price: '$49.00', perCredit: '$0.49/credit' },
+    { key: 'starter', label: 'Starter', credits: 50,  price: '$9.00',  perCredit: '$0.18/credit' },
+    { key: 'pro',     label: 'Pro',     credits: 200, price: '$19.00', perCredit: '$0.095/credit' },
+    { key: 'power',   label: 'Power',   credits: 600, price: '$49.00', perCredit: '$0.082/credit' },
   ] as const
 
   let buying = $state<string | null>(null)

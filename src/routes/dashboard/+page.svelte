@@ -2,21 +2,19 @@
   import { goto } from '$app/navigation'
   import { onMount } from 'svelte'
   import BacktestInput from '$lib/components/backtest/BacktestInput.svelte'
-  import UnderstandPreview from '$lib/components/backtest/UnderstandPreview.svelte'
-  import type { ClarifyAnswers } from '$lib/components/backtest/UnderstandPreview.svelte'
+  import ResearchResults from '$lib/components/backtest/ResearchResults.svelte'
   import TickerConfirmation from '$lib/components/backtest/TickerConfirmation.svelte'
   import ProcessingLog from '$lib/components/backtest/ProcessingLog.svelte'
   import RuleSelector from '$lib/components/backtest/RuleSelector.svelte'
   import QuerySummaryCard from '$lib/components/backtest/QuerySummaryCard.svelte'
-  import UnderstandSummaryCard from '$lib/components/backtest/UnderstandSummaryCard.svelte'
   import TickerSummaryCard from '$lib/components/backtest/TickerSummaryCard.svelte'
   import RuleSummaryCard from '$lib/components/backtest/RuleSummaryCard.svelte'
   import WaitlistModal from '$lib/components/WaitlistModal.svelte'
   import type { PageData } from './$types'
   import type {
     RankedTicker,
-    RawExaEvent,
-    UnderstandResponse,
+    ResearchEvent,
+    ResearchSummary,
     ConfirmedTickerWithDirection
   } from '$lib/types/pipeline'
 
@@ -60,8 +58,8 @@
   // ── Pipeline state machine ──────────────────────────────────────────────────
   type ViewState =
     | 'input'
-    | 'understanding'
-    | 'previewing'
+    | 'researching'
+    | 'previewing_research'
     | 'confirming_tickers'
     | 'processing'
     | 'confirming_rule'
@@ -77,12 +75,14 @@
 
   type CompletedStep = 'query' | 'understanding' | 'tickers' | 'rule'
 
-  let view                 = $state<ViewState>('input')
-  let currentQuery         = $state('')
-  let understandResult     = $state<UnderstandResponse | null>(null)
-  let rankedTickers        = $state<RankedTicker[] | null>(null)
-  let previewArticles      = $state<RawExaEvent[]>([])
-  let confirmedTickers     = $state<ConfirmedTickerWithDirection[] | null>(null)
+  let view                  = $state<ViewState>('input')
+  let currentQuery          = $state('')
+  let researchEvents        = $state<ResearchEvent[]>([])
+  let lowConfidenceEvents   = $state<ResearchEvent[]>([])
+  let researchSummary       = $state<ResearchSummary | null>(null)
+  let researchLogs          = $state<string[]>([])
+  let rankedTickers         = $state<RankedTicker[] | null>(null)
+  let confirmedTickers      = $state<ConfirmedTickerWithDirection[] | null>(null)
   let totalPortfolioValue  = $state(0)
   let sessionId            = $state<string | null>(null)
   let streamUrl            = $state<string | null>(null)
@@ -122,9 +122,9 @@
       : 0
   )
 
-  // Default direction from event spec
+  // Default direction from research summary
   const defaultDirection = $derived<'long' | 'short'>(
-    understandResult?.event_spec.direction_hint === 'short' ? 'short' : 'long'
+    researchSummary?.direction_hint === 'short' ? 'short' : 'long'
   )
 
   // ── Auto-start from URL params (homepage handoff or rerun) ─────────────────
@@ -134,72 +134,81 @@
     }
   })
 
-  // ── Step 1 → Step 2: Understand + detect-events ────────────────────────────
-  async function handleRun(query: string) {
-    currentQuery     = query
-    pendingQuery     = null
-    errorState       = { kind: 'none' }
-    understandError  = ''
-    view             = 'understanding'
+  // ── Step 1 → Step 2: Agentic research via SSE ─────────────────────────────
+  function handleRun(query: string) {
+    currentQuery          = query
+    pendingQuery          = null
+    errorState            = { kind: 'none' }
+    understandError       = ''
+    researchEvents        = []
+    lowConfidenceEvents   = []
+    researchSummary       = null
+    researchLogs          = []
+    view                  = 'researching'
 
-    try {
-      const understandRes = await fetch('/api/pipeline/understand', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ query }),
-      })
-      if (!understandRes.ok) throw new Error('understand failed')
-      const understood: UnderstandResponse = await understandRes.json()
-      understandResult = understood
+    const params = new URLSearchParams({ query })
+    const source = new EventSource(`/api/pipeline/research?${params}`)
 
-      const detectRes = await fetch('/api/pipeline/detect-events', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          event_spec: understood.event_spec,
-          exa_search: understood.exa_search,
-        }),
-      })
-      if (!detectRes.ok) throw new Error('detect-events failed')
-      const detectData = await detectRes.json()
+    source.addEventListener('log', (e) => {
+      const data = JSON.parse((e as MessageEvent).data)
+      researchLogs = [...researchLogs, data.message]
+    })
 
-      rankedTickers   = detectData.ranked_tickers ?? []
-      previewArticles = (detectData.raw_events ?? []).slice(0, 3)
+    source.addEventListener('result', (e) => {
+      source.close()
+      const data = JSON.parse((e as MessageEvent).data)
+      researchEvents      = data.research_events      ?? []
+      lowConfidenceEvents = data.low_confidence_events ?? []
+      rankedTickers       = data.ranked_tickers        ?? []
+      researchSummary     = data.summary               ?? null
+      completedSteps      = { ...completedSteps, query: true }
+      view = 'previewing_research'
+    })
 
-      completedSteps = { ...completedSteps, query: true }
-      view = 'previewing'
-    } catch (e) {
-      console.error('[dashboard] understand/detect failed:', e)
-      understandError = 'Could not analyse your query. Please try again.'
+    source.addEventListener('error', (e) => {
+      source.close()
+      let message = 'Could not research your query. Please try again.'
+      try {
+        const data = JSON.parse((e as MessageEvent).data)
+        if (data.message === 'research_agent_limit_exceeded') {
+          message = 'Research agent hit its search limit. Try a more specific query.'
+        }
+      } catch { /* connection-level error — use default message */ }
+      console.error('[dashboard] research failed:', message)
+      understandError = message
       view = 'input'
-    }
+    })
   }
 
-  // ── Step 2 → Step 3: User confirmed understanding ──────────────────────────
-  function handlePreviewContinue(_answers: ClarifyAnswers) {
+  // ── Step 2 → Step 3: User confirmed research results ──────────────────────
+  function handleResearchContinue() {
     completedSteps = { ...completedSteps, understanding: true }
     view = 'confirming_tickers'
   }
 
   // ── Step 3 → Processing: Tickers + direction + portfolio confirmed ──────────
-  function handleTickersConfirmed(payload: { tickers: ConfirmedTickerWithDirection[]; totalPortfolioValue: number }) {
-    if (!understandResult) return
+  async function handleTickersConfirmed(payload: { tickers: ConfirmedTickerWithDirection[]; totalPortfolioValue: number }) {
     confirmedTickers    = payload.tickers
     totalPortfolioValue = payload.totalPortfolioValue
     pendingTickerPayload = null
     sessionId           = crypto.randomUUID()
 
     const paramsObj = {
-      query:                currentQuery,
-      session_id:           sessionId,
-      event_spec:           understandResult.event_spec,
-      exa_search:           understandResult.exa_search,
-      confirmed_tickers:    payload.tickers,
+      query:                 currentQuery,
+      session_id:            sessionId,
+      research_events:       researchEvents,
+      research_summary:      researchSummary,
+      confirmed_tickers:     payload.tickers,
       total_portfolio_value: payload.totalPortfolioValue,
-      is_rerun:             !!data.rerunSlug,
-      source_report_slug:   data.rerunSlug ?? undefined,
+      is_rerun:              !!data.rerunSlug,
+      source_report_slug:    data.rerunSlug ?? undefined,
     }
-    streamUrl = `/api/pipeline/run?params=${encodeURIComponent(JSON.stringify(paramsObj))}`
+    await fetch('/api/pipeline/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paramsObj),
+    })
+    streamUrl = `/api/pipeline/run?session_id=${sessionId}`
     completedSteps = { ...completedSteps, tickers: true }
     view = 'processing'
   }
@@ -264,18 +273,20 @@
     editingStep  = null
   }
 
-  async function handleRerunFromQuery() {
+  function handleRerunFromQuery() {
     if (!pendingQuery) return
     // Clear all downstream state
-    understandResult = null
-    rankedTickers    = null
-    previewArticles  = []
-    confirmedTickers = null
+    researchEvents      = []
+    lowConfidenceEvents = []
+    researchSummary     = null
+    researchLogs        = []
+    rankedTickers       = null
+    confirmedTickers    = null
     entryExitSuggestions = null
     pendingTickerPayload = null
     completedSteps = { query: false, understanding: false, tickers: false, rule: false }
     editingStep = null
-    await handleRun(pendingQuery)
+    handleRun(pendingQuery)
   }
 
   // ── Back-navigation: edit tickers ───────────────────────────────────────────
@@ -432,12 +443,12 @@
           onCancel={handleCancelEdit}
         />
 
-        {#if completedSteps.understanding && understandResult}
-          <UnderstandSummaryCard
-            understand={understandResult}
-            articles={previewArticles}
-            stale={staleUnderstanding}
-          />
+        {#if completedSteps.understanding && researchSummary}
+          <div class="py-2 px-0 flex flex-col gap-0.5" class:opacity-50={staleUnderstanding}>
+            <p class="font-sans text-xs text-text-muted m-0 uppercase tracking-[0.08em]">RESEARCH</p>
+            <p class="font-sans text-sm text-text-secondary m-0">{researchSummary.event_description}</p>
+            <p class="font-mono text-xs text-text-muted m-0">{researchEvents.filter(e => e.condition_met).length} tradeable event{researchEvents.filter(e => e.condition_met).length !== 1 ? 's' : ''} found</p>
+          </div>
         {/if}
 
         {#if completedSteps.tickers && confirmedTickers && rankedTickers}
@@ -556,14 +567,24 @@
         <BacktestInput onrun={handleRun} initialValue={currentQuery} />
       {/if}
 
-    {:else if view === 'understanding'}
-      <p class="font-sans text-sm text-[#AAAAAA] m-0">Analysing your hypothesis…</p>
+    {:else if view === 'researching'}
+      <div class="flex flex-col gap-2">
+        <p class="font-sans text-sm text-[#AAAAAA] m-0">Researching your hypothesis…</p>
+        {#if researchLogs.length > 0}
+          <div class="flex flex-col gap-0.5 border-l-2 border-[#E5E5E5] pl-3">
+            {#each researchLogs as logLine}
+              <p class="font-mono text-xs text-text-muted m-0">{logLine}</p>
+            {/each}
+          </div>
+        {/if}
+      </div>
 
-    {:else if view === 'previewing' && understandResult}
-      <UnderstandPreview
-        understand={understandResult}
-        articles={previewArticles}
-        oncontinue={handlePreviewContinue}
+    {:else if view === 'previewing_research'}
+      <ResearchResults
+        events={researchEvents}
+        lowConfidence={lowConfidenceEvents}
+        rankedTickers={rankedTickers ?? []}
+        oncontinue={handleResearchContinue}
         onrefine={handleRefineQuery}
       />
 

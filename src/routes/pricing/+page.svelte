@@ -23,7 +23,7 @@
 
 		<div class="pb-10">
 			<h1 class="font-display italic font-normal text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.1] text-text-primary m-0 mb-4">Pricing</h1>
-			<p class="font-sans text-base text-text-secondary m-0">Free to start — 3 credits on signup, no card required.</p>
+			<p class="font-sans text-base text-text-secondary m-0">Free to start — 20 credits on signup, no card required.</p>
 		</div>
 
 		<!-- Credit packs -->
@@ -39,21 +39,21 @@
 				</div>
 				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
 					<span>Starter</span>
-					<span>10</span>
+					<span>50</span>
 					<span class="text-right">$9</span>
-					<span class="text-right text-text-muted">$0.90</span>
+					<span class="text-right text-text-muted">$0.18</span>
 				</div>
 				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
 					<span>Pro</span>
-					<span>30</span>
+					<span>200</span>
 					<span class="text-right">$19</span>
-					<span class="text-right text-text-muted">$0.63</span>
+					<span class="text-right text-text-muted">$0.095</span>
 				</div>
 				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary">
 					<span>Power</span>
-					<span>100</span>
+					<span>600</span>
 					<span class="text-right">$49</span>
-					<span class="text-right text-text-muted">$0.49</span>
+					<span class="text-right text-text-muted">$0.082</span>
 				</div>
 			</div>
 
@@ -66,20 +66,20 @@
 
 			<div class="flex flex-col">
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">Basic backtest (1 ticker, ≤5 events)</span>
+					<span class="text-text-secondary">Per Exa search (usage-based)</span>
 					<span class="font-mono text-text-primary whitespace-nowrap ml-4">1 credit</span>
 				</div>
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">Standard backtest (1 ticker, 6–20 events)</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">2 credits</span>
+					<span class="text-text-secondary">AI baseline — 1 ticker</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">+1 credit</span>
 				</div>
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">Multi-stock backtest (2–5 tickers)</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">3 credits</span>
+					<span class="text-text-secondary">AI baseline — 2–5 tickers</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">+2 credits</span>
 				</div>
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">Multi-stock backtest (6–10 tickers)</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">5 credits</span>
+					<span class="text-text-secondary">AI baseline — 6+ tickers</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">+3 credits</span>
 				</div>
 				<div class="flex justify-between py-[9px] font-sans text-sm">
 					<span class="text-text-secondary">Re-run with adjusted parameters</span>
@@ -98,7 +98,7 @@
 		<div class="border-t border-black py-10 flex flex-col gap-5">
 			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">FREE TIER</span>
 			<p class="font-sans text-base text-text-secondary leading-relaxed m-0">
-				Every account starts with 3 free credits — no credit card required.
+				Every account starts with 20 free credits — no credit card required.
 				Run your first backtest immediately after signing up.
 			</p>
 			<a

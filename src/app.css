@@ -43,6 +43,12 @@
   --text-lg:   18px;
   --text-xl:   24px;
   --text-2xl:  36px;
+  --text-3xl:  2rem;
+  --text-4xl:  2.5rem;
+  --text-5xl:  3.5rem;
+  --text-6xl:  4.5rem;
+  --text-7xl:  6rem;
+  --text-8xl:  8rem;
 }
 
 /* Design system — color variables */

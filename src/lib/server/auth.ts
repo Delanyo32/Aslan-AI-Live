@@ -73,7 +73,7 @@ export function createAuth(db: ReturnType<typeof createDb>) {
       additionalFields: {
         credits: {
           type:         "number",
-          defaultValue: 3,
+          defaultValue: 20,
           required:     false
         }
       }

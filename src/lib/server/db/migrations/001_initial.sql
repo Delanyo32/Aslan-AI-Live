@@ -7,7 +7,7 @@ CREATE TABLE users (
   password_hash  TEXT,
   google_id      TEXT UNIQUE,
   name           TEXT,
-  credits        INTEGER DEFAULT 3,
+  credits        INTEGER DEFAULT 20,
   created_at     TIMESTAMPTZ DEFAULT now()
 );
 

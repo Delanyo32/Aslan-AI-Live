@@ -13,14 +13,18 @@ const productIds: Record<string, string> = {
 }
 
 const creditsByPack: Record<string, number> = {
-	starter: 10,
-	pro: 30,
-	power: 100,
+	starter: 50,
+	pro:     200,
+	power:   600,
 }
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
 		return json({ error: "Unauthorized" }, { status: 401 })
+	}
+
+	if (!PUBLIC_BASE_URL) {
+		return json({ error: "PUBLIC_BASE_URL is not configured" }, { status: 500 })
 	}
 
 	const body = await request.json()

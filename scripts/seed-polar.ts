@@ -14,9 +14,9 @@ if (!accessToken) {
 const polar = new Polar({ accessToken })
 
 const packs = [
-	{ name: "Starter Pack", description: "10 backtest credits", credits: 10, amountCents: 900 },
-	{ name: "Pro Pack", description: "30 backtest credits", credits: 30, amountCents: 1900 },
-	{ name: "Power Pack", description: "100 backtest credits", credits: 100, amountCents: 4900 },
+	{ name: "Starter Pack", description: "50 backtest credits",  credits: 50,  amountCents: 900  },
+	{ name: "Pro Pack",     description: "200 backtest credits", credits: 200, amountCents: 1900 },
+	{ name: "Power Pack",   description: "600 backtest credits", credits: 600, amountCents: 4900 },
 ]
 
 // ── Fetch existing products ────────────────────────────────────────────────
@@ -27,7 +27,7 @@ const existingByName = new Map(page.result.items.map((p) => [p.name, p.id]))
 
 console.log(`Found ${existingByName.size} existing product(s).`)
 
-// ── Create or reuse products ───────────────────────────────────────────────
+// ── Create or update products ──────────────────────────────────────────────
 
 const envLines: string[] = []
 
@@ -36,8 +36,9 @@ for (const pack of packs) {
 
 	if (existingByName.has(pack.name)) {
 		const id = existingByName.get(pack.name)!
+		await polar.products.update({ id, productUpdate: { description: pack.description } })
 		envLines.push(`${envKey}=${id}`)
-		console.log(`↳ Skipped (already exists) ${pack.name}: ${id}`)
+		console.log(`✓ Updated ${pack.name}: ${id}`)
 		continue
 	}
 

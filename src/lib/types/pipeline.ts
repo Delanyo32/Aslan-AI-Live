@@ -77,6 +77,20 @@ export type RawExaEvent = {
 	sources: { url: string; title: string; highlight: string | null }[]
 }
 
+export type ResearchEvent = RawExaEvent & {
+	condition_met: boolean
+	condition_evidence: string        // one-line evidence snippet
+	condition_confidence: "HIGH" | "MEDIUM" | "LOW"
+}
+
+export type ResearchSummary = {
+	event_type: string
+	event_description: string
+	direction_hint: string
+	date_from: string
+	date_to: string
+}
+
 export type RankedTicker = {
 	symbol: string
 	name?: string // company name, populated server-side from Alpaca assets API

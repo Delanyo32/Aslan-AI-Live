@@ -5,6 +5,7 @@
   import PortfolioChart from '$lib/components/charts/PortfolioChart.svelte';
   import TeaserChart from '$lib/components/charts/TeaserChart.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
+  import { Tooltip } from 'bits-ui';
 
   interface Props {
     report: BacktestReportRow;
@@ -382,7 +383,7 @@
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <!-- TOP NAV — unified navigation bar                                       -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div class="flex items-center justify-between gap-3 py-[14px] border-b-2 border-black bg-white">
+<div class="flex items-center justify-between gap-3 py-[14px] border-b-4 border-black bg-white">
   <div class="flex items-center gap-3 flex-wrap">
     {#if viewContext === 'owner'}
       <a href={backTo} class="font-sans text-xs uppercase tracking-[0.08em] text-[#525252] no-underline transition-colors duration-100 hover:text-black">← {backTo === '/dashboard' ? 'Dashboard' : 'Home'}</a>
@@ -397,7 +398,7 @@
         onclick={copyShareLink}
       >{shareText}</button>
       <span class="text-[#CCCCCC]" aria-hidden="true">·</span>
-      <span class="font-sans text-xs tracking-[0.05em]" class:text-amber-400={!currentIsPublic} class:text-[#525252]={currentIsPublic}>
+      <span class="font-sans text-xs tracking-[0.05em] text-[#525252]">
         {currentIsPublic ? 'Public' : 'Private'}
       </span>
       <button
@@ -420,7 +421,7 @@
 <!-- DISCLAIMER — informational notice, separate from navigation            -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div
-  class="sticky top-0 z-50 w-full px-5 py-3 bg-[#FAFAFA] border-l-[3px] border-amber-400 font-sans text-sm text-[#525252] leading-relaxed
+  class="sticky top-0 z-50 w-full px-5 py-3 bg-[#FAFAFA] border-l-[3px] border-black font-sans text-sm text-[#525252] leading-relaxed
          sm:block
          max-sm:flex max-sm:items-center max-sm:gap-1"
   class:max-sm:flex-col={disclaimerExpanded}
@@ -450,9 +451,12 @@
 {#if teaserMode}
 <div class="py-12 pb-16 flex flex-col gap-6">
 
+  <!-- Editorial label -->
+  <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252]">Backtest Result · {report.query.slice(0, 60)}{report.query.length > 60 ? '…' : ''}</p>
+
   <!-- Headline P&L -->
   <h1
-    class="font-display italic text-[2.5rem] font-normal leading-[1.2] tracking-[-0.02em]"
+    class="font-display italic text-6xl max-md:text-5xl max-sm:text-4xl font-normal leading-[1.1] tracking-tighter"
     class:text-accent-gain={summary.total_return_pct >= 0}
     class:text-accent-loss={summary.total_return_pct < 0}
   >
@@ -579,7 +583,7 @@
   <!-- OWNER STATE NOTICES ─────────────────────────────────────────────── -->
   {#if viewContext === 'owner'}
   {#if justMadePrivate}
-  <div class="border-l-[3px] border-amber-400 px-3 py-1.5 font-sans text-sm text-amber-400">
+  <div class="border-l-[3px] border-[#E5E5E5] px-3 py-1.5 font-sans text-sm text-[#525252]">
     This report is now private — only you can view it.
   </div>
   {/if}
@@ -661,15 +665,15 @@
   <section class="py-8">
     <div class="flex items-center gap-2.5 mb-4">
       <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-0">AI-Generated Research Narrative</p>
-      <span class="font-mono text-[10px] uppercase tracking-[0.1em] text-amber-400 border border-amber-400 px-1.5 py-px leading-[1.6]">AI Generated</span>
+      <span class="font-mono text-[10px] uppercase tracking-widest bg-black text-white px-2 py-px leading-[1.6]">AI Generated</span>
     </div>
     <div class="max-w-[720px] flex flex-col gap-4">
       {#if report.research_narrative}
         {#each report.research_narrative.split('\n\n').filter(p => p.trim()) as para}
-          <p class="text-base text-black leading-[1.7]" style="font-family:'Source Serif 4',Georgia,serif;">{para}</p>
+          <p class="text-lg text-black leading-[1.75]" style="font-family:'Source Serif 4',Georgia,serif;">{para}</p>
         {/each}
       {:else}
-        <p class="text-base leading-[1.7] text-text-muted italic" style="font-family:'Source Serif 4',Georgia,serif;">Research narrative is being generated…</p>
+        <p class="text-lg leading-[1.75] text-text-muted italic" style="font-family:'Source Serif 4',Georgia,serif;">Research narrative is being generated…</p>
       {/if}
     </div>
   </section>
@@ -690,7 +694,7 @@
       >{low_confidence_events.length} low-confidence event{low_confidence_events.length !== 1 ? 's' : ''} excluded — Show →</button>
       {:else}
       <button
-        class="bg-transparent border border-amber-400 text-amber-400 font-sans text-sm px-[10px] py-1 cursor-pointer rounded-none transition-colors duration-100"
+        class="bg-transparent border border-black text-[#525252] font-sans text-sm px-[10px] py-1 cursor-pointer rounded-none transition-colors duration-100 hover:text-black"
         onclick={() => showLow = false}
       >← Hide low-confidence events</button>
       {/if}
@@ -723,9 +727,9 @@
     <div class="flex items-center gap-3 mb-2">
       <span class="font-mono text-sm text-black">{item.date}</span>
       {#if item.confidence === 'HIGH'}
-        <span class="font-mono text-xs uppercase tracking-[0.08em] px-1.5 py-px text-black border border-black">{item.confidence}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-px bg-black text-white border border-black">{item.confidence}</span>
       {:else}
-        <span class="font-mono text-xs uppercase tracking-[0.08em] px-1.5 py-px text-amber-400 border border-amber-400">{item.confidence}</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-px text-[#525252] border border-[#525252]">{item.confidence}</span>
       {/if}
     </div>
     <p class="text-base text-black max-w-[720px] mb-2 leading-[1.6]" style="font-family:'Source Serif 4',Georgia,serif;">{item.description}</p>
@@ -788,27 +792,47 @@
   <section class="py-8">
     <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">Aggregate Performance</p>
 
-    <p class="font-display italic text-[2.25rem] font-normal text-black leading-[1.2] mb-1 tracking-[-0.02em]">Final portfolio value: ${summary.final_portfolio_value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+    <p class="font-display italic text-5xl max-sm:text-4xl font-normal text-black leading-[1.1] mb-1 tracking-tighter">Final portfolio value: ${summary.final_portfolio_value.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
     <p class="font-sans text-sm text-[#525252] mb-6">(started at ${summary.starting_capital.toLocaleString('en-US')})</p>
 
     <div class="grid grid-cols-4 max-md:grid-cols-2 max-sm:grid-cols-2 gap-px bg-black border border-black mb-6">
-      <div class="bg-white p-4 flex flex-col gap-1">
-        <span class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252]">Total return</span>
-        <span class="font-mono text-lg leading-[1.3]" class:text-accent-gain={summary.total_return_pct >= 0} class:text-accent-loss={summary.total_return_pct < 0}>
+      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
+        <Tooltip.Provider delayDuration={200}>
+          <Tooltip.Root>
+            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Total return</Tooltip.Trigger>
+            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Net P&L as a percentage of starting capital</Tooltip.Content>
+          </Tooltip.Root>
+        </Tooltip.Provider>
+        <span class="font-mono text-lg leading-[1.3] group-hover:text-white transition-colors duration-100" class:text-accent-gain={summary.total_return_pct >= 0} class:text-accent-loss={summary.total_return_pct < 0}>
           {fmtPnlPct(summary.total_return_pct * 100)}
         </span>
       </div>
-      <div class="bg-white p-4 flex flex-col gap-1">
-        <span class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252]">Win rate</span>
-        <span class="font-mono text-lg leading-[1.3] text-black">{(summary.win_rate * 100).toFixed(0)}%</span>
+      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
+        <Tooltip.Provider delayDuration={200}>
+          <Tooltip.Root>
+            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Win rate</Tooltip.Trigger>
+            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Percentage of trades that closed profitably</Tooltip.Content>
+          </Tooltip.Root>
+        </Tooltip.Provider>
+        <span class="font-mono text-lg leading-[1.3] text-black group-hover:text-white transition-colors duration-100">{(summary.win_rate * 100).toFixed(0)}%</span>
       </div>
-      <div class="bg-white p-4 flex flex-col gap-1">
-        <span class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252]">Max drawdown</span>
-        <span class="font-mono text-lg leading-[1.3] text-accent-loss">−{(summary.max_drawdown * 100).toFixed(1)}%</span>
+      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
+        <Tooltip.Provider delayDuration={200}>
+          <Tooltip.Root>
+            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Max drawdown</Tooltip.Trigger>
+            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Largest peak-to-trough portfolio decline</Tooltip.Content>
+          </Tooltip.Root>
+        </Tooltip.Provider>
+        <span class="font-mono text-lg leading-[1.3] text-accent-loss group-hover:text-white transition-colors duration-100">−{(summary.max_drawdown * 100).toFixed(1)}%</span>
       </div>
-      <div class="bg-white p-4 flex flex-col gap-1">
-        <span class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252]">Avg hold</span>
-        <span class="font-mono text-lg leading-[1.3] text-black">{summary.avg_hold_days.toFixed(0)} days</span>
+      <div class="group bg-white p-4 flex flex-col gap-1 transition-colors duration-100 hover:bg-black cursor-default">
+        <Tooltip.Provider delayDuration={200}>
+          <Tooltip.Root>
+            <Tooltip.Trigger class="font-mono text-xs uppercase tracking-[0.08em] text-[#525252] group-hover:text-[#AAAAAA] transition-colors duration-100 text-left w-fit">Avg hold</Tooltip.Trigger>
+            <Tooltip.Content class="bg-black text-white font-sans text-xs px-3 py-2 border border-[#333] z-50" sideOffset={6}>Mean number of calendar days per trade</Tooltip.Content>
+          </Tooltip.Root>
+        </Tooltip.Provider>
+        <span class="font-mono text-lg leading-[1.3] text-black group-hover:text-white transition-colors duration-100">{summary.avg_hold_days.toFixed(0)} days</span>
       </div>
     </div>
 
@@ -874,10 +898,10 @@
   <!-- ⑦ Trade Log Table ────────────────────────────────────────────────── -->
   <section class="py-8">
     <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252] mb-4">All Trades</p>
-    <div class="overflow-x-auto">
-      <table class="w-full border-collapse font-mono text-sm text-black whitespace-nowrap">
+    <div class="overflow-x-auto border border-black">
+      <table class="w-full border-collapse font-mono text-sm text-black">
         <thead>
-          <tr>
+          <tr class="bg-[#F5F5F5] border-b border-black">
             {#each [
               ['id',         '#'],
               ['date',       'DATE'],
@@ -893,28 +917,28 @@
               ['vsSpy',      'vs SPY'],
             ] as [col, label]}
             <th
-              class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal sticky top-[47px] z-10 cursor-pointer select-none hover:text-black"
+              class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2.5 font-normal whitespace-nowrap cursor-pointer select-none hover:text-black transition-colors duration-100"
               onclick={() => sortBy(col)}
               title="Sort by {label}"
             >{label}{sortIndicator(col)}</th>
             {/each}
           </tr>
         </thead>
-        <tbody>
-          {#each sortedTrades as t, i}
-          <tr class="group">
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.id}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.date}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.ticker}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.dir}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.entryDate}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPrice(t.entryPrice)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.exitDate}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPrice(t.exitPrice)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.days}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={t.pnlDollar >= 0} class:text-accent-loss={t.pnlDollar < 0}>{fmtPnlDollar(t.pnlDollar)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={t.pnlPct >= 0} class:text-accent-loss={t.pnlPct < 0}>{fmtPnlPct(t.pnlPct)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5] transition-colors duration-100 group-hover:bg-[#F5F5F5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={t.vsSpy >= 0} class:text-accent-loss={t.vsSpy < 0}>{fmtPnlPct(t.vsSpy)}</td>
+        <tbody class="divide-y divide-black">
+          {#each sortedTrades as t}
+          <tr class="transition-colors duration-100 hover:bg-[#F5F5F5]">
+            <td class="px-3 py-2 whitespace-nowrap">{t.id}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{t.date}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{t.ticker}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{t.dir}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{t.entryDate}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{fmtPrice(t.entryPrice)}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{t.exitDate}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{fmtPrice(t.exitPrice)}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{t.days}</td>
+            <td class="px-3 py-2 whitespace-nowrap" class:text-accent-gain={t.pnlDollar >= 0} class:text-accent-loss={t.pnlDollar < 0}>{fmtPnlDollar(t.pnlDollar)}</td>
+            <td class="px-3 py-2 whitespace-nowrap" class:text-accent-gain={t.pnlPct >= 0} class:text-accent-loss={t.pnlPct < 0}>{fmtPnlPct(t.pnlPct)}</td>
+            <td class="px-3 py-2 whitespace-nowrap" class:text-accent-gain={t.vsSpy >= 0} class:text-accent-loss={t.vsSpy < 0}>{fmtPnlPct(t.vsSpy)}</td>
           </tr>
           {/each}
         </tbody>
@@ -946,9 +970,9 @@
     >{shareText}</button>
 
     <p class="font-sans text-sm text-[#525252]">
-      Set a live alert for this event — <span class="text-amber-400">Coming Soon.</span>
+      Set a live alert for this event — <span class="text-[#525252]">Coming Soon.</span>
       <!-- svelte-ignore a11y_invalid_attribute -->
-      <a href="#" class="text-amber-400 no-underline hover:text-black transition-colors duration-100" onclick={(e) => { e.preventDefault(); openWaitlist('Live alerts — coming soon', 'live-alerts'); }}>Join the waitlist →</a>
+      <a href="#" class="text-black underline decoration-[#E5E5E5] hover:decoration-black transition-colors duration-100" onclick={(e) => { e.preventDefault(); openWaitlist('Live alerts — coming soon', 'live-alerts'); }}>Join the waitlist →</a>
     </p>
 
     <p class="font-sans text-sm">

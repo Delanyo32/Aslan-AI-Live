@@ -2,34 +2,70 @@ import type { RequestHandler } from "./$types"
 import { model } from "$lib/server/ai"
 import { complete, type Context } from "@mariozechner/pi-ai"
 import type {
-	EventSpec,
-	ExaSearch,
+	ResearchEvent,
+	ResearchSummary,
 	ConfirmedTickerWithDirection,
 	ImpactWindow,
 	OHLCVBar,
 	EventOccurrence
 } from "$lib/types/pipeline"
-import { searchEventsForTicker, deduplicateEvents, buildEventOccurrences } from "$lib/server/exa-events"
 import { fetchOHLCV } from "$lib/server/alpaca-market-data"
 import { calculateImpactWindow } from "$lib/server/impact-window"
 import { runSimulation } from "$lib/server/trade-simulation"
-import { waitForRule } from "$lib/server/pipeline-sessions"
+import { waitForRule, storePipelineParams, getPipelineParams } from "$lib/server/pipeline-sessions"
 import { createReport, setResearchNarrative } from "$lib/server/db/reports"
 import { authUser, creditTransactions } from "$lib/server/db/schema"
 import { eq, and, sql } from "drizzle-orm"
+import { runResearchAgentForTicker } from "$lib/server/exa-events"
 
-function computeCreditCost(isRerun: boolean, tickerCount: number, eventCount: number): number {
+function computeCreditCost(isRerun: boolean, tickerCount: number, exaSearchCount: number): number {
 	if (isRerun) return 1
-	if (tickerCount >= 6) return 5
-	if (tickerCount >= 2) return 3
-	if (eventCount  > 5) return 2
-	return 1
+	const aiBaseline = tickerCount >= 6 ? 3 : tickerCount >= 2 ? 2 : 1
+	return aiBaseline + exaSearchCount
+}
+
+async function runConcurrent<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
+	const results: T[] = []
+	const queue = [...tasks]
+	const workers = Array.from({ length: Math.min(limit, tasks.length) }, async () => {
+		while (queue.length) {
+			const task = queue.shift()!
+			results.push(await task())
+		}
+	})
+	await Promise.all(workers)
+	return results
 }
 
 function addCalendarDays(isoDate: string, days: number): string {
 	const d = new Date(isoDate)
 	d.setUTCDate(d.getUTCDate() + days)
 	return d.toISOString().slice(0, 10)
+}
+
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return new Response(JSON.stringify({ error: "unauthorized" }), {
+			status: 401,
+			headers: { "Content-Type": "application/json" },
+		})
+	}
+
+	let body: { session_id?: string }
+	try {
+		body = await request.json()
+	} catch {
+		return new Response("Invalid JSON", { status: 400 })
+	}
+
+	if (!body.session_id) {
+		return new Response("session_id required", { status: 400 })
+	}
+
+	storePipelineParams(body.session_id, body)
+	return new Response(JSON.stringify({ ok: true }), {
+		headers: { "Content-Type": "application/json" },
+	})
 }
 
 export const GET: RequestHandler = async ({ url, locals }) => {
@@ -40,32 +76,32 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		})
 	}
 
-	const paramsStr = url.searchParams.get("params")
-	if (!paramsStr) {
-		return new Response("Missing params", { status: 400 })
+	const session_id = url.searchParams.get("session_id")
+	if (!session_id) {
+		return new Response("Missing session_id", { status: 400 })
 	}
 
 	let params: {
 		query: string
 		session_id: string
-		event_spec: EventSpec
-		exa_search: ExaSearch
+		research_events: ResearchEvent[]
+		research_summary: ResearchSummary
 		confirmed_tickers: ConfirmedTickerWithDirection[]
 		total_portfolio_value: number
 		is_rerun?: boolean
 		source_report_slug?: string
 	}
 
-	try {
-		params = JSON.parse(decodeURIComponent(paramsStr))
-	} catch {
-		return new Response("Invalid params JSON", { status: 400 })
+	const stored = getPipelineParams(session_id)
+	if (!stored) {
+		return new Response("Session not found or expired", { status: 404 })
 	}
+	params = stored as typeof params
 
-	const { query, session_id, event_spec, exa_search, confirmed_tickers, total_portfolio_value } = params
+	const { query, research_events, research_summary, confirmed_tickers, total_portfolio_value } = params
 
-	if (!query || !session_id || !event_spec || !exa_search || !confirmed_tickers?.length) {
-		return new Response("query, session_id, event_spec, exa_search, and confirmed_tickers are required", { status: 400 })
+	if (!query || !session_id || !research_events?.length || !research_summary || !confirmed_tickers?.length) {
+		return new Response("query, session_id, research_events, research_summary, and confirmed_tickers are required", { status: 400 })
 	}
 
 	const { db } = locals
@@ -94,42 +130,71 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 
 			try {
-				// ── Stage 1: Per-ticker event search ───────────────────────────────────
-				log(`Searching for events across ${confirmed_tickers.length} ticker${confirmed_tickers.length !== 1 ? 's' : ''}...`)
+				// ── Per-ticker research agents ─────────────────────────────────────────
+				let totalExaSearches = 0
+				let mergedEvents = research_events
 
-				const tickerEventResults = await Promise.allSettled(
-					confirmed_tickers.map(async (t) => {
-						const events = await searchEventsForTicker(t.symbol, t.name, event_spec, exa_search)
-						return { ticker: t, events }
+				if (!params.is_rerun) {
+					log(`Running per-ticker research agents for ${confirmed_tickers.length} ticker${confirmed_tickers.length !== 1 ? 's' : ''}…`)
+
+					const tickerTasks = confirmed_tickers.map(t => async () => {
+						const result = await runResearchAgentForTicker(
+							t.symbol,
+							query,
+							research_summary.date_from,
+							research_summary.date_to,
+							(msg) => log(msg)
+						)
+						totalExaSearches += result.searchCount
+						return { ticker: t.symbol, ...result }
 					})
-				)
 
-				// Build per-ticker occurrences; warn but continue if a ticker has no events
+					const tickerResults = await runConcurrent(tickerTasks, 3)
+
+					// Merge per-ticker events into research_events, deduplicating on (event_date, primary ticker)
+					const seenKeys = new Set(
+						research_events.map(e => `${e.event_date}|${e.tickers_mentioned[0] ?? ""}`)
+					)
+					const additionalEvents: ResearchEvent[] = tickerResults.flatMap(r =>
+						r.events.filter(e => {
+							const key = `${e.event_date}|${r.ticker}`
+							if (seenKeys.has(key)) return false
+							seenKeys.add(key)
+							return true
+						})
+					)
+					mergedEvents = [...research_events, ...additionalEvents]
+					log(`Per-ticker research complete — ${additionalEvents.length} additional event${additionalEvents.length !== 1 ? "s" : ""} found (${totalExaSearches} Exa search${totalExaSearches !== 1 ? "es" : ""} total)`)
+				}
+
+				// ── Stage 1: Build occurrences from pre-researched events ─────────────
+				log(`Building event occurrences for ${confirmed_tickers.length} ticker${confirmed_tickers.length !== 1 ? 's' : ''}...`)
+
+				const conditionMetEvents = mergedEvents.filter(e => e.condition_met)
 				const allOccurrences: EventOccurrence[] = []
 				const skippedTickers: string[] = []
 
-				for (const result of tickerEventResults) {
-					if (result.status === "rejected") {
-						console.error("[pipeline/run] ticker search error:", result.reason)
+				for (const t of confirmed_tickers) {
+					const tickerEvents = conditionMetEvents.filter(e =>
+						e.tickers_mentioned.includes(t.symbol)
+					)
+					// Fall back to all condition-met events if none mention this ticker explicitly
+					const eventsToUse = tickerEvents.length > 0 ? tickerEvents : conditionMetEvents
+					if (eventsToUse.length === 0) {
+						skippedTickers.push(t.symbol)
+						log(`No events available for ${t.symbol} — skipping`)
 						continue
 					}
-					const { ticker, events } = result.value
-					if (events.length === 0) {
-						skippedTickers.push(ticker.symbol)
-						log(`No events found for ${ticker.symbol} — skipping`)
-						continue
-					}
-					// Each occurrence is specific to this ticker
-					for (const e of events) {
+					for (const e of eventsToUse) {
 						allOccurrences.push({
-							event_date: e.event_date,
+							event_date:  e.event_date,
 							description: e.description,
-							confidence: e.confidence,
-							tickers: [ticker.symbol],
-							sources: e.sources
+							confidence:  e.confidence,
+							tickers:     [t.symbol],
+							sources:     e.sources
 						})
 					}
-					log(`Found ${events.length} event${events.length !== 1 ? 's' : ''} for ${ticker.symbol}`)
+					log(`${eventsToUse.length} event${eventsToUse.length !== 1 ? 's' : ''} mapped to ${t.symbol}`)
 				}
 
 				if (allOccurrences.length === 0) {
@@ -264,7 +329,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				const creditCost = computeCreditCost(
 					params.is_rerun === true,
 					confirmedSymbols.length,
-					allOccurrences.length
+					params.is_rerun ? 0 : totalExaSearches
 				)
 				const deducted = await db
 					.update(authUser)
@@ -289,17 +354,35 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				}
 
 				// ── Persist to DB ──────────────────────────────────────────────────────
+				// Synthesize event_spec and exa_search from research_summary for backward compat
+				const syntheticEventSpec = {
+					event_type:        research_summary.event_type,
+					event_description: research_summary.event_description,
+					geography:         "US",
+					direction_hint:    research_summary.direction_hint,
+					date_range: {
+						start: research_summary.date_from,
+						end:   research_summary.date_to
+					}
+				}
+				const syntheticExaSearch = {
+					primary_query:      research_summary.event_description,
+					additional_queries: [],
+					date_from:          research_summary.date_from,
+					date_to:            research_summary.date_to
+				}
+
 				const report = await createReport(db, {
 					query,
-					event_spec,
-					exa_search,
+					event_spec:           syntheticEventSpec,
+					exa_search:           syntheticExaSearch,
 					rule,
-					confirmed_tickers: confirmedSymbols,
-					occurrences: allOccurrences,
+					confirmed_tickers:    confirmedSymbols,
+					occurrences:          allOccurrences,
 					impact_windows,
-					backtest_result: result,
-					low_confidence_events: [],
-					user_id: user.id,
+					backtest_result:      result,
+					low_confidence_events: research_events.filter(e => e.confidence === "LOW"),
+					user_id:              user.id,
 				})
 
 				// ── Record credit transaction ─────────────────────────────────────────

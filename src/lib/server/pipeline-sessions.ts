@@ -3,6 +3,7 @@ import type { EntryExitRule } from "$lib/types/pipeline"
 type PendingSession = {
 	tickerResolve?: (tickers: string[]) => void
 	ruleResolve?: (rule: EntryExitRule) => void
+	params?: unknown
 	createdAt: number
 }
 
@@ -74,4 +75,19 @@ export function confirmRule(sessionId: string, rule: EntryExitRule): boolean {
 	if (!session?.ruleResolve) return false
 	session.ruleResolve(rule)
 	return true
+}
+
+// Called by POST /api/pipeline/run — stores large params so the GET SSE handler
+// can retrieve them by session_id instead of putting them in the URL query string.
+export function storePipelineParams(sessionId: string, params: unknown): void {
+	purgeExpired()
+	const existing = sessions.get(sessionId)
+	sessions.set(sessionId, {
+		...(existing ?? { createdAt: Date.now() }),
+		params,
+	})
+}
+
+export function getPipelineParams(sessionId: string): unknown | undefined {
+	return sessions.get(sessionId)?.params
 }
