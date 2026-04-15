@@ -33,13 +33,13 @@
   /* Font families → font-sans, font-mono, font-serif, font-display */
   --font-sans:    'IBM Plex Sans', system-ui, sans-serif;
   --font-mono:    'IBM Plex Mono', monospace;
-  --font-serif:   'Instrument Serif', serif;
+  --font-serif:   'Source Serif 4', Georgia, serif;
   --font-display: 'Playfair Display', Georgia, serif;
 
   /* Type scale */
   --text-xs:   11px;
   --text-sm:   13px;
-  --text-base: 15px;
+  --text-base: 16px;
   --text-lg:   18px;
   --text-xl:   24px;
   --text-2xl:  36px;
@@ -84,7 +84,7 @@
   /* Type scale — extended MM range */
   --text-xs:   11px;
   --text-sm:   13px;
-  --text-base: 15px;
+  --text-base: 16px;
   --text-lg:   18px;
   --text-xl:   24px;
   --text-2xl:  36px;
@@ -107,7 +107,7 @@
     color-scheme: light;
     background: #FFFFFF;
     color: #000000;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-family: 'Source Serif 4', Georgia, serif;
     font-size: var(--text-base);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
