@@ -92,13 +92,6 @@ export async function getReportBySlug(db: Db, slug: string): Promise<BacktestRep
 	return (row as unknown as BacktestReportRow) ?? null
 }
 
-export async function updateReportStatus(db: Db, id: string, status: string): Promise<void> {
-	await db
-		.update(backtestReports)
-		.set({ status, updated_at: new Date() })
-		.where(eq(backtestReports.id, id))
-}
-
 export async function setResearchNarrative(db: Db, id: string, narrative: string): Promise<void> {
 	await db
 		.update(backtestReports)
