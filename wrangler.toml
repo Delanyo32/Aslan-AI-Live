@@ -14,20 +14,7 @@ migrations_dir = "src/lib/server/db/migrations/drizzle"
 #                 OPENROUTER_API_KEY, ALPACA_API_KEY, ALPACA_API_SECRET, EXA_API_KEY,
 #                 POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET, POLAR_PRODUCT_STARTER,
 #                 POLAR_PRODUCT_PRO, POLAR_PRODUCT_POWER
-[observability]
-enabled = false
-head_sampling_rate = 1
 
-[observability.logs]
-enabled = true
-head_sampling_rate = 1
-persist = true
-invocation_logs = true
-
-[observability.traces]
-enabled = false
-persist = true
-head_sampling_rate = 1
 
 [vars]
 PUBLIC_BASE_URL          = "https://aslanfinance.app"
