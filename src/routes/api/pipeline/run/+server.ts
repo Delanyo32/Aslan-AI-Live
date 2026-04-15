@@ -17,6 +17,8 @@ import { createReport, setResearchNarrative } from "$lib/server/db/reports"
 import { authUser, creditTransactions } from "$lib/server/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { runResearchAgentForTicker } from "$lib/server/exa-events"
+import { addCalendarDays } from "$lib/server/date-utils"
+import { ENTRY_EXIT_SUGGESTIONS } from "$lib/server/pipeline-config"
 
 function computeCreditCost(isRerun: boolean, tickerCount: number, exaSearchCount: number): number {
 	if (isRerun) return 1
@@ -35,12 +37,6 @@ async function runConcurrent<T>(tasks: (() => Promise<T>)[], limit: number): Pro
 	})
 	await Promise.all(workers)
 	return results
-}
-
-function addCalendarDays(isoDate: string, days: number): string {
-	const d = new Date(isoDate)
-	d.setUTCDate(d.getUTCDate() + days)
-	return d.toISOString().slice(0, 10)
 }
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -245,36 +241,12 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 					}
 				}
 
-				const entry_exit_suggestions = {
-					aggressive: {
-						label: "Aggressive",
-						entry_rule: "Market open on event day",
-						exit_rule: "Close on peak CAR date",
-						description:
-							"Catches maximum upside but requires same-day execution. Best for fast-moving events."
-					},
-					moderate: {
-						label: "Moderate",
-						entry_rule: "Market open next trading day after event",
-						exit_rule: "Close on impact window end date (CAR decay or mean reversion)",
-						description:
-							"Rides the full event effect with a 1-day entry buffer to avoid gap-open noise."
-					},
-					conservative: {
-						label: "Conservative",
-						entry_rule: "Market open 2 trading days after event",
-						exit_rule: "Close 5 trading days after event",
-						description:
-							"Avoids gap-open noise; trades the sustained trend only. Fixed 5-day hold."
-					}
-				}
-
 				// Register rule wait BEFORE emitting suggestions.
 				const rulePromise = waitForRule(session_id)
 
 				emit("entry_exit_suggestions", {
 					type: "entry_exit_suggestions",
-					suggestions: entry_exit_suggestions
+					suggestions: ENTRY_EXIT_SUGGESTIONS
 				})
 
 				let rule

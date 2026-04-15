@@ -1,14 +1,10 @@
 import { json } from "@sveltejs/kit"
 import { fetchOHLCV } from "$lib/server/alpaca-market-data"
 import { calculateImpactWindow } from "$lib/server/impact-window"
+import { addCalendarDays } from "$lib/server/date-utils"
+import { ENTRY_EXIT_SUGGESTIONS } from "$lib/server/pipeline-config"
 import type { EventOccurrence, ImpactWindow, OHLCVBar } from "$lib/types/pipeline"
 import type { RequestHandler } from "./$types"
-
-function addCalendarDays(isoDate: string, days: number): string {
-	const d = new Date(isoDate)
-	d.setUTCDate(d.getUTCDate() + days)
-	return d.toISOString().slice(0, 10)
-}
 
 export const POST: RequestHandler = async ({ request }) => {
 	let occurrences: EventOccurrence[]
@@ -71,29 +67,5 @@ export const POST: RequestHandler = async ({ request }) => {
 	// 3 entry/exit presets — rule descriptions, not pinned dates, because every
 	// occurrence has different peak_car_date and impact_end values (applied per-trade
 	// in the simulation step).
-	const entry_exit_suggestions = {
-		aggressive: {
-			label: "Aggressive",
-			entry_rule: "Market open on event day",
-			exit_rule: "Close on peak CAR date",
-			description:
-				"Catches maximum upside but requires same-day execution. Best for fast-moving events."
-		},
-		moderate: {
-			label: "Moderate",
-			entry_rule: "Market open next trading day after event",
-			exit_rule: "Close on impact window end date (CAR decay or mean reversion)",
-			description:
-				"Rides the full event effect with a 1-day entry buffer to avoid gap-open noise."
-		},
-		conservative: {
-			label: "Conservative",
-			entry_rule: "Market open 2 trading days after event",
-			exit_rule: "Close 5 trading days after event",
-			description:
-				"Avoids gap-open noise; trades the sustained trend only. Fixed 5-day hold."
-		}
-	}
-
-	return json({ impact_windows, entry_exit_suggestions })
+	return json({ impact_windows, entry_exit_suggestions: ENTRY_EXIT_SUGGESTIONS })
 }
