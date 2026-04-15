@@ -41,8 +41,17 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		)
 		.orderBy(desc(backtestReports.created_at))
 
+	// Coerce null values from json_extract() when JSON paths are missing or schema changes
+	const safeReports = reports.map(r => ({
+		...r,
+		ticker_count:     r.ticker_count     ?? 0,
+		total_return_pct: r.total_return_pct ?? 0,
+		date_from:        r.date_from        ?? "",
+		date_to:          r.date_to          ?? "",
+	}))
+
 	return {
-		reports,
+		reports: safeReports,
 		pendingQuery: url.searchParams.get('query') ?? null,
 		rerunSlug:    url.searchParams.get('rerun')  ?? null,
 	}
