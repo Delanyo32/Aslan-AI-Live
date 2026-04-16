@@ -357,7 +357,7 @@ export async function runResearchAgent(
 	ranked_tickers: RankedTicker[]
 	summary: ResearchSummary
 }> {
-	const MAX_SEARCHES = 15
+	const MAX_SEARCHES = 50
 	let searchCount = 0
 
 	const exaSearchTool: Tool = {
@@ -537,7 +537,7 @@ export async function runResearchAgentForTicker(
 	low_confidence_events: ResearchEvent[]
 	searchCount: number
 }> {
-	const MAX_SEARCHES = 10
+	const MAX_SEARCHES = 30
 	let searchCount = 0
 
 	const exaSearchTool: Tool = {

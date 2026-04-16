@@ -50,6 +50,7 @@
     deleteLoading = null
     if (!res.ok) {
       deleteErrors[slug] = 'Could not delete. Try again.'
+      toast.error('Could not delete. Try again.')
       return
     }
     reports = reports.filter(r => r.slug !== slug)
@@ -173,7 +174,7 @@
           message = 'Research agent hit its search limit. Try a more specific query.'
         }
       } catch { /* connection-level error — use default message */ }
-      console.error('[dashboard] research failed:', message)
+      toast.error(message)
       understandError = message
       view = 'input'
     })
@@ -207,6 +208,7 @@
     })
     if (!res.ok) {
       errorState = { kind: 'generic', message: 'Failed to start pipeline. Please try again.' }
+      toast.error('Failed to start pipeline. Please try again.')
       view = 'input'
       return
     }
@@ -242,18 +244,23 @@
   function handleError(d: { message: string; stage: string; required?: number; available?: number }) {
     if (d.message === 'no_events' || d.message === 'no_events_for_confirmed_tickers') {
       errorState = { kind: 'no_events' }
+      toast.error('No tradeable events found. Try refining your query.')
     } else if (d.message === 'no_trades') {
       errorState = { kind: 'no_trades' }
+      toast.error('No trades generated with this strategy.')
     } else if (d.message === 'insufficient_credits') {
       errorState = { kind: 'insufficient_credits', required: d.required ?? 1, available: d.available ?? 0 }
+      toast.error('Insufficient credits to run this backtest.')
     } else if (
       d.message === 'exa_search_failed'  ||
       d.message === 'price_fetch_failed' ||
       d.message === 'ai_api_error'
     ) {
       errorState = { kind: 'api_error', stage: d.stage }
+      toast.error(d.stage === 'detection' ? 'News search failed. Try again.' : 'Price data unavailable. Try again.')
     } else {
       errorState = { kind: 'generic', message: d.message }
+      toast.error(d.message || 'Something went wrong. Please try again.')
     }
     view = 'input'
   }

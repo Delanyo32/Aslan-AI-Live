@@ -2,8 +2,9 @@ import { createAuth } from "$lib/server/auth"
 import { createDb } from "$lib/server/db/client"
 import { svelteKitHandler } from "better-auth/svelte-kit"
 import { building } from "$app/environment"
-import type { Handle } from "@sveltejs/kit"
+import type { Handle, HandleServerError } from "@sveltejs/kit"
 import { redirect } from "@sveltejs/kit"
+import { logger } from "$lib/server/logger"
 
 export const handle: Handle = async ({ event, resolve }) => {
   const db   = createDb(event.platform!.env.DB)
@@ -37,4 +38,14 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   return resolve(event)
+}
+
+export const handleError: HandleServerError = ({ error, event, status, message }) => {
+  logger.error('unhandled_server_error', {
+    status,
+    path: event.url.pathname,
+    method: event.request.method,
+    error: logger.serializeError(error),
+  })
+  return { message }
 }

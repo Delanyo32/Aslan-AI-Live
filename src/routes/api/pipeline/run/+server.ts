@@ -1,4 +1,5 @@
 import type { RequestHandler } from "./$types"
+import { logger } from "$lib/server/logger"
 import { model } from "$lib/server/ai"
 import { complete, type Context } from "@mariozechner/pi-ai"
 import type {
@@ -145,7 +146,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 						return { ticker: t.symbol, ...result }
 					})
 
-					const tickerResults = await runConcurrent(tickerTasks, 3)
+					const tickerResults = await runConcurrent(tickerTasks, 10)
 
 					// Merge per-ticker events into research_events, deduplicating on (event_date, primary ticker)
 					const seenKeys = new Set(
@@ -397,12 +398,12 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 						await setResearchNarrative(db, report.id, narrative)
 					}
 				} catch (e) {
-					console.error("[pipeline/run] narrative generation failed (non-fatal):", e)
+					logger.warn('pipeline_narrative_failed', { stage: 'narrative', error: logger.serializeError(e) })
 				}
 
 				emit("result", { type: "result", slug: report.slug })
 			} catch (e) {
-				console.error("[pipeline/run] unhandled error:", e)
+				logger.error('pipeline_run_failed', { stage: 'unknown', error: logger.serializeError(e) })
 				try {
 					emit("error", { type: "error", message: "internal_error", stage: "unknown" })
 				} catch {
