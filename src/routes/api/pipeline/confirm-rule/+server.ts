@@ -45,7 +45,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "rule.position_size must be a positive number" }, { status: 400 })
 	}
 
-	const ok = confirmRule(b.session_id, rule)
+	const ok = await confirmRule(b.session_id, rule, locals.db)
 	if (!ok) {
 		return json({ error: "session_not_found_or_expired" }, { status: 404 })
 	}

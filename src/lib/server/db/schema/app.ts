@@ -58,3 +58,13 @@ export const creditTransactions = sqliteTable("credit_transactions", {
 	stripe_payment_id: text("stripe_payment_id"),
 	created_at:        integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
+
+export const pipelineSessions = sqliteTable("pipeline_sessions", {
+	id:                     text("id").primaryKey(),
+	user_id:                text("user_id").notNull(),
+	params_json:            text("params_json").notNull(),
+	confirmed_rule_json:    text("confirmed_rule_json"),
+	confirmed_tickers_json: text("confirmed_tickers_json"),
+	created_at:             integer("created_at").notNull(),
+	expires_at:             integer("expires_at").notNull(),
+})

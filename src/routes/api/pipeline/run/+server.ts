@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return new Response("session_id required", { status: 400 })
 	}
 
-	storePipelineParams(body.session_id, body)
+	await storePipelineParams(body.session_id, locals.user.id, body, locals.db)
 	return new Response(JSON.stringify({ ok: true }), {
 		headers: { "Content-Type": "application/json" },
 	})
@@ -88,7 +88,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		source_report_slug?: string
 	}
 
-	const stored = getPipelineParams(session_id)
+	const stored = await getPipelineParams(session_id, locals.user.id, locals.db)
 	if (!stored) {
 		return new Response("Session not found or expired", { status: 404 })
 	}
@@ -242,7 +242,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				}
 
 				// Register rule wait BEFORE emitting suggestions.
-				const rulePromise = waitForRule(session_id)
+				const rulePromise = waitForRule(session_id, db)
 
 				emit("entry_exit_suggestions", {
 					type: "entry_exit_suggestions",

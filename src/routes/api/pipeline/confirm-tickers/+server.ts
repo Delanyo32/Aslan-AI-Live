@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: "confirmed_tickers must be a non-empty array" }, { status: 400 })
 	}
 
-	const ok = confirmTickers(b.session_id, b.confirmed_tickers as string[])
+	const ok = await confirmTickers(b.session_id, b.confirmed_tickers as string[], locals.db)
 	if (!ok) {
 		return json({ error: "session_not_found_or_expired" }, { status: 404 })
 	}

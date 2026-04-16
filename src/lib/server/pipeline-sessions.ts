@@ -1,93 +1,114 @@
+import { eq, lt } from "drizzle-orm"
+import { pipelineSessions } from "$lib/server/db/schema"
 import type { EntryExitRule } from "$lib/types/pipeline"
+import type { createDb } from "$lib/server/db/client"
 
-type PendingSession = {
-	tickerResolve?: (tickers: string[]) => void
-	ruleResolve?: (rule: EntryExitRule) => void
-	params?: unknown
-	createdAt: number
+type Db = ReturnType<typeof createDb>
+
+const SESSION_TTL_MS = 15 * 60 * 1000
+const TIMEOUT_MS     = 5  * 60 * 1000
+const POLL_INTERVAL  = 1_500
+
+function sleep(ms: number) {
+	return new Promise<void>(r => setTimeout(r, ms))
 }
 
-// Module-level Map — shared across all requests in the same Node.js process.
-const sessions = new Map<string, PendingSession>()
+// Called by POST /api/pipeline/run — persists params to D1 so the GET SSE handler
+// can retrieve them by session_id regardless of which Worker instance handles each request.
+export async function storePipelineParams(
+	sessionId: string,
+	userId: string,
+	params: unknown,
+	db: Db,
+): Promise<void> {
+	const now = Date.now()
+	await db.delete(pipelineSessions).where(lt(pipelineSessions.expires_at, now))
+	await db.insert(pipelineSessions).values({
+		id:          sessionId,
+		user_id:     userId,
+		params_json: JSON.stringify(params),
+		created_at:  now,
+		expires_at:  now + SESSION_TTL_MS,
+	})
+}
 
-const TIMEOUT_MS = 5 * 60 * 1000
-const TTL_MS = 10 * 60 * 1000
+export async function getPipelineParams(
+	sessionId: string,
+	_userId: string,
+	db: Db,
+): Promise<unknown | null> {
+	const rows = await db
+		.select({ params_json: pipelineSessions.params_json })
+		.from(pipelineSessions)
+		.where(eq(pipelineSessions.id, sessionId))
+		.limit(1)
+	return rows[0]?.params_json ? JSON.parse(rows[0].params_json) : null
+}
 
-function purgeExpired(): void {
-	const cutoff = Date.now() - TTL_MS
-	for (const [id, s] of sessions) {
-		if (s.createdAt < cutoff) sessions.delete(id)
+// Polls D1 every 1.5s until confirmed_rule_json is set (by POST /api/pipeline/confirm-rule).
+// Works across Worker instances — no shared memory required.
+export async function waitForRule(
+	sessionId: string,
+	db: Db,
+	timeoutMs = TIMEOUT_MS,
+): Promise<EntryExitRule> {
+	const deadline = Date.now() + timeoutMs
+	while (Date.now() < deadline) {
+		const rows = await db
+			.select({ confirmed_rule_json: pipelineSessions.confirmed_rule_json })
+			.from(pipelineSessions)
+			.where(eq(pipelineSessions.id, sessionId))
+			.limit(1)
+		if (rows[0]?.confirmed_rule_json) {
+			return JSON.parse(rows[0].confirmed_rule_json) as EntryExitRule
+		}
+		await sleep(POLL_INTERVAL)
 	}
+	throw new Error("timeout")
 }
 
-// Called by the SSE endpoint before emitting ticker_candidates.
-// Registers the resolve callback so confirm-tickers can wake it up.
-export function waitForTickers(sessionId: string): Promise<string[]> {
-	return new Promise((resolve, reject) => {
-		purgeExpired()
-
-		const timer = setTimeout(() => {
-			sessions.delete(sessionId)
-			reject(new Error("timeout"))
-		}, TIMEOUT_MS)
-
-		const existing = sessions.get(sessionId)
-		sessions.set(sessionId, {
-			...(existing ?? { createdAt: Date.now() }),
-			tickerResolve: (tickers) => {
-				clearTimeout(timer)
-				resolve(tickers)
-			}
-		})
-	})
+export async function waitForTickers(
+	sessionId: string,
+	db: Db,
+	timeoutMs = TIMEOUT_MS,
+): Promise<string[]> {
+	const deadline = Date.now() + timeoutMs
+	while (Date.now() < deadline) {
+		const rows = await db
+			.select({ confirmed_tickers_json: pipelineSessions.confirmed_tickers_json })
+			.from(pipelineSessions)
+			.where(eq(pipelineSessions.id, sessionId))
+			.limit(1)
+		if (rows[0]?.confirmed_tickers_json) {
+			return JSON.parse(rows[0].confirmed_tickers_json) as string[]
+		}
+		await sleep(POLL_INTERVAL)
+	}
+	throw new Error("timeout")
 }
 
-// Called by the SSE endpoint before emitting entry_exit_suggestions.
-export function waitForRule(sessionId: string): Promise<EntryExitRule> {
-	return new Promise((resolve, reject) => {
-		const timer = setTimeout(() => {
-			sessions.delete(sessionId)
-			reject(new Error("timeout"))
-		}, TIMEOUT_MS)
-
-		const existing = sessions.get(sessionId)
-		sessions.set(sessionId, {
-			...(existing ?? { createdAt: Date.now() }),
-			ruleResolve: (rule) => {
-				clearTimeout(timer)
-				resolve(rule)
-			}
-		})
-	})
+export async function confirmRule(
+	sessionId: string,
+	rule: EntryExitRule,
+	db: Db,
+): Promise<boolean> {
+	const result = await db
+		.update(pipelineSessions)
+		.set({ confirmed_rule_json: JSON.stringify(rule) })
+		.where(eq(pipelineSessions.id, sessionId))
+		.returning({ id: pipelineSessions.id })
+	return result.length > 0
 }
 
-// Called by POST /api/pipeline/confirm-tickers — resolves the waiting SSE promise.
-export function confirmTickers(sessionId: string, tickers: string[]): boolean {
-	const session = sessions.get(sessionId)
-	if (!session?.tickerResolve) return false
-	session.tickerResolve(tickers)
-	return true
-}
-
-// Called by POST /api/pipeline/confirm-rule — resolves the waiting SSE promise.
-export function confirmRule(sessionId: string, rule: EntryExitRule): boolean {
-	const session = sessions.get(sessionId)
-	if (!session?.ruleResolve) return false
-	session.ruleResolve(rule)
-	return true
-}
-
-// Called by POST /api/pipeline/run — stores large params so the GET SSE handler
-// can retrieve them by session_id instead of putting them in the URL query string.
-export function storePipelineParams(sessionId: string, params: unknown): void {
-	purgeExpired()
-	const existing = sessions.get(sessionId)
-	sessions.set(sessionId, {
-		...(existing ?? { createdAt: Date.now() }),
-		params,
-	})
-}
-
-export function getPipelineParams(sessionId: string): unknown | undefined {
-	return sessions.get(sessionId)?.params
+export async function confirmTickers(
+	sessionId: string,
+	tickers: string[],
+	db: Db,
+): Promise<boolean> {
+	const result = await db
+		.update(pipelineSessions)
+		.set({ confirmed_tickers_json: JSON.stringify(tickers) })
+		.where(eq(pipelineSessions.id, sessionId))
+		.returning({ id: pipelineSessions.id })
+	return result.length > 0
 }
