@@ -367,22 +367,14 @@
 			<p class="mono-label text-gray-500">— The Aslan Core</p>
 		</div>
 
-		<!-- 3-col grid -->
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-16 border-t border-white/10 pt-20 mb-16" style="font-family: 'Inter', sans-serif;">
+		<!-- 2-col grid -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-16 border-t border-white/10 pt-20 mb-16" style="font-family: 'Inter', sans-serif;">
 			<div>
 				<h5 class="mono-label text-xs mb-8 text-gray-500">Platform</h5>
 				<div class="flex flex-col gap-3 text-gray-400">
 					<a href="/#how-it-works" class="hover:text-white transition-colors no-underline">Methodology</a>
 					<a href="/backtests"     class="hover:text-white transition-colors no-underline">Backtests</a>
 					<a href="#pricing"       class="hover:text-white transition-colors no-underline">Pricing</a>
-				</div>
-			</div>
-			<div>
-				<h5 class="mono-label text-xs mb-8 text-gray-500">Legal</h5>
-				<div class="flex flex-col gap-3 text-gray-400">
-					<a href="/disclaimer" class="hover:text-white transition-colors no-underline">Disclaimer</a>
-					<a href="/terms"      class="hover:text-white transition-colors no-underline">Terms</a>
-					<a href="/privacy"    class="hover:text-white transition-colors no-underline">Privacy</a>
 				</div>
 			</div>
 			<div>
