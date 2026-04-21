@@ -4,7 +4,6 @@
   import type { BacktestReportRow, RawExaEvent } from '$lib/types/pipeline';
   import EventChart from '$lib/components/charts/EventChart.svelte';
   import PortfolioChart from '$lib/components/charts/PortfolioChart.svelte';
-  import TeaserChart from '$lib/components/charts/TeaserChart.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
   import { Tooltip } from 'bits-ui';
 
@@ -24,12 +23,6 @@
   // ── Low-confidence events toggle ──────────────────────────────────────────
   let showLow = $state(false);
 
-  // ── Gate state ────────────────────────────────────────────────────────────
-  let teaserMode  = $state(viewContext === 'public_link');
-  let email       = $state('');
-  let emailError  = $state('');
-  let alreadyUsed = $state(false);
-  let gateBtn     = $state('Unlock Report →');
   let shareText   = $state('Copy share link  ↗');
 
   // ── Waitlist modal ────────────────────────────────────────────────────────
@@ -116,20 +109,6 @@
   const tradeClosePoints = $derived.by(() => {
     const exitDates = new Set(allTrades.map(t => t.exit_date));
     return report.backtest_result.portfolio_series.filter(p => exitDates.has(p.date));
-  });
-
-  // Teaser headline return string
-  const teaserReturnStr = $derived.by(() => {
-    const pct  = summary.total_return_pct;
-    const sign = pct >= 0 ? '+' : '−';
-    return `${sign}${(Math.abs(pct) * 100).toFixed(0)}% across ${summary.event_count} events`;
-  });
-
-  // Date range from portfolio series for teaser sub-stats
-  const teaserDateRange = $derived.by(() => {
-    const series = report.backtest_result.portfolio_series;
-    if (series.length === 0) return '—';
-    return `${fmtMonth(series[0].date)} – ${fmtMonth(series[series.length - 1].date)}`;
   });
 
   // Date range from occurrences for params block
@@ -303,46 +282,6 @@
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  async function handleEmailSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    emailError = '';
-
-    if (!EMAIL_RE.test(email)) {
-      emailError = 'Enter a valid email address';
-      return;
-    }
-
-    gateBtn = 'Opening report…';
-
-    try {
-      const res = await fetch(`/api/reports/${report.slug}/capture-email`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email }),
-      });
-
-      if (res.status === 409) {
-        alreadyUsed = true;
-        gateBtn     = 'Unlock Report →';
-        return;
-      }
-      if (!res.ok) {
-        emailError = 'Something went wrong — please try again';
-        gateBtn    = 'Unlock Report →';
-        return;
-      }
-    } catch {
-      emailError = 'Something went wrong — please try again';
-      gateBtn    = 'Unlock Report →';
-      return;
-    }
-
-    teaserMode = false;
-    window.scrollTo({ top: 0 });
-  }
-
   async function copyShareLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -442,12 +381,10 @@
   </div>
 
   <div class="flex items-center gap-4 flex-wrap justify-end">
-    {#if !teaserMode}
-      <div class="hidden lg:flex items-center gap-2 px-4 py-2 bg-white border border-[#e5e5e5] rounded-full">
-        <span class="w-2 h-2 bg-green-500 rounded-full pulse-status"></span>
-        <span class="mono-label text-[10px] tracking-widest text-gray-500">Analysis Complete</span>
-      </div>
-    {/if}
+    <div class="hidden lg:flex items-center gap-2 px-4 py-2 bg-white border border-[#e5e5e5] rounded-full">
+      <span class="w-2 h-2 bg-green-500 rounded-full pulse-status"></span>
+      <span class="mono-label text-[10px] tracking-widest text-gray-500">Analysis Complete</span>
+    </div>
 
     {#if viewContext === 'owner'}
       <button onclick={copyShareLink} class="mono-label text-[10px] text-gray-500 hover:text-black transition-colors cursor-pointer bg-transparent border-none">{shareText}</button>
@@ -506,127 +443,6 @@
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <!-- CONTENT                                                                -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-{#if teaserMode}
-<!-- ─── TEASER STATE ─────────────────────────────────────────────────── -->
-<div class="pt-32 pb-16 px-8 lg:px-12 max-w-[1440px] mx-auto flex flex-col gap-6">
-
-  <p class="font-mono text-xs uppercase tracking-[0.1em] text-[#525252]">Backtest Result · {report.query.slice(0, 60)}{report.query.length > 60 ? '…' : ''}</p>
-
-  <h1
-    class="font-display italic text-6xl max-md:text-5xl max-sm:text-4xl font-normal leading-[1.1] tracking-tighter"
-    class:text-accent-gain={summary.total_return_pct >= 0}
-    class:text-accent-loss={summary.total_return_pct < 0}
-  >
-    {teaserReturnStr}
-  </h1>
-
-  <p class="font-mono text-sm text-[#525252]">
-    Date range: {teaserDateRange}&nbsp;&nbsp;·&nbsp;&nbsp;{summary.trade_count} trades simulated&nbsp;&nbsp;·&nbsp;&nbsp;{summary.ticker_count} tickers
-  </p>
-
-  <TeaserChart portfolio_series={report.backtest_result.portfolio_series} />
-
-  <div class="flex flex-col">
-    <div class="overflow-x-auto">
-      <table class="w-full border-collapse font-mono text-sm text-black whitespace-nowrap">
-        <thead>
-          <tr>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">#</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">DATE</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">TICKER</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">DIR</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">ENTRY DATE</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">ENTRY $</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">EXIT DATE</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">EXIT $</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">DAYS</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">P&amp;L $</th>
-            <th class="font-sans text-[10px] uppercase tracking-[0.08em] text-[#525252] text-left px-3 py-2 bg-[#F5F5F5] border-b border-black font-normal">P&amp;L %</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each viewTrades.slice(0, 2) as t, i}
-          <tr>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.id}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.date}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.ticker}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.dir}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.entryDate}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPrice(t.entryPrice)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.exitDate}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPrice(t.exitPrice)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.days}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={t.pnlDollar >= 0} class:text-accent-loss={t.pnlDollar < 0}>{fmtPnlDollar(t.pnlDollar)}</td>
-            <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0} class:text-accent-gain={t.pnlPct >= 0} class:text-accent-loss={t.pnlPct < 0}>{fmtPnlPct(t.pnlPct)}</td>
-          </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-    {#if viewTrades.length > 2}
-    <div class="blurred-rows" aria-hidden="true">
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse font-mono text-sm text-black whitespace-nowrap">
-          <tbody>
-            {#each viewTrades.slice(2) as t, i}
-            <tr>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.id}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.date}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.ticker}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.dir}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.entryDate}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPrice(t.entryPrice)}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.exitDate}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPrice(t.exitPrice)}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{t.days}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPnlDollar(t.pnlDollar)}</td>
-              <td class="px-3 py-2 border-b border-[#E5E5E5]" class:bg-[#FAFAFA]={i % 2 === 1} class:bg-white={i % 2 === 0}>{fmtPnlPct(t.pnlPct)}</td>
-            </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    {/if}
-  </div>
-
-  <!-- Email gate -->
-  <div class="flex flex-col items-center gap-3 pt-8 pb-2">
-    {#if alreadyUsed}
-      <p class="font-display italic text-lg text-black">You've already run a free backtest.</p>
-      <p class="font-sans text-sm text-[#525252] m-0">Create a free account to run more backtests and save your reports.</p>
-      <a href="/auth/register" class="bg-black border-2 border-black text-white font-sans text-xs uppercase tracking-[0.1em] px-6 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black no-underline">Create free account →</a>
-      <p class="font-sans text-sm text-text-muted m-0">Already have an account? <a href="/auth/login" class="text-[#525252] underline decoration-[#E5E5E5] hover:text-black hover:decoration-black transition-colors duration-100">Log in →</a></p>
-    {:else}
-      <p class="font-display italic text-lg text-black">See the full report — free</p>
-      <form class="flex gap-0 w-full max-w-[420px] border-2 border-black" onsubmit={handleEmailSubmit}>
-        <div class="flex-1 flex flex-col">
-          <input
-            class="w-full bg-white border-none border-r border-black text-black font-sans text-sm px-[14px] py-[10px] rounded-none outline-none placeholder:text-[#BBBBBB] placeholder:italic focus:bg-[#F5F5F5]"
-            class:border-accent-loss={!!emailError}
-            type="email"
-            bind:value={email}
-            placeholder="your@email.com"
-            autocomplete="email"
-          />
-          {#if emailError}
-            <p class="font-sans text-xs text-accent-loss mt-1 mb-0 px-[14px] w-full max-w-[420px] text-left">{emailError}</p>
-          {/if}
-        </div>
-        <button
-          class="whitespace-nowrap bg-black border-none text-white font-sans text-xs uppercase tracking-[0.1em] px-5 py-[10px] cursor-pointer rounded-none transition-colors duration-100 hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-default"
-          type="submit"
-          disabled={gateBtn !== 'Unlock Report →'}
-        >{gateBtn}</button>
-      </form>
-      <p class="font-sans text-sm text-text-muted">{report.view_count.toLocaleString()} traders have viewed this backtest</p>
-    {/if}
-  </div>
-
-</div>
-
-{:else}
-<!-- ─── FULL REPORT STATE ──────────────────────────────────────────────── -->
 
 <!-- MAIN: Hero + KPIs + Chart + Secondary metrics -->
 <main class="pt-32 pb-24 px-8 lg:px-12 max-w-[1440px] mx-auto">
@@ -1076,8 +892,6 @@
   </div>
 </section>
 
-{/if}
-
 </div>
 
 <!-- Delete confirmation overlay -->
@@ -1111,12 +925,6 @@
 {/if}
 
 <style>
-  .blurred-rows {
-    filter: blur(4px);
-    pointer-events: none;
-    user-select: none;
-  }
-
   .chart-ph {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
