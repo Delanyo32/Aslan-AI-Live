@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../app.css';
-  import favicon from '$lib/assets/favicon.svg';
+  import favicon from '$lib/assets/Aslan Finance Logo.svg';
+  import ogImage from '$lib/assets/Aslan Finance Logo.png';
   import { Toaster } from 'svelte-sonner';
 
   let { children } = $props();
@@ -8,6 +9,9 @@
 
 <svelte:head>
   <link rel="icon" href={favicon} />
+  <meta property="og:image" content={ogImage} />
+  <meta name="twitter:image" content={ogImage} />
+  <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <Toaster
