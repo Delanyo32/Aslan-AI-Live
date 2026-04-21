@@ -32,10 +32,13 @@ function startWrangler() {
 	// :5173 matches PUBLIC_BASE_URL=http://localhost:5173 in .dev.vars so
 	// better-auth's callback URLs stay consistent in dev.
 	const port = process.env.PORT ?? "5173"
-	console.log(`[dev-do] starting wrangler pages dev on :${port}…`)
+	console.log(`[dev-do] starting wrangler dev on :${port}…`)
+	// Workers mode: `wrangler dev` reads `main` from wrangler.toml and bundles
+	// the DO class natively (no separate Worker required). --live-reload
+	// refreshes the browser whenever _worker.js is rewritten by the watcher.
 	const proc = spawn(
 		"npx",
-		["wrangler", "pages", "dev", ".svelte-kit/cloudflare", "--live-reload", "--port", port],
+		["wrangler", "dev", "--live-reload", "--port", port],
 		{ stdio: "inherit" },
 	)
 	proc.on("exit", (code) => {
