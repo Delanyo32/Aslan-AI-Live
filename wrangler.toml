@@ -9,6 +9,18 @@ database_name  = "aslan-ai"
 database_id    = "81f2a5e9-5864-41be-9870-19a36fc3b1d6"
 migrations_dir = "src/lib/server/db/migrations/drizzle"
 
+# Durable Object: long-running backtest pipeline runner (one DO instance per session_id).
+# Keeps the pipeline alive across request/response boundaries, deploy-time evictions, and
+# client reconnects. The class itself is exported from src/hooks.server.ts, which the
+# adapter-cloudflare worker entry re-exports for Pages.
+[[durable_objects.bindings]]
+name       = "PIPELINE_RUNNER"
+class_name = "PipelineRunner"
+
+[[migrations]]
+tag         = "v1"
+new_classes = ["PipelineRunner"]
+
 # Non-secret public vars. Secrets must be set via: wrangler pages secret put <NAME> --project-name aslan-ai
 # Secrets needed: BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY,
 #                 OPENROUTER_API_KEY, ALPACA_API_KEY, ALPACA_API_SECRET, EXA_API_KEY,

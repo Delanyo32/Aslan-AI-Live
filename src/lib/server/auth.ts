@@ -2,19 +2,24 @@ import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { env as privateEnv } from "$env/dynamic/private"
 import { env as publicEnv } from "$env/dynamic/public"
-
-const {
-  BETTER_AUTH_SECRET,
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  RESEND_API_KEY
-} = privateEnv
-const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL
 import * as schema from "$lib/server/db/schema"
 import { eq, and, isNull } from "drizzle-orm"
 import type { createDb } from "$lib/server/db/client"
 
 export function createAuth(db: ReturnType<typeof createDb>) {
+  // IMPORTANT: read env at call time, not module load time. Under
+  // adapter-cloudflare, hooks.server.ts (which imports this file) is evaluated
+  // during `new Server(manifest)` — before server.init({ env }) runs, so
+  // $env/dynamic/private is empty at module load and destructuring there leaves
+  // baseURL / providers silently undefined.
+  const {
+    BETTER_AUTH_SECRET,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    RESEND_API_KEY,
+  } = privateEnv
+  const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL
+
   return betterAuth({
     secret:  BETTER_AUTH_SECRET,
     baseURL: PUBLIC_BASE_URL,

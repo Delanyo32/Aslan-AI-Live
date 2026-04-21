@@ -1,4 +1,4 @@
-import type { D1Database } from "@cloudflare/workers-types"
+import type { D1Database, DurableObjectNamespace } from "@cloudflare/workers-types"
 import type { User, Session } from "$lib/server/auth"
 import type { createDb } from "$lib/server/db/client"
 
@@ -7,6 +7,7 @@ declare global {
     interface Platform {
       env: {
         DB: D1Database
+        PIPELINE_RUNNER: DurableObjectNamespace
         // Cloudflare exposes wrangler [vars] and secrets here too
         [key: string]: unknown
       }

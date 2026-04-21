@@ -55,6 +55,12 @@
 
   let esInstance: EventSource | null = null;
   let isClosed = false;
+  let fatalReported = false;
+  let fatalTimer: ReturnType<typeof setTimeout> | null = null;
+  // Max time we tolerate a gap between receiving events before declaring the
+  // connection dead. The browser auto-reconnects EventSource with Last-Event-ID,
+  // so this only trips if retries aren't making progress.
+  const CONNECTION_GRACE_MS = 45_000;
 
   function handleCancel() {
     if (esInstance && !isClosed) {
@@ -62,6 +68,7 @@
       esInstance.close();
       esInstance = null;
     }
+    if (fatalTimer) { clearTimeout(fatalTimer); fatalTimer = null; }
     oncancelled?.();
   }
 
@@ -69,32 +76,59 @@
     return new Date().toTimeString().slice(0, 8);
   }
 
+  function armFatalTimer() {
+    if (fatalTimer) clearTimeout(fatalTimer);
+    fatalTimer = setTimeout(() => {
+      if (isClosed || fatalReported) return;
+      fatalReported = true;
+      isClosed = true;
+      esInstance?.close();
+      esInstance = null;
+      onerror({ message: 'connection_lost', stage: 'unknown' });
+    }, CONNECTION_GRACE_MS);
+  }
+
+  function cancelFatalTimer() {
+    if (fatalTimer) { clearTimeout(fatalTimer); fatalTimer = null; }
+  }
+
   onMount(() => {
     isClosed = false;
+    fatalReported = false;
     const es = new EventSource(streamUrl);
     esInstance = es;
 
+    const bumpLiveness = () => cancelFatalTimer();
+
     es.addEventListener('log', (e) => {
+      bumpLiveness();
       const data = JSON.parse((e as MessageEvent).data);
       visibleLines = [...visibleLines, { time: currentTimestamp(), text: data.message }];
     });
 
     es.addEventListener('low_confidence', (e) => {
+      bumpLiveness();
       const data = JSON.parse((e as MessageEvent).data);
       onlowconfidence?.({ event_count: data.event_count });
     });
 
     es.addEventListener('ticker_candidates', (e) => {
+      bumpLiveness();
       const data = JSON.parse((e as MessageEvent).data) as TickerCandidatesPayload;
       ontickercandidates(data);
     });
 
     es.addEventListener('entry_exit_suggestions', (e) => {
+      bumpLiveness();
       const data = JSON.parse((e as MessageEvent).data) as EntryExitSuggestionsPayload;
       onentryexitsuggestions(data);
     });
 
+    es.addEventListener('stage_started', bumpLiveness);
+    es.addEventListener('stage_done', bumpLiveness);
+
     es.addEventListener('result', (e) => {
+      cancelFatalTimer();
       const data = JSON.parse((e as MessageEvent).data);
       isClosed = true;
       es.close();
@@ -103,30 +137,36 @@
     });
 
     es.addEventListener('error', (e) => {
+      // Named server-sent "error" event (carries JSON payload) — terminal.
       if (e instanceof MessageEvent && e.data) {
         try {
           const data = JSON.parse(e.data);
+          cancelFatalTimer();
           isClosed = true;
+          fatalReported = true;
           es.close();
           esInstance = null;
           onerror(data);
         } catch {
-          // ignore JSON parse errors from connection noise
+          // Transport-level error event without payload — fall through to onerror handler below.
         }
       }
     });
 
     es.onerror = () => {
-      if (!isClosed) {
-        isClosed = true;
-        es.close();
-        esInstance = null;
-        onerror({ message: 'connection_lost', stage: 'unknown' });
+      // Transport-level error. Browser auto-reconnects using Last-Event-ID;
+      // only surface a fatal error if no event arrives within the grace window.
+      if (isClosed || fatalReported) return;
+      if (es.readyState === EventSource.CLOSED) {
+        // Server explicitly closed the stream (e.g. complete state) — not fatal on its own.
+        return;
       }
+      armFatalTimer();
     };
 
     return () => {
       isClosed = true;
+      cancelFatalTimer();
       es.close();
       esInstance = null;
     };

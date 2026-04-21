@@ -1,7 +1,7 @@
 import Exa from "exa-js"
 import { env } from "$env/dynamic/private"
 import { Type, complete, validateToolCall, type Tool, type Context, type ToolCall } from "@mariozechner/pi-ai"
-import { model } from "./ai"
+import { getAiModel } from "./ai"
 import type { ExaSearch, EventSpec, RawExaEvent, RankedTicker, EventOccurrence, ResearchEvent, ResearchSummary } from "$lib/types/pipeline"
 import type { AssetUniverse } from "./alpaca-market-data"
 import { loadUSEquityUniverse } from "./alpaca-market-data"
@@ -416,7 +416,7 @@ export async function runResearchAgent(
 	let findings: ResearchFindings | null = null
 
 	while (searchCount <= MAX_SEARCHES) {
-		const response = await complete(model, context)
+		const response = await complete(getAiModel(), context)
 
 		if (response.stopReason === "error") {
 			throw new Error(response.errorMessage ?? "LLM error during research agent")
@@ -595,7 +595,7 @@ export async function runResearchAgentForTicker(
 	let findings: ResearchFindings | null = null
 
 	while (searchCount <= MAX_SEARCHES) {
-		const response = await complete(model, context)
+		const response = await complete(getAiModel(), context)
 
 		if (response.stopReason === "error") {
 			throw new Error(response.errorMessage ?? "LLM error during per-ticker research agent")

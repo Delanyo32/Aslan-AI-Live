@@ -1,5 +1,4 @@
 import { env } from "$env/dynamic/private"
-const { ALPACA_API_KEY, ALPACA_API_SECRET } = env
 import type { OHLCVBar } from "$lib/types/pipeline"
 
 const BASE_URL = "https://data.alpaca.markets/v2/stocks"
@@ -25,8 +24,8 @@ export async function fetchOHLCV(
 	dateTo: string
 ): Promise<OHLCVBar[]> {
 	const headers: Record<string, string> = {
-		"APCA-API-KEY-ID": ALPACA_API_KEY,
-		"APCA-API-SECRET-KEY": ALPACA_API_SECRET
+		"APCA-API-KEY-ID":     env.ALPACA_API_KEY,
+		"APCA-API-SECRET-KEY": env.ALPACA_API_SECRET,
 	}
 
 	const bars: OHLCVBar[] = []
@@ -95,8 +94,8 @@ export async function loadUSEquityUniverse(): Promise<AssetUniverse> {
 	if (_universe && Date.now() - _loadedAt < TTL_MS) return _universe
 
 	const headers: Record<string, string> = {
-		"APCA-API-KEY-ID": ALPACA_API_KEY,
-		"APCA-API-SECRET-KEY": ALPACA_API_SECRET
+		"APCA-API-KEY-ID":     env.ALPACA_API_KEY,
+		"APCA-API-SECRET-KEY": env.ALPACA_API_SECRET,
 	}
 
 	for (const base of ["https://paper-api.alpaca.markets", "https://api.alpaca.markets"]) {

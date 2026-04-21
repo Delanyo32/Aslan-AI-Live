@@ -15,6 +15,13 @@
       "when": 1744934400000,
       "tag": "0001_pipeline_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776571200000,
+      "tag": "0002_pipeline_runs",
+      "breakpoints": true
     }
   ]
 }

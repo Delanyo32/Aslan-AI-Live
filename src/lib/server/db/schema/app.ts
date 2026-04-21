@@ -68,3 +68,17 @@ export const pipelineSessions = sqliteTable("pipeline_sessions", {
 	created_at:             integer("created_at").notNull(),
 	expires_at:             integer("expires_at").notNull(),
 })
+
+// Cross-DO index of pipeline runs. One row per run. The DO itself owns event log
+// and per-stage state in DO storage; this table exists so other Workers can look
+// up status / result by session_id without routing through the DO.
+export const pipelineRuns = sqliteTable("pipeline_runs", {
+	session_id:  text("session_id").primaryKey(),
+	user_id:     text("user_id").notNull(),
+	status:      text("status").notNull(),       // pending | running | awaiting_rule | complete | failed | cancelled
+	stage:       text("stage").notNull(),        // see PipelineStage union in PipelineRunner.ts
+	error:       text("error"),
+	result_slug: text("result_slug"),
+	created_at:  integer("created_at").notNull(),
+	updated_at:  integer("updated_at").notNull(),
+})

@@ -1,6 +1,6 @@
 import { json } from "@sveltejs/kit"
 import { complete, validateToolCall, type Tool, type Context } from "@mariozechner/pi-ai"
-import { model } from "$lib/server/ai"
+import { getAiModel } from "$lib/server/ai"
 import { UnderstandResponseSchema, type UnderstandResponse } from "$lib/types/pipeline"
 import type { RequestHandler } from "./$types"
 
@@ -46,7 +46,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	let response
 	try {
-		response = await complete(model, context)
+		response = await complete(getAiModel(), context)
 	} catch (e) {
 		console.error("[understand] complete() failed:", e)
 		return json({ error: "AI request failed" }, { status: 500 })

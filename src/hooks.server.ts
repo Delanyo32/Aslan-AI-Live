@@ -6,6 +6,11 @@ import type { Handle, HandleServerError } from "@sveltejs/kit"
 import { redirect } from "@sveltejs/kit"
 import { logger } from "$lib/server/logger"
 
+// Re-export Durable Object classes so the adapter-cloudflare-generated worker
+// entry exposes them at the top level. Cloudflare Pages wires the DO binding
+// declared in wrangler.toml to the matching named export.
+export { PipelineRunner } from "$lib/server/durable-objects/PipelineRunner"
+
 export const handle: Handle = async ({ event, resolve }) => {
   const db   = createDb(event.platform!.env.DB)
   const auth = createAuth(db)
