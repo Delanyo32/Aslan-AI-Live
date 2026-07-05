@@ -190,6 +190,10 @@
 
 .pulse-status { animation: pulse-dot 2s infinite ease-in-out; }
 
+@media (prefers-reduced-motion: reduce) {
+  .pulse-status { animation: none; }
+}
+
 .wave-container {
   position: absolute;
   bottom: 0;

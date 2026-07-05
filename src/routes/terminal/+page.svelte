@@ -10,7 +10,7 @@
   type ViewState = 'picking' | 'confirming' | 'running' | 'error'
 
   let view = $state<ViewState>('picking')
-  let query = $state('')
+  let query = $state(data.q ?? '')
   let candidates = $state<Candidate[] | null>(null)
   let resolving = $state(false)
   let selected = $state<Candidate | null>(null)
