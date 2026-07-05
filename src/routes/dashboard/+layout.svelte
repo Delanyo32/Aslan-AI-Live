@@ -40,13 +40,12 @@
 
 <!-- Fixed header -->
 <header class="fixed top-0 left-0 w-full z-[100] h-20 bg-[#fcfbf9] border-b border-[#e5e5e5] px-8 lg:px-24 flex items-center justify-between">
-  <a href="/dashboard" class="serif-italic text-2xl tracking-tight text-[#171717] no-underline">Aslan Finance</a>
+  <a href="/dashboard" class="serif-italic text-2xl tracking-tight text-[#171717] no-underline">Aslan Terminal</a>
 
   <!-- Desktop nav -->
   <nav class="hidden md:flex items-center gap-10">
-    <a href="/terminal" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Terminal</a>
-    <a href="/board" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Board</a>
-    <a href="/backtests" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Explore</a>
+    <a href="/dashboard" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">The Desk</a>
+    <a href="/terminal" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">New Report</a>
 
     <div class="flex items-center gap-2 px-4 py-1.5 bg-white border border-[#e5e5e5] rounded-full">
       <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full shrink-0"></span>
@@ -76,16 +75,16 @@
   {#if menuOpen}
     <div class="absolute top-full right-4 mt-2 bg-white border border-[#e5e5e5] rounded-2xl min-w-[160px] z-50 shadow-lg overflow-hidden">
       <a
+        href="/dashboard"
+        onclick={() => menuOpen = false}
+        class="block px-5 py-3 mono-label text-gray-600 hover:bg-[#fcfbf9] no-underline transition-colors"
+      >The Desk</a>
+      <div class="border-t border-[#e5e5e5]"></div>
+      <a
         href="/terminal"
         onclick={() => menuOpen = false}
         class="block px-5 py-3 mono-label text-gray-600 hover:bg-[#fcfbf9] no-underline transition-colors"
-      >Terminal</a>
-      <div class="border-t border-[#e5e5e5]"></div>
-      <a
-        href="/board"
-        onclick={() => menuOpen = false}
-        class="block px-5 py-3 mono-label text-gray-600 hover:bg-[#fcfbf9] no-underline transition-colors"
-      >Board</a>
+      >New Report</a>
       <div class="border-t border-[#e5e5e5]"></div>
       <a
         href="/dashboard/account"
