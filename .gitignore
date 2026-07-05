@@ -30,3 +30,4 @@ vite.config.ts.timestamp-*
 .agents/
 .impeccable/
 .claude/skills/
+.superdesign/
