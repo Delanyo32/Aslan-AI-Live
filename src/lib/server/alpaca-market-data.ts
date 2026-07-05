@@ -73,6 +73,37 @@ export async function fetchOHLCV(
 	return bars
 }
 
+type AlpacaSnapshotResponse = {
+	latestTrade?: { p: number } | null
+	dailyBar?: { c: number } | null
+	prevDailyBar?: { c: number } | null
+}
+
+/**
+ * Latest price for a symbol via Alpaca's snapshot endpoint (iex feed, matching
+ * fetchOHLCV). Prefers the latest trade, then today's close, then yesterday's.
+ * Returns null when Alpaca has no usable price; throws on transport/auth errors
+ * (callers treat a thrown snapshot as "no verdict", never fatal to a report).
+ */
+export async function fetchSnapshot(symbol: string): Promise<number | null> {
+	const headers: Record<string, string> = {
+		"APCA-API-KEY-ID":     env.ALPACA_API_KEY,
+		"APCA-API-SECRET-KEY": env.ALPACA_API_SECRET,
+	}
+
+	const url = `${BASE_URL}/${encodeURIComponent(symbol)}/snapshot?feed=iex`
+	const response = await fetch(url, { headers })
+
+	if (!response.ok) {
+		const text = await response.text()
+		throw new Error(`Alpaca snapshot error for ${symbol}: ${response.status} ${text}`)
+	}
+
+	const data: AlpacaSnapshotResponse = await response.json()
+	const price = data.latestTrade?.p ?? data.dailyBar?.c ?? data.prevDailyBar?.c ?? null
+	return typeof price === "number" && price > 0 ? price : null
+}
+
 export type AssetUniverse = {
 	/** All active US equity symbols — used as an allowlist to filter noise from Exa extractions */
 	symbols: Set<string>

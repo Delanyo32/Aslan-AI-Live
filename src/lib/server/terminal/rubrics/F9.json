@@ -1,0 +1,177 @@
+{
+	"version": "1.0.0",
+	"id": "F9",
+	"name": "Value Creation, Distribution & Management",
+	"question": "Is real economic value being created (customers pay more than it costs to serve them), is it distributed sanely (customers/employees/shareholders), and does management allocate capital like owners?",
+	"weight": 2.0,
+	"veto": true,
+	"signals": [
+		{
+			"id": "f9_unit_economics",
+			"description": "Unit economics evidence: gross margin, cash conversion; summary.schema extraction of revenue, GM, OCF, FCF, SBC, share count — each figure cited to its filing",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} annual report OR quarterly filing revenue gross margin cash flow",
+				"category": "financial report",
+				"days": 365,
+				"contents": "summary"
+			}
+		},
+		{
+			"id": "f9_earnings_quality",
+			"description": "Earnings quality: cash flow tracking net income; extraction of OCF vs NI divergence across periods",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} operating cash flow versus net income",
+				"category": "financial report",
+				"days": 730,
+				"contents": "summary"
+			}
+		},
+		{
+			"id": "f9_dilution_discipline",
+			"description": "Dilution discipline: share count and SBC trajectory; extraction across filings",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} share count OR stock-based compensation trajectory",
+				"category": "financial report",
+				"days": 730,
+				"contents": "summary"
+			}
+		},
+		{
+			"id": "f9_capital_allocation",
+			"description": "Capital allocation: buybacks vs price history, M&A discipline, capex returns; filings + news, Alpaca price context (US)",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} buybacks versus price history, M&A discipline, capex returns",
+				"days": 730
+			}
+		},
+		{
+			"id": "f9_insider_behavior",
+			"description": "Insider behavior: buying vs selling patterns in coverage",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} insider buying OR insider selling",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f9_customer_value",
+			"description": "Customer value evidence: retention, willingness to pay, NPS coverage — independent sources only (reviews, case studies not hosted by company)",
+			"polarity": "supports",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} customer retention OR willingness to pay OR NPS",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f9_management_candor",
+			"description": "Management candor: do they name mistakes, or reframe every miss? LLM tone analysis over earnings-call coverage across quarters",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} earnings-call coverage across quarters: does management name mistakes or reframe every miss",
+				"days": 730
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Cash flows confirm the income statement; dilution modest; capital returns disciplined; customers demonstrably better off; management admits and corrects errors.",
+		"C": "Value creation real but partially consumed by SBC/dilution; capital allocation mixed; candor selective.",
+		"F": "Income statement and cash flow tell different stories; value flows mainly to insiders (dilution, related-party payments, buybacks timed around insider sales); customers churn when subsidies stop."
+	},
+	"false_signals": [
+		{
+			"id": "non_gaap_divergence",
+			"description": "Widening gap between adjusted and GAAP earnings; \"community-adjusted EBITDA\" pathology. Extraction of both figures per period; trend the gap.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} non-GAAP versus GAAP earnings adjusted",
+				"category": "financial report",
+				"days": 730,
+				"contents": "summary"
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "accruals_red_flag",
+			"description": "Net income persistently exceeding operating cash flow. Filings extraction (red-flag tier of forensic accounting; deeper accrual decomposition is v2, see §9).",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} net income exceeding operating cash flow",
+				"category": "financial report",
+				"days": 730,
+				"contents": "summary"
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "revenue_recognition_change",
+			"description": "Accounting-policy changes coinciding with growth inflections. Filings coverage + news search for restatement/policy language.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} revenue recognition change OR restatement OR accounting policy change",
+				"category": "news",
+				"days": 730
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "auditor_events",
+			"description": "Auditor resignation/change, qualified opinions, material weaknesses, delayed filings. Monitor + filings; any hit is an automatic composite cap.",
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} auditor resignation OR auditor change OR qualified opinion OR material weakness OR delayed filing",
+				"category": "news",
+				"cadence": "1d"
+			},
+			"action": "composite_cap:C"
+		},
+		{
+			"id": "related_party_web",
+			"description": "Transactions with insider-linked entities. Filings extraction of related-party sections.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} related party transactions",
+				"category": "financial report",
+				"days": 730,
+				"contents": "summary"
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "buyback_insider_divergence",
+			"description": "Company buying back stock while insiders sell. Cross-reference buyback announcements vs insider-sale coverage.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} buyback announcement insider selling",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "Anchor framework: weighted highest and vetoes the composite (D or lower caps composite at B). v1 covers the red-flag tier of forensic accounting only; deeper accrual decomposition is v2. The round-trip-revenue composite-cap pattern is detected in F8 (round_trip_deals) and propagates here via composite_cap:C."
+	}
+}

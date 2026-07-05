@@ -16,9 +16,12 @@
 		"db:migrate:local": "wrangler d1 migrations apply aslan-ai --local",
 		"db:migrate:prod": "wrangler d1 migrations apply aslan-ai --remote",
 		"db:studio": "drizzle-kit studio",
-		"seed:polar": "bun run scripts/seed-polar.ts"
+		"seed:polar": "bun run scripts/seed-polar.ts",
+		"exa:smoke": "bun scripts/exa-smoke.ts",
+		"eval": "bun scripts/eval/run-eval.ts"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20260410.1",
 		"@sveltejs/kit": "^2.57.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/d3-scale": "^4.0.9",
@@ -26,7 +29,8 @@
 		"svelte": "^5.55.2",
 		"svelte-check": "^4.4.6",
 		"typescript": "^6.0.2",
-		"vite": "^8.0.7"
+		"vite": "^8.0.7",
+		"wrangler": "^4.81.1"
 	},
 	"optionalDependencies": {
 		"@rolldown/binding-linux-x64-gnu": "1.0.0-rc.15",
@@ -35,7 +39,6 @@
 		"lightningcss-linux-x64-musl": "1.32.0"
 	},
 	"dependencies": {
-		"@cloudflare/workers-types": "^4.20260410.1",
 		"@fontsource/ibm-plex-mono": "^5.2.7",
 		"@fontsource/ibm-plex-sans": "^5.2.8",
 		"@fontsource/playfair-display": "^5.2.8",
@@ -51,7 +54,6 @@
 		"layerchart": "^1.0.13",
 		"resend": "^6.10.0",
 		"svelte-sonner": "^1.1.0",
-		"tailwindcss": "^4.2.2",
-		"wrangler": "^4.81.1"
+		"tailwindcss": "^4.2.2"
 	}
 }

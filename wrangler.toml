@@ -28,15 +28,37 @@ migrations_dir = "src/lib/server/db/migrations/drizzle"
 name       = "PIPELINE_RUNNER"
 class_name = "PipelineRunner"
 
+# Durable Object: Aslan Terminal deep-report runner (one DO instance per run
+# session_id). Same Worker bundle; re-exported from src/hooks.server.ts and
+# surfaced by scripts/patch-worker-durable-objects.mjs.
+[[durable_objects.bindings]]
+name       = "TERMINAL_REPORT_RUNNER"
+class_name = "TerminalReportRunner"
+
+# Durable Object: Aslan Terminal watchlist monitor (one DO instance per
+# company_id). Same Worker bundle; re-exported from src/hooks.server.ts and
+# surfaced by scripts/patch-worker-durable-objects.mjs.
+[[durable_objects.bindings]]
+name       = "COMPANY_MONITOR"
+class_name = "CompanyMonitor"
+
 [[migrations]]
 tag         = "v1"
 new_classes = ["PipelineRunner"]
 
+[[migrations]]
+tag         = "v2"
+new_classes = ["TerminalReportRunner"]
+
+[[migrations]]
+tag         = "v3"
+new_classes = ["CompanyMonitor"]
+
 # Non-secret public vars. Secrets must be set via: wrangler secret put <NAME>
 # Secrets needed: BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY,
 #                 OPENROUTER_API_KEY, ALPACA_API_KEY, ALPACA_API_SECRET, EXA_API_KEY,
-#                 POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET, POLAR_PRODUCT_STARTER,
-#                 POLAR_PRODUCT_PRO, POLAR_PRODUCT_POWER
+#                 EXA_WEBHOOK_TOKEN, POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET,
+#                 POLAR_PRODUCT_STARTER, POLAR_PRODUCT_PRO, POLAR_PRODUCT_POWER
 
 [vars]
 PUBLIC_BASE_URL          = "https://aslanfinance.app"

@@ -91,18 +91,19 @@ type ResearchFindings = {
 	direction_hint: string
 }
 
-export async function runResearchAgent(
-	query: string,
-	dateFrom: string,
-	dateTo: string,
+// Shared agent loop: LLM orchestrates exa_search calls until it calls submit_findings
+// or the search budget is exhausted. Wrappers own the prompt and limit-exceeded behavior.
+async function runExaAgent(opts: {
+	systemPrompt: string
+	query: string
+	dateFrom: string
+	dateTo: string
+	maxSearches: number
+	logPrefix: string
+	errorLabel: string
 	onLog: (msg: string) => void
-): Promise<{
-	events: ResearchEvent[]
-	low_confidence_events: ResearchEvent[]
-	ranked_tickers: RankedTicker[]
-	summary: ResearchSummary
-}> {
-	const MAX_SEARCHES = 50
+}): Promise<{ findings: ResearchFindings | null; searchCount: number }> {
+	const { systemPrompt, query, dateFrom, dateTo, maxSearches, logPrefix, errorLabel, onLog } = opts
 	let searchCount = 0
 
 	const exaSearchTool: Tool = {
@@ -124,34 +125,6 @@ export async function runResearchAgent(
 		parameters:  ResearchFindingsSchema
 	}
 
-	const systemPrompt =
-		`You are a financial event research agent. Find ALL historical instances of the trading trigger event ` +
-		`in the user's hypothesis, evaluate any conditions, and return structured findings.\n\n` +
-		`You have two tools:\n` +
-		`- exa_search: Search the web. Results include titles and highlights (excerpts).\n` +
-		`- submit_findings: Call once when finished to return structured results.\n\n` +
-		`## Process\n\n` +
-		`**Step 1 — Analyze the query:**\n` +
-		`Identify: (1) the TRIGGER EVENT (what must happen), (2) the CONDITION (additional requirement, if any), ` +
-		`(3) the relevant ticker/company, (4) date range: ${dateFrom} to ${dateTo}.\n\n` +
-		`**Step 2 — Find all trigger event instances:**\n` +
-		`Search broadly for all occurrences in the date range. Extract specific ISO dates (YYYY-MM-DD). ` +
-		`Use journalist-style sentences as queries.\n\n` +
-		`**Step 3 — Evaluate conditions (if any):**\n` +
-		`For each event, if there is a condition, search for evidence of it. ` +
-		`Example: for "MKBHD favourably reviewed iPhone 15" — search "MKBHD iPhone 15 review" and read highlights ` +
-		`to judge sentiment.\n\n` +
-		`**Step 4 — Call submit_findings:**\n` +
-		`Include condition_met=true only if evidence clearly supports it. ` +
-		`For simple queries with no explicit condition: condition_met=true if event clearly occurred. ` +
-		`condition_evidence must be a one-line summary of the key evidence.\n\n` +
-		`## Rules\n` +
-		`- Maximum ${MAX_SEARCHES} total exa_search calls — use them wisely\n` +
-		`- Always extract specific dates (YYYY-MM-DD), not just years\n` +
-		`- Be conservative: only mark condition_met=true when evidence clearly supports it\n` +
-		`- Include all relevant stock tickers in tickers_mentioned\n` +
-		`- Call submit_findings exactly once`
-
 	const context: Context = {
 		systemPrompt,
 		messages: [{ role: "user", content: query.trim(), timestamp: Date.now() }],
@@ -160,11 +133,11 @@ export async function runResearchAgent(
 
 	let findings: ResearchFindings | null = null
 
-	while (searchCount <= MAX_SEARCHES) {
+	while (searchCount <= maxSearches) {
 		const response = await complete(getAiModel(), context)
 
 		if (response.stopReason === "error") {
-			throw new Error(response.errorMessage ?? "LLM error during research agent")
+			throw new Error(response.errorMessage ?? `LLM error during ${errorLabel}`)
 		}
 
 		// Append assistant message to conversation
@@ -196,7 +169,7 @@ export async function runResearchAgent(
 					num_results?: number
 				}
 				searchCount++
-				onLog(`Searching: "${args.query}"`)
+				onLog(`${logPrefix}Searching: "${args.query}"`)
 
 				let resultText: string
 				try {
@@ -213,11 +186,11 @@ export async function runResearchAgent(
 						published:  r.publishedDate,
 						highlights: r.highlights ?? []
 					}))
-					onLog(`  → ${results.length} result${results.length !== 1 ? "s" : ""}`)
+					onLog(`${logPrefix}  → ${results.length} result${results.length !== 1 ? "s" : ""}`)
 					resultText = JSON.stringify(results)
 				} catch (e) {
 					const msg = e instanceof Error ? e.message : "search failed"
-					onLog(`  → error: ${msg}`)
+					onLog(`${logPrefix}  → error: ${msg}`)
 					resultText = JSON.stringify({ error: msg })
 				}
 
@@ -235,18 +208,24 @@ export async function runResearchAgent(
 		if (findings) break
 	}
 
-	if (!findings) {
-		throw new Error("research_agent_limit_exceeded")
-	}
+	return { findings, searchCount }
+}
 
-	// Map to ResearchEvent[], normalising confidence strings
+// Map findings to ResearchEvent[], normalising confidence strings and splitting
+// by confidence. forceTicker prepends the ticker when the LLM omitted it.
+function mapFindingsToEvents(
+	findings: ResearchFindings,
+	forceTicker?: string
+): { events: ResearchEvent[]; low_confidence_events: ResearchEvent[] } {
 	const toConfidence = (s: string): "HIGH" | "MEDIUM" | "LOW" =>
 		(["HIGH", "MEDIUM", "LOW"].includes(s) ? s : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW"
 
 	const allEvents: ResearchEvent[] = findings.events.map(e => ({
 		event_date:           e.event_date,
 		description:          e.description,
-		tickers_mentioned:    e.tickers_mentioned,
+		tickers_mentioned:    forceTicker && !e.tickers_mentioned.includes(forceTicker)
+			? [forceTicker, ...e.tickers_mentioned]
+			: e.tickers_mentioned,
 		confidence:           toConfidence(e.confidence),
 		sources:              e.sources.map(s => ({ url: s.url, title: s.title, highlight: null })),
 		condition_met:        e.condition_met,
@@ -254,8 +233,69 @@ export async function runResearchAgent(
 		condition_confidence: toConfidence(e.condition_confidence)
 	}))
 
-	const events             = allEvents.filter(e => e.confidence !== "LOW")
-	const low_confidence_events = allEvents.filter(e => e.confidence === "LOW")
+	return {
+		events:                allEvents.filter(e => e.confidence !== "LOW"),
+		low_confidence_events: allEvents.filter(e => e.confidence === "LOW")
+	}
+}
+
+export async function runResearchAgent(
+	query: string,
+	dateFrom: string,
+	dateTo: string,
+	onLog: (msg: string) => void
+): Promise<{
+	events: ResearchEvent[]
+	low_confidence_events: ResearchEvent[]
+	ranked_tickers: RankedTicker[]
+	summary: ResearchSummary
+}> {
+	const MAX_SEARCHES = 50
+
+	const systemPrompt =
+		`You are a financial event research agent. Find ALL historical instances of the trading trigger event ` +
+		`in the user's hypothesis, evaluate any conditions, and return structured findings.\n\n` +
+		`You have two tools:\n` +
+		`- exa_search: Search the web. Results include titles and highlights (excerpts).\n` +
+		`- submit_findings: Call once when finished to return structured results.\n\n` +
+		`## Process\n\n` +
+		`**Step 1 — Analyze the query:**\n` +
+		`Identify: (1) the TRIGGER EVENT (what must happen), (2) the CONDITION (additional requirement, if any), ` +
+		`(3) the relevant ticker/company, (4) date range: ${dateFrom} to ${dateTo}.\n\n` +
+		`**Step 2 — Find all trigger event instances:**\n` +
+		`Search broadly for all occurrences in the date range. Extract specific ISO dates (YYYY-MM-DD). ` +
+		`Use journalist-style sentences as queries.\n\n` +
+		`**Step 3 — Evaluate conditions (if any):**\n` +
+		`For each event, if there is a condition, search for evidence of it. ` +
+		`Example: for "MKBHD favourably reviewed iPhone 15" — search "MKBHD iPhone 15 review" and read highlights ` +
+		`to judge sentiment.\n\n` +
+		`**Step 4 — Call submit_findings:**\n` +
+		`Include condition_met=true only if evidence clearly supports it. ` +
+		`For simple queries with no explicit condition: condition_met=true if event clearly occurred. ` +
+		`condition_evidence must be a one-line summary of the key evidence.\n\n` +
+		`## Rules\n` +
+		`- Maximum ${MAX_SEARCHES} total exa_search calls — use them wisely\n` +
+		`- Always extract specific dates (YYYY-MM-DD), not just years\n` +
+		`- Be conservative: only mark condition_met=true when evidence clearly supports it\n` +
+		`- Include all relevant stock tickers in tickers_mentioned\n` +
+		`- Call submit_findings exactly once`
+
+	const { findings } = await runExaAgent({
+		systemPrompt,
+		query,
+		dateFrom,
+		dateTo,
+		maxSearches: MAX_SEARCHES,
+		logPrefix:   "",
+		errorLabel:  "research agent",
+		onLog
+	})
+
+	if (!findings) {
+		throw new Error("research_agent_limit_exceeded")
+	}
+
+	const { events, low_confidence_events } = mapFindingsToEvents(findings)
 
 	const universe       = await loadUSEquityUniverse()
 	const ranked_tickers = rankTickers(events, universe)
@@ -283,26 +323,6 @@ export async function runResearchAgentForTicker(
 	searchCount: number
 }> {
 	const MAX_SEARCHES = 30
-	let searchCount = 0
-
-	const exaSearchTool: Tool = {
-		name: "exa_search",
-		description:
-			"Search the web for information about events. Returns article titles and relevant highlights. " +
-			"Use natural journalist-style sentences as queries, not keywords.",
-		parameters: Type.Object({
-			query:       Type.String({ description: "Search query as a journalist headline or natural sentence" }),
-			date_from:   Type.Optional(Type.String({ description: "Start date YYYY-MM-DD" })),
-			date_to:     Type.Optional(Type.String({ description: "End date YYYY-MM-DD" })),
-			num_results: Type.Optional(Type.Number({ description: "Number of results 1-10, default 5" }))
-		})
-	}
-
-	const submitFindingsTool: Tool = {
-		name:        "submit_findings",
-		description: "Submit your final structured research findings. Call this exactly once when done.",
-		parameters:  ResearchFindingsSchema
-	}
 
 	const systemPrompt =
 		`You are a financial event research agent focused specifically on ${ticker}. ` +
@@ -331,111 +351,23 @@ export async function runResearchAgentForTicker(
 		`- Every event must include ${ticker} in tickers_mentioned\n` +
 		`- Call submit_findings exactly once`
 
-	const context: Context = {
+	const { findings, searchCount } = await runExaAgent({
 		systemPrompt,
-		messages: [{ role: "user", content: query.trim(), timestamp: Date.now() }],
-		tools: [exaSearchTool, submitFindingsTool]
-	}
-
-	let findings: ResearchFindings | null = null
-
-	while (searchCount <= MAX_SEARCHES) {
-		const response = await complete(getAiModel(), context)
-
-		if (response.stopReason === "error") {
-			throw new Error(response.errorMessage ?? "LLM error during per-ticker research agent")
-		}
-
-		context.messages.push(response)
-
-		if (response.stopReason !== "toolUse") break
-
-		const toolCalls = response.content.filter((b): b is ToolCall => b.type === "toolCall")
-
-		for (const toolCall of toolCalls) {
-			if (toolCall.name === "submit_findings") {
-				findings = validateToolCall([submitFindingsTool], toolCall) as ResearchFindings
-				context.messages.push({
-					role:       "toolResult",
-					toolCallId: toolCall.id,
-					toolName:   toolCall.name,
-					content:    [{ type: "text", text: "Findings submitted." }],
-					isError:    false,
-					timestamp:  Date.now()
-				})
-				break
-			}
-
-			if (toolCall.name === "exa_search") {
-				const args = toolCall.arguments as {
-					query: string
-					date_from?: string
-					date_to?: string
-					num_results?: number
-				}
-				searchCount++
-				onLog(`[${ticker}] Searching: "${args.query}"`)
-
-				let resultText: string
-				try {
-					const res = await getExa().search(args.query, {
-						type:               "auto",
-						numResults:         Math.min(args.num_results ?? 5, 10),
-						startPublishedDate: args.date_from ?? dateFrom,
-						endPublishedDate:   args.date_to   ?? dateTo,
-						contents:           { highlights: { maxCharacters: 1500 } }
-					})
-					const results = res.results.map(r => ({
-						title:      r.title,
-						url:        r.url,
-						published:  r.publishedDate,
-						highlights: r.highlights ?? []
-					}))
-					onLog(`[${ticker}]   → ${results.length} result${results.length !== 1 ? "s" : ""}`)
-					resultText = JSON.stringify(results)
-				} catch (e) {
-					const msg = e instanceof Error ? e.message : "search failed"
-					onLog(`[${ticker}]   → error: ${msg}`)
-					resultText = JSON.stringify({ error: msg })
-				}
-
-				context.messages.push({
-					role:       "toolResult",
-					toolCallId: toolCall.id,
-					toolName:   toolCall.name,
-					content:    [{ type: "text", text: resultText }],
-					isError:    false,
-					timestamp:  Date.now()
-				})
-			}
-		}
-
-		if (findings) break
-	}
+		query,
+		dateFrom,
+		dateTo,
+		maxSearches: MAX_SEARCHES,
+		logPrefix:   `[${ticker}] `,
+		errorLabel:  "per-ticker research agent",
+		onLog
+	})
 
 	if (!findings) {
 		onLog(`[${ticker}] Research limit reached — using partial results`)
 		return { events: [], low_confidence_events: [], searchCount }
 	}
 
-	const toConfidence = (s: string): "HIGH" | "MEDIUM" | "LOW" =>
-		(["HIGH", "MEDIUM", "LOW"].includes(s) ? s : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW"
-
-	const allEvents: ResearchEvent[] = findings.events.map(e => ({
-		event_date:           e.event_date,
-		description:          e.description,
-		tickers_mentioned:    e.tickers_mentioned.includes(ticker)
-			? e.tickers_mentioned
-			: [ticker, ...e.tickers_mentioned],
-		confidence:           toConfidence(e.confidence),
-		sources:              e.sources.map(s => ({ url: s.url, title: s.title, highlight: null })),
-		condition_met:        e.condition_met,
-		condition_evidence:   e.condition_evidence,
-		condition_confidence: toConfidence(e.condition_confidence)
-	}))
-
-	const events               = allEvents.filter(e => e.confidence !== "LOW")
-	const low_confidence_events = allEvents.filter(e => e.confidence === "LOW")
+	const { events, low_confidence_events } = mapFindingsToEvents(findings, ticker)
 
 	return { events, low_confidence_events, searchCount }
 }

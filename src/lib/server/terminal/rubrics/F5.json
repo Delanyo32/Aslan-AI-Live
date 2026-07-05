@@ -1,0 +1,132 @@
+{
+	"version": "1.0.0",
+	"id": "F5",
+	"name": "Demand Landscape",
+	"question": "Is real end-demand for the product growing, stable, or shrinking — and is it paid, organic demand rather than channel, subsidy, or hype artifacts?",
+	"weight": 1.5,
+	"signals": [
+		{
+			"id": "f5_web_traffic_trend",
+			"description": "Web traffic level + trend vs competitor set; company entities webTraffic.history across the Webset",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "web traffic level and trend of {company} versus {competitors}"
+			}
+		},
+		{
+			"id": "f5_reviews_trajectory",
+			"description": "Customer reviews volume/tone trajectory; review platforms and trade press",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} customer reviews volume OR tone",
+				"category": "news",
+				"days": 365,
+				"contents": "highlights"
+			}
+		},
+		{
+			"id": "f5_order_books",
+			"description": "Order books, backlogs, bookings coverage",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} order book OR backlog OR bookings",
+				"category": "financial report",
+				"days": 365
+			}
+		},
+		{
+			"id": "f5_price_realization",
+			"description": "Price realization: waitlists/scarcity vs discounting/promotions; news + retail coverage monitors",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} waitlist OR scarcity OR discount OR promotion",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f5_channel_checks",
+			"description": "Channel checks in trade press (sell-through vs sell-in); trade-domain-scoped search",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} sell-through OR sell-in channel checks",
+				"category": "news",
+				"days": 180
+			}
+		},
+		{
+			"id": "f5_end_market_health",
+			"description": "End-market health (the customer's customer); downstream industry conditions",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "downstream end-market conditions for {company} customers"
+			}
+		},
+		{
+			"id": "f5_attention_trends",
+			"description": "Search/attention trends reported by third parties; news coverage of demand indicators",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} search trends OR demand indicators",
+				"category": "news",
+				"days": 180
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Multiple independent demand proxies rising together; pricing holding or rising; downstream markets healthy.",
+		"C": "Headline demand flat; mix of proxies; growth increasingly promotional.",
+		"F": "Proxies falling while management reports growth (see screen); demand shown to be pull-forward or subsidy-driven."
+	},
+	"false_signals": [
+		{
+			"id": "sell_in_vs_sell_through",
+			"description": "Shipping to channel booked as demand. Distributor inventory coverage + returns/impairment news following strong quarters.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} distributor inventory OR returns OR impairment after strong quarter",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "pull_forward_masking",
+			"description": "Incentives that borrow future demand (one-time discounts, expiring subsidies, pre-buy ahead of price rises). Agent run classifying demand drivers per quarter.",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} demand drivers per quarter: one-time discounts, expiring subsidies, pre-buy ahead of price rises"
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "metric_switching",
+			"description": "Company changes its demand KPI (users → \"engaged accounts\" → \"transacting entities\") when the old one stalls. KPI-definition tracking across consecutive earnings coverage; any unexplained definition change is an automatic flag.",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} demand KPI definition changes across consecutive earnings coverage",
+				"days": 730
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365
+	}
+}

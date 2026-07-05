@@ -1,0 +1,139 @@
+{
+	"version": "1.1.0",
+	"id": "F7",
+	"name": "Operations & Execution",
+	"question": "Does the company reliably convert plans into shipped products, delivered services, and completed projects — on time, at quality, at promised cost?",
+	"weight": 1.0,
+	"signals": [
+		{
+			"id": "f7_delivery_track_record",
+			"description": "Launch/delivery track record vs announced dates — the backbone of this dimension (announcement-to-execution ledger, §4.4; ledger follow-through feeds in once tracking accrues)",
+			"polarity": "both",
+			"weight": 0.22,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} announced launch OR delivery dates versus actual ship dates",
+				"days": 730
+			}
+		},
+		{
+			"id": "f7_recalls_outages",
+			"description": "Product recalls, outages, quality incidents",
+			"polarity": "undermines",
+			"weight": 0.13,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} recall OR outage OR defect",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f7_capex_execution",
+			"description": "Capex projects: on-time/on-budget coverage; news + filings extraction per project",
+			"polarity": "both",
+			"weight": 0.13,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} capex project on time OR over budget OR delayed",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f7_margin_trajectory",
+			"description": "Margin trajectory extracted from filings",
+			"polarity": "both",
+			"weight": 0.17,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} gross margin OR operating margin trajectory",
+				"category": "financial report",
+				"days": 365,
+				"contents": "summary"
+			}
+		},
+		{
+			"id": "f7_safety_incidents",
+			"description": "Safety/environmental incidents; regulator-domain monitors (cross-feeds F2)",
+			"polarity": "undermines",
+			"weight": 0.08,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} safety incident OR environmental violation",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f7_restructuring_frequency",
+			"description": "Restructuring frequency (\"transformation\" every 18 months); news history search",
+			"polarity": "undermines",
+			"weight": 0.12,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} restructuring OR transformation program",
+				"category": "news",
+				"days": 1095
+			}
+		},
+		{
+			"id": "f7_followthrough",
+			"description": "Announcement-ledger follow-through rate: share of dated commitments delivered on time (§4.4). Fed by the forward-only ledger (WP6.1), NOT searched — this signal is injected at grading time from ledger.followThroughRate; the recipe is a placeholder and monitor_feed recipes are skipped by report-run research.",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} announced commitment delivered on time",
+				"category": "news",
+				"cadence": "1d"
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Ships what it announces, roughly when announced; quality incidents rare and well-handled; margins behave as guided.",
+		"C": "Slippage common but disclosed; one live quality issue being managed credibly.",
+		"F": "Chronic delay pattern, repeated recalls/outages, or a \"transformation program\" treadmill masking execution failure."
+	},
+	"false_signals": [
+		{
+			"id": "perpetual_pilot",
+			"description": "\"Pilots\" and \"trials\" with marquee names that never convert to production contracts. Pilot-announcement follow-through tracking at 6/12 months.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} pilot OR trial converted to production contract",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "restructuring_as_recurring_cost",
+			"description": "\"One-time\" charges appearing every year. Filings extraction of special-items frequency.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} one-time charges OR special items",
+				"category": "financial report",
+				"days": 1095
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "milestone_redefinition",
+			"description": "Shipped ≠ announced spec (\"launch\" that is a waitlist). Launch-claim vs availability coverage comparison.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} launch availability OR waitlist OR limited release",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "The announcement ledger (§4.4) is forward-only; follow-through rate feeds this dimension only after tracking has accrued (WP6.1)."
+	}
+}

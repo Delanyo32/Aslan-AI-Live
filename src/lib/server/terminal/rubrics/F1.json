@@ -1,0 +1,138 @@
+{
+	"version": "1.0.0",
+	"id": "F1",
+	"name": "Investor Sentiment & Relationship Health",
+	"question": "Do the investors who own this company understand it, trust management, and hold for the stated thesis — or is the register churning, hostile, or promotional?",
+	"weight": 1.0,
+	"signals": [
+		{
+			"id": "f1_press_tone",
+			"description": "Tone and consistency of coverage in financial press",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} investors OR shareholders",
+				"category": "news",
+				"days": 90,
+				"contents": "highlights"
+			}
+		},
+		{
+			"id": "f1_activist_campaigns",
+			"description": "Activist involvement, proxy fights, public letters",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} activist investor OR proxy fight OR open letter",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f1_institutional_flows",
+			"description": "Institutional buying/selling reported in media; 13F coverage",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} institutional investors 13F OR 13D OR 13G buying OR selling",
+				"category": "financial report",
+				"days": 180
+			}
+		},
+		{
+			"id": "f1_short_reports",
+			"description": "Short-seller reports published against the company; personal-site category for research blogs",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} short seller report",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f1_guidance_credibility",
+			"description": "Guidance credibility: history of raised/met vs cut/missed guidance",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} guidance raised OR met OR cut OR missed across the past 8 quarters of earnings coverage",
+				"days": 730
+			}
+		},
+		{
+			"id": "f1_ir_conduct",
+			"description": "IR conduct: responsiveness, restatements of KPIs, canceled calls",
+			"polarity": "undermines",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} investor relations restatement OR canceled earnings call OR KPI change",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f1_capital_return_consistency",
+			"description": "Dividend/buyback consistency vs cuts and surprises",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} dividend cut OR suspended OR buyback OR special dividend",
+				"category": "financial report",
+				"days": 365
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Stable, informed base; management guidance historically reliable; no live activist/short campaigns; independent coverage tone matches company narrative.",
+		"C": "Mixed: churning narrative, guidance credibility questioned at least once in 4 quarters, or one unresolved activist/short thesis with partial merit.",
+		"F": "Open hostility: credible short reports unanswered, serial guidance misses reframed as beats, mass institutional exit, or evidence of coordinated promotion."
+	},
+	"false_signals": [
+		{
+			"id": "promotional_cadence_spike",
+			"description": "Abnormal press-release volume in the 60 days before a share offering, lockup expiry, or reported insider sales. Compare PR frequency (news search, company domain) across trailing windows; cross-reference offering/insider news.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} share offering OR secondary offering OR lockup expiry OR insider selling",
+				"category": "news",
+				"days": 120
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "paid_promotion_network",
+			"description": "Same bullish narrative appearing near-simultaneously across low-authority sites. Search-result clustering by publish date + domain-authority heuristics.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} stock undervalued OR massive upside OR next big",
+				"category": "news",
+				"days": 60
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "engineered_beats",
+			"description": "Guidance walked down mid-quarter then \"beaten.\" Agent run comparing guidance-change news vs earnings-result news per quarter.",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} lowered OR walked down guidance mid-quarter then beat earnings, per quarter",
+				"days": 365
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "No social-media firehose in v1 (Exa removed the tweet category); investor sentiment is inferred from press and published research coverage only — disclose this gap."
+	}
+}

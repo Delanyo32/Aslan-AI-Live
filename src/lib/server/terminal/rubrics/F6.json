@@ -1,0 +1,126 @@
+{
+	"version": "1.0.0",
+	"id": "F6",
+	"name": "Staffing & Talent Health",
+	"question": "Is the company attracting, keeping, and productively using the people it needs — especially in the functions its strategy depends on?",
+	"weight": 1.0,
+	"signals": [
+		{
+			"id": "f6_headcount",
+			"description": "Headcount level (point-in-time) + reported changes; company entity workforce.total (weekly refresh) + layoffs/hiring news monitors",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} layoffs OR hiring OR headcount",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f6_exec_changes",
+			"description": "Executive departures/arrivals, especially CFO/CTO/COO. Webset of person entities (leadership roster) with refresh monitor + 1d news monitor; profile refresh is weekly, the news path is faster.",
+			"polarity": "both",
+			"weight": 0.25,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} CFO OR CTO OR COO departure OR resignation OR appointment",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f6_key_function_hiring",
+			"description": "Key-function hiring intensity (e.g., AI researchers, field sales); category:\"people\" searches on role + company",
+			"polarity": "supports",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{role} at {company}",
+				"category": "people"
+			}
+		},
+		{
+			"id": "f6_morale_coverage",
+			"description": "Glassdoor-style morale coverage in press (no direct ratings API — evidence gap noted)",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} employee morale OR workplace culture OR Glassdoor",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f6_labor_disputes",
+			"description": "Union actions, strikes, labor disputes",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} strike OR union action OR labor dispute",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f6_insider_commitment",
+			"description": "Founder/insider commitment vs departures-and-selling pattern; news + filings coverage",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} founder OR insider departure OR share selling",
+				"category": "news",
+				"days": 365
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Net senior talent inflow in strategy-critical functions; stable executive bench; labor relations quiet.",
+		"C": "Normal churn; one unexplained senior exit; hiring slowed but targeted.",
+		"F": "CFO/auditor exits in close succession, exodus in the function the strategy depends on, or sustained hiring freeze contradicting growth narrative."
+	},
+	"false_signals": [
+		{
+			"id": "stealth_layoffs",
+			"description": "\"Performance management,\" contractor purges, silent attrition without announcement. Severance/attrition coverage + workforce.total deltas vs company statements.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} performance management OR contractor cuts OR silent attrition OR severance",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "title_inflation_retention_theater",
+			"description": "Mass promotions replacing compensation. Weak signal; only flagged when corroborated.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} mass promotions OR title inflation instead of raises",
+				"category": "news",
+				"days": 365
+			},
+			"action": "discount"
+		},
+		{
+			"id": "ghost_hiring",
+			"description": "Job postings maintained for optics without hires (postings data is an evidence gap in v1; inferred only from reporting).",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} ghost jobs OR job postings without hiring",
+				"category": "news",
+				"days": 365
+			},
+			"action": "discount"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "Job-postings data and direct employer-ratings APIs are v1 evidence gaps; morale and ghost hiring are inferred from press coverage only — disclose this gap."
+	}
+}

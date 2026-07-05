@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores'
   import { onMount } from 'svelte'
+  import { fmtDate } from '$lib/utils'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
@@ -57,13 +58,8 @@
     }
   }
 
-  function formatDate(iso: string | Date): string {
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day:   'numeric',
-      year:  'numeric',
-    })
-  }
+  // created_at is a Date (drizzle timestamp mode) — fmtDate takes an ISO string.
+  const formatDate = (d: string | Date) => fmtDate(new Date(d).toISOString())
 
   function formatReason(reason: string): string {
     if (reason.startsWith('purchase_')) {

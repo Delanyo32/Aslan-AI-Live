@@ -1,0 +1,124 @@
+{
+	"version": "1.0.0",
+	"id": "F2",
+	"name": "Policy & Governmental Landscape",
+	"question": "Do laws, regulators, subsidies, and geopolitics currently favor, tolerate, or threaten this business — and which pending changes could flip that?",
+	"weight": 1.0,
+	"signals": [
+		{
+			"id": "f2_enforcement_actions",
+			"description": "Open investigations, enforcement actions, consent decrees",
+			"polarity": "undermines",
+			"weight": 0.25,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} investigation OR enforcement action OR consent decree",
+				"category": "news",
+				"cadence": "1d",
+				"domains": ["sec.gov", "justice.gov", "ftc.gov", "ec.europa.eu"]
+			}
+		},
+		{
+			"id": "f2_pending_legislation",
+			"description": "Pending legislation/rulemaking touching the sector; domain-scoped to legislatures/regulators + trade press",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{sector} regulation OR bill OR rulemaking",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f2_subsidies_tariffs",
+			"description": "Subsidies, tariffs, export controls affecting company or inputs; 6h cadence during active policy cycles",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} OR {sector} subsidy OR tariff OR export controls",
+				"category": "news",
+				"cadence": "6h"
+			}
+		},
+		{
+			"id": "f2_lobbying_posture",
+			"description": "Lobbying posture and political exposure",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} lobbying disclosure OR political spending",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f2_licenses_approvals",
+			"description": "Licenses/approvals pipeline (FDA, FCC, antitrust clearances); agency-domain-scoped",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} approval OR clearance OR license",
+				"category": "news",
+				"cadence": "1d",
+				"domains": ["fda.gov", "fcc.gov"]
+			}
+		},
+		{
+			"id": "f2_jurisdiction_concentration",
+			"description": "Jurisdictional concentration (revenue exposed to one government's mood); geographic revenue split extraction from filings",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} geographic revenue split by jurisdiction from filings",
+				"category": "financial report"
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Tailwind: subsidized/protected activity, no open enforcement, diversified jurisdictions.",
+		"C": "Neutral-contested: sector under active rulemaking with uncertain outcome, or one material investigation with plausible defense.",
+		"F": "Existential exposure: core revenue depends on a practice regulators have signaled intent to ban, or enforcement already restricting operations."
+	},
+	"false_signals": [
+		{
+			"id": "compliance_theater",
+			"description": "Announced \"compliance programs\" or settlements framed as resolution while the underlying practice continues. Post-settlement news search for repeat violations.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} repeat violation OR continued practice after settlement",
+				"category": "news",
+				"days": 730
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "subsidy_dependence_as_demand",
+			"description": "Growth attributable to expiring government programs presented as organic. Agent run cross-referencing revenue-driver claims vs subsidy program timelines.",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} revenue-driver claims cross-referenced against government subsidy program timelines and expiry dates"
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "regulatory_arbitrage_as_strategy",
+			"description": "The \"moat\" is only a licensing loophole. Flagged when the policy dimension is load-bearing for the value-creation grade (F9 cross-check).",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} competitive advantage dependent on licensing loophole OR regulatory arbitrage"
+			},
+			"action": "discount"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "Regulator domains listed for US/EU; jurisdiction equivalents added per company at research time."
+	}
+}

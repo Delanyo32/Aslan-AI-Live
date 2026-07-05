@@ -44,6 +44,8 @@
 
   <!-- Desktop nav -->
   <nav class="hidden md:flex items-center gap-10">
+    <a href="/terminal" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Terminal</a>
+    <a href="/board" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Board</a>
     <a href="/backtests" class="mono-label text-gray-600 hover:text-black nav-underline no-underline">Explore</a>
 
     <div class="flex items-center gap-2 px-4 py-1.5 bg-white border border-[#e5e5e5] rounded-full">
@@ -73,6 +75,18 @@
 
   {#if menuOpen}
     <div class="absolute top-full right-4 mt-2 bg-white border border-[#e5e5e5] rounded-2xl min-w-[160px] z-50 shadow-lg overflow-hidden">
+      <a
+        href="/terminal"
+        onclick={() => menuOpen = false}
+        class="block px-5 py-3 mono-label text-gray-600 hover:bg-[#fcfbf9] no-underline transition-colors"
+      >Terminal</a>
+      <div class="border-t border-[#e5e5e5]"></div>
+      <a
+        href="/board"
+        onclick={() => menuOpen = false}
+        class="block px-5 py-3 mono-label text-gray-600 hover:bg-[#fcfbf9] no-underline transition-colors"
+      >Board</a>
+      <div class="border-t border-[#e5e5e5]"></div>
       <a
         href="/dashboard/account"
         onclick={() => menuOpen = false}

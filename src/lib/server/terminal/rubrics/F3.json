@@ -1,0 +1,134 @@
+{
+	"version": "1.0.0",
+	"id": "F3",
+	"name": "Competitive Landscape",
+	"question": "Is the company gaining or losing ground against current competitors and credible entrants, and is its advantage structural or temporary?",
+	"weight": 1.5,
+	"signals": [
+		{
+			"id": "f3_competitor_set",
+			"description": "Named-competitor set and changes to it (baseline). Webset entity:\"company\" with criteria; monitor search behavior catches entrants.",
+			"polarity": "both",
+			"weight": 0.2,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "competitors of {company}",
+				"category": "company",
+				"cadence": "7d"
+			}
+		},
+		{
+			"id": "f3_web_traffic",
+			"description": "Relative web traffic and trajectory: company entity webTraffic (+ similarweb connector), compared across the competitor Webset",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "web traffic level and trajectory of {company} compared against {competitors}"
+			}
+		},
+		{
+			"id": "f3_win_loss",
+			"description": "Win/loss coverage: customers switching to/from",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} OR {competitors} wins contract OR switches from",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f3_pricing_power",
+			"description": "Pricing-power evidence: price increases sticking vs discounting spirals",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} price increase OR discounting",
+				"category": "news",
+				"days": 365
+			}
+		},
+		{
+			"id": "f3_product_comparisons",
+			"description": "Product-comparison verdicts in trade press and reviews",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} vs {competitors} review OR comparison",
+				"category": "news",
+				"days": 365,
+				"contents": "highlights"
+			}
+		},
+		{
+			"id": "f3_ip_disputes",
+			"description": "Patent/IP disputes with competitors; litigation coverage",
+			"polarity": "both",
+			"weight": 0.1,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} patent dispute OR IP lawsuit",
+				"category": "news",
+				"cadence": "7d"
+			}
+		},
+		{
+			"id": "f3_new_entrant_funding",
+			"description": "New-entrant funding in the category (fiber connector / news)",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{category} startup raises",
+				"category": "news",
+				"days": 180
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Share gains confirmed by third parties; pricing power demonstrated; entrants struggling.",
+		"C": "Holding share in a commoditizing category; wins and losses roughly balanced; advantage explainable but eroding.",
+		"F": "Verified customer exodus, forced discounting, or a structurally superior substitute scaling unchecked."
+	},
+	"false_signals": [
+		{
+			"id": "tam_inflation",
+			"description": "\"Market leadership\" claimed in a market defined so narrowly (or so broadly) it's meaningless. Compare company TAM claims vs independent market-size estimates.",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} TAM OR market size claims compared against independent market-size estimates"
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "vanity_benchmarks",
+			"description": "Self-published comparisons that independent reviews contradict. Independence rule enforced.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} benchmark claims contradicted by independent review",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "land_grab_accounting",
+			"description": "\"Growth\" bought with unsustainable discounts/incentives (cross-check F9 unit economics).",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} growth driven by unsustainable discounts OR incentives, cross-checked against unit economics"
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "Competitor set comes from the company's competitor Webset (created at report time); {competitors} placeholders resolve from it."
+	}
+}

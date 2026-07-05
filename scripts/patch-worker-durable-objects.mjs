@@ -12,7 +12,7 @@ import path from "node:path"
 const WORKER_PATH = path.resolve(".svelte-kit/cloudflare/_worker.js")
 const HOOKS_IMPORT = "./../output/server/entries/hooks.server.js"
 
-const DO_CLASSES = ["PipelineRunner"]
+const DO_CLASSES = ["PipelineRunner", "TerminalReportRunner", "CompanyMonitor"]
 
 if (!existsSync(WORKER_PATH)) {
 	console.error(`[patch-worker] ${WORKER_PATH} not found — run vite build first.`)

@@ -1,0 +1,137 @@
+{
+	"version": "1.1.0",
+	"id": "F8",
+	"name": "Partnerships & Deals",
+	"question": "Do the company's partnerships, contracts, and M&A actually move revenue, capability, or distribution — or are they press-release assets?",
+	"weight": 1.0,
+	"signals": [
+		{
+			"id": "f8_new_deals_economics",
+			"description": "New partnerships/contracts with disclosed economics; LLM classifies: economics disclosed? binding? exclusive?",
+			"polarity": "supports",
+			"weight": 0.22,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} partnership OR contract OR deal",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f8_partner_confirmation",
+			"description": "Partner-side confirmation and prominence — search from the partner's side: does the partner also announce it? Independence rule.",
+			"polarity": "supports",
+			"weight": 0.21,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{partner} announces partnership with {company}",
+				"category": "news",
+				"days": 180
+			}
+		},
+		{
+			"id": "f8_renewals_lapses",
+			"description": "Renewals vs quiet lapses of past deals; deal ledger follow-up searches at renewal windows",
+			"polarity": "both",
+			"weight": 0.12,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} renews OR extends OR ends partnership",
+				"category": "news",
+				"days": 730
+			}
+		},
+		{
+			"id": "f8_ma_track_record",
+			"description": "M&A track record: integration success, goodwill impairments; filings + news history per acquisition",
+			"polarity": "both",
+			"weight": 0.18,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} acquisition integration OR goodwill impairment",
+				"category": "financial report",
+				"days": 1095
+			}
+		},
+		{
+			"id": "f8_customer_concentration",
+			"description": "Customer-concentration risk in contracts; filings extraction",
+			"polarity": "undermines",
+			"weight": 0.12,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} customer concentration",
+				"category": "financial report",
+				"days": 365
+			}
+		},
+		{
+			"id": "f8_followthrough",
+			"description": "Announcement-ledger follow-through rate for deals/partnerships: share of dated commitments delivered on time (§4.4). Fed by the forward-only ledger (WP6.1), NOT searched — this signal is injected at grading time from ledger.followThroughRate; the recipe is a placeholder and monitor_feed recipes are skipped by report-run research.",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} announced deal OR partnership delivered on time",
+				"category": "news",
+				"cadence": "1d"
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Deals have disclosed economics, partner-side confirmation, and later show up in results; acquisitions integrate without impairment.",
+		"C": "Mix of substantive and promotional deals; one aging unconfirmed \"strategic partnership.\"",
+		"F": "Deal-flow is press-release theater: undisclosed economics, no partner-side confirmation, serial acquisitions writing down goodwill."
+	},
+	"false_signals": [
+		{
+			"id": "logo_licensing",
+			"description": "\"Partnership with {BigTech}\" that is actually a standard vendor/reseller agreement. Check partner's own announcement (absent = flag), check disclosed economics (absent = flag).",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{partner} announcement OR press release about {company} partnership",
+				"category": "news",
+				"days": 180
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "round_trip_deals",
+			"description": "Company invests in an entity that becomes a \"customer\" (revenue round-tripping). Agent run cross-referencing investment announcements vs new-customer announcements. Confirmed hit caps the composite at C and pins a red banner (§4.3).",
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} investment announcements cross-referenced against new-customer announcements",
+				"days": 730
+			},
+			"action": "composite_cap:C"
+		},
+		{
+			"id": "mou_inflation",
+			"description": "Non-binding memoranda counted in \"pipeline\" or implied backlog. Language classification of deal announcements (binding vs intent).",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} memorandum of understanding OR MOU OR letter of intent pipeline",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "serial_acquirer_obscuring_decline",
+			"description": "Growth entirely from roll-ups. Filings extraction separating organic vs acquired revenue where disclosed; flag when not disclosed.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} organic revenue versus acquired revenue",
+				"category": "financial report",
+				"days": 730
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365,
+		"notes": "This dimension is largely made of its false-signal screen; the deal ledger (§4.4) feeds follow-through once tracking accrues (WP6.1). {partner} resolves per announced deal at research time."
+	}
+}

@@ -5,6 +5,7 @@
   import EventChart from '$lib/components/charts/EventChart.svelte';
   import PortfolioChart from '$lib/components/charts/PortfolioChart.svelte';
   import WaitlistModal from '$lib/components/WaitlistModal.svelte';
+  import { hostOf } from '$lib/utils';
   import { Tooltip } from 'bits-ui';
 
   interface Props {
@@ -41,22 +42,12 @@
   let sortDir = $state<'asc' | 'desc'>('asc');
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  // Capitalized first domain label ("bloomberg.com" → "Bloomberg"); unparseable URLs pass through.
   function extractPub(url: string): string {
-    try {
-      const hostname = new URL(url).hostname.replace(/^www\./, '');
-      const domain   = hostname.split('.')[0];
-      return domain.charAt(0).toUpperCase() + domain.slice(1);
-    } catch {
-      return url;
-    }
-  }
-
-  function extractDomain(url: string): string {
-    try {
-      return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-      return url;
-    }
+    const host = hostOf(url);
+    if (host === null) return url;
+    const domain = host.split('.')[0];
+    return domain.charAt(0).toUpperCase() + domain.slice(1);
   }
 
   const ENTRY_LABELS: Record<string, string> = {
@@ -711,7 +702,7 @@
         {#each allSources as src, i}
           <li class="font-sans text-[13px] text-[#fcfbf9]/60 flex items-start gap-4">
             <span class="opacity-40 uppercase tracking-widest text-[9px] mt-1 shrink-0">Source {String.fromCharCode(65 + i)}</span>
-            <span>{src.pub}&nbsp;&nbsp;·&nbsp;&nbsp;"{src.title}"&nbsp;&nbsp;·&nbsp;&nbsp;<a href={src.url} target="_blank" rel="noopener noreferrer" class="text-indigo-400/60 no-underline hover:text-indigo-400 transition-colors duration-100">↗ {extractDomain(src.url)}</a></span>
+            <span>{src.pub}&nbsp;&nbsp;·&nbsp;&nbsp;"{src.title}"&nbsp;&nbsp;·&nbsp;&nbsp;<a href={src.url} target="_blank" rel="noopener noreferrer" class="text-indigo-400/60 no-underline hover:text-indigo-400 transition-colors duration-100">↗ {hostOf(src.url) ?? src.url}</a></span>
           </li>
         {/each}
       </ul>

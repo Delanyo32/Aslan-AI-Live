@@ -1,0 +1,64 @@
+{
+	"_note": "Extraction truth set (SPEC v0.3 §2.3 figure set, invariant §5.3). Values are recorded in FULL canonical units — USD for money, % for margins, shares for share counts — sourced from each company's latest 10-K on SEC EDGAR (form 10-K XBRL, FY2025). run-eval.ts scale-normalizes the extractor's output (which may report in the filing's thousands/millions convention) before the 1% relative comparison, and discloses the scale it applied per figure. Figures marked derived are computed from stated GAAP line items in the same 10-K (the filing does not print them verbatim); expect these to be the likeliest legitimate mismatches. Companies / figures marked \"unverified\": true are structure-only — filling them from primary filings is flagged analyst work.",
+	"version": "1.0.0",
+	"companies": {
+		"AAPL": {
+			"period": "FY2025",
+			"fiscal_year_end": "2025-09-27",
+			"filing": "10-K (accession 0000320193-25-000079)",
+			"figures": {
+				"revenue": { "value": 416161000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"gross_margin": { "value": 46.91, "unit": "%", "period": "FY2025", "derived": true, "note": "GrossProfit 195,201M / Revenue 416,161M", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"operating_margin": { "value": 31.97, "unit": "%", "period": "FY2025", "derived": true, "note": "OperatingIncome 133,050M / Revenue 416,161M", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"fcf": { "value": 98767000000, "unit": "USD", "period": "FY2025", "derived": true, "note": "OCF 111,482M - CapEx 12,715M", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"ocf": { "value": 111482000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"net_income": { "value": 112010000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"net_debt": { "value": 54744000000, "unit": "USD", "period": "FY2025", "derived": true, "note": "Total debt (LT 78,328M + current 12,350M) - cash & equivalents 35,934M; excludes 18,763M current marketable securities", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"share_count": { "value": 15004697000, "unit": "shares", "period": "FY2025", "note": "Weighted-average diluted shares (filing reports in thousands: 15,004,697)", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" },
+				"sbc": { "value": 12863000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.htm" }
+			}
+		},
+		"MSFT": {
+			"period": "FY2025",
+			"fiscal_year_end": "2025-06-30",
+			"filing": "10-K (accession 0000950170-25-100235)",
+			"figures": {
+				"revenue": { "value": 281724000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"gross_margin": { "value": 68.82, "unit": "%", "period": "FY2025", "derived": true, "note": "GrossProfit 193,893M / Revenue 281,724M", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"operating_margin": { "value": 45.62, "unit": "%", "period": "FY2025", "derived": true, "note": "OperatingIncome 128,528M / Revenue 281,724M", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"fcf": { "value": 71611000000, "unit": "USD", "period": "FY2025", "derived": true, "note": "OCF 136,162M - CapEx 64,551M", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"ocf": { "value": 136162000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"net_income": { "value": 101832000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"net_debt": { "value": 12909000000, "unit": "USD", "period": "FY2025", "derived": true, "note": "Total debt (LT 40,152M + current 2,999M) - cash & equivalents 30,242M; excludes 64,323M short-term investments", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"share_count": { "value": 7465000000, "unit": "shares", "period": "FY2025", "note": "Weighted-average diluted shares (filing reports in millions: 7,465)", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" },
+				"sbc": { "value": 11974000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm" }
+			}
+		},
+		"COST": {
+			"period": "FY2025",
+			"fiscal_year_end": "2025-08-31",
+			"filing": "10-K (accession 0000909832-25-000101)",
+			"figures": {
+				"revenue": { "value": 275235000000, "unit": "USD", "period": "FY2025", "note": "Total revenue (net sales + membership fees)", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"gross_margin": { "unverified": true, "note": "Costco does not report a standalone GAAP gross profit line (membership model; merchandise costs disclosed separately) — deliberately left unverified." },
+				"operating_margin": { "value": 3.77, "unit": "%", "period": "FY2025", "derived": true, "note": "OperatingIncome 10,383M / Revenue 275,235M", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"fcf": { "value": 7837000000, "unit": "USD", "period": "FY2025", "derived": true, "note": "OCF 13,335M - CapEx 5,498M", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"ocf": { "value": 13335000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"net_income": { "value": 8099000000, "unit": "USD", "period": "FY2025", "note": "Net income attributable to Costco", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"net_debt": { "value": -8373000000, "unit": "USD", "period": "FY2025", "derived": true, "note": "Total debt (LT 5,713M + current 75M) - cash & equivalents 14,161M; negative = net cash", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"share_count": { "value": 444803000, "unit": "shares", "period": "FY2025", "note": "Weighted-average diluted shares (filing reports in thousands: 444,803)", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" },
+				"sbc": { "value": 860000000, "unit": "USD", "period": "FY2025", "source_url": "https://www.sec.gov/Archives/edgar/data/909832/000090983225000101/0000909832-25-000101-index.htm" }
+			}
+		},
+
+		"ASML": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 20-F/annual report — flagged analyst work" },
+		"JNJ": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work" },
+		"JPM": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work (bank; margin figures N/A)" },
+		"TSM": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 20-F/annual report — flagged analyst work" },
+		"DE": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work" },
+		"ADBE": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work" },
+		"UNP": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work" },
+		"TXN": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work" },
+		"WM": { "unverified": true, "_note": "structure-only; fill §2.3 figures from the latest 10-K — flagged analyst work" }
+	}
+}

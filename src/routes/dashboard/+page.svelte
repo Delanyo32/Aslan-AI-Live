@@ -11,6 +11,7 @@
   import TickerSummaryCard from '$lib/components/backtest/TickerSummaryCard.svelte'
   import RuleSummaryCard from '$lib/components/backtest/RuleSummaryCard.svelte'
   import WaitlistModal from '$lib/components/WaitlistModal.svelte'
+  import { fmtDate } from '$lib/utils'
   import type { PageData } from './$types'
   import type {
     RankedTicker,
@@ -320,13 +321,8 @@
     return `${sign}${(pct * 100).toFixed(1)}%`
   }
 
-  function fmtMonthYear(iso: string): string {
-    return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
-      month: 'short',
-      year:  'numeric',
-      timeZone: 'UTC'
-    })
-  }
+  const fmtMonthYear = (iso: string) =>
+    fmtDate(iso + 'T00:00:00Z', { month: 'short', year: 'numeric', timeZone: 'UTC' })
 </script>
 
 {#if waitlistOpen}
@@ -519,11 +515,9 @@
         {:else if view === 'processing' || view === 'confirming_rule'}
           <ProcessingLog
             streamUrl={streamUrl!}
-            sessionId={sessionId!}
             onentryexitsuggestions={handleEntryExitSuggestions}
             oncomplete={handleComplete}
             onerror={handleError}
-            ontickercandidates={() => {}}
             oncancelled={handleProcessingCancelled}
           />
 

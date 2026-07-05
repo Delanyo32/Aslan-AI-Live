@@ -1,0 +1,55 @@
+{
+	"_note": "Frozen eval set — SPEC v0.3 §3 WP7.1 / §7.2. Editable. 12 operators (broad, durable US + non-US large caps used for extraction + grading) and 6 historical deception cases used only for language/false-signal screen testing (never for extraction truth). Each deception case names the false-signal patterns it should exercise, mapped to the F1–F9 rubric screens.",
+	"version": "1.0.0",
+	"companies": [
+		{ "ticker": "AAPL", "name": "Apple Inc.", "role": "operator" },
+		{ "ticker": "MSFT", "name": "Microsoft Corporation", "role": "operator" },
+		{ "ticker": "COST", "name": "Costco Wholesale Corporation", "role": "operator" },
+		{ "ticker": "ASML", "name": "ASML Holding N.V.", "role": "operator" },
+		{ "ticker": "JNJ", "name": "Johnson & Johnson", "role": "operator" },
+		{ "ticker": "JPM", "name": "JPMorgan Chase & Co.", "role": "operator" },
+		{ "ticker": "TSM", "name": "Taiwan Semiconductor Manufacturing Company Limited", "role": "operator" },
+		{ "ticker": "DE", "name": "Deere & Company", "role": "operator" },
+		{ "ticker": "ADBE", "name": "Adobe Inc.", "role": "operator" },
+		{ "ticker": "UNP", "name": "Union Pacific Corporation", "role": "operator" },
+		{ "ticker": "TXN", "name": "Texas Instruments Incorporated", "role": "operator" },
+		{ "ticker": "WM", "name": "Waste Management, Inc.", "role": "operator" },
+
+		{
+			"ticker": "WDI",
+			"name": "Wirecard AG",
+			"role": "deception_case",
+			"note": "Exercises F9 auditor-event screen (EY qualified then withdrew audit opinion; €1.9bn escrow cash did not exist) → composite_cap:C; F8 round-trip / third-party-acquirer revenue booked through opaque partners → composite_cap:C; F1 promotional/legal response to short-seller (FT) reports rather than substantive rebuttal."
+		},
+		{
+			"ticker": "NKLA",
+			"name": "Nikola Corporation",
+			"role": "deception_case",
+			"note": "Exercises F1 promotional_cadence_spike (press-release volume clustered around capital raises); F7/F8 non-binding pre-orders / MOUs presented as demand (order book that is not revenue); commitment-ledger follow-through misses (announced truck deliveries and the Nikola One 'in motion' demo that slipped or were staged)."
+		},
+		{
+			"ticker": "LKNCY",
+			"name": "Luckin Coffee Inc.",
+			"role": "deception_case",
+			"note": "Exercises F8 round-trip / fabricated revenue (≈RMB2.2bn of fabricated transactions inflating sales and COGS) → composite_cap:C; F9 restatement + board internal investigation → composite_cap:C; F1 short-seller (Muddy Waters) report unanswered on the merits."
+		},
+		{
+			"ticker": "N/A",
+			"name": "Theranos, Inc. (private; press-era coverage)",
+			"role": "deception_case",
+			"note": "Exercises F1/F7 independence downgrade — positive signals almost entirely company-controlled (press releases, staged demos) with no independent verification; commitment-ledger misses (announced retail-clinic rollouts and lab-partnership go-lives that never delivered); evidence-gap disclosure (no audited technical validation of the core assay)."
+		},
+		{
+			"ticker": "WE",
+			"name": "WeWork (The We Company), 2019 IPO-era coverage",
+			"role": "deception_case",
+			"note": "Exercises F3/F5 governance concentration + related-party transactions (founder super-voting control, self-dealing property leases and 'We' trademark payment); non-standard adjusted metrics ('Community-Adjusted EBITDA') flagged as promotional framing; F1 narrative churn around the withdrawn S-1."
+		},
+		{
+			"ticker": "VRX",
+			"name": "Valeant Pharmaceuticals International (now Bausch Health)",
+			"role": "deception_case",
+			"note": "Exercises F8 captive-distributor / round-trip revenue via the Philidor specialty pharmacy → composite_cap:C; F9 restatement of previously reported revenue; F7 acquisition roll-up screen (organic vs acquired growth obscured by serial M&A and aggressive price hikes)."
+		}
+	]
+}

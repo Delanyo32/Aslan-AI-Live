@@ -1,0 +1,122 @@
+{
+	"version": "1.0.0",
+	"id": "F4",
+	"name": "Supply Landscape",
+	"question": "Can the company reliably and economically get what it needs — inputs, components, capacity, logistics — and how concentrated/fragile is that chain?",
+	"weight": 1.0,
+	"signals": [
+		{
+			"id": "f4_supplier_map",
+			"description": "Named supplier map + single-source dependencies (baseline). Agent run (effort: high) over filings, news, teardown/trade press; outputSchema = supplier list with confidence per edge.",
+			"polarity": "both",
+			"weight": 0.25,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "named suppliers and single-source dependencies of {company} from filings, news, and teardown/trade press"
+			}
+		},
+		{
+			"id": "f4_supplier_distress",
+			"description": "Supplier distress: financial trouble, capacity cuts, exits; monitored over the supplier Webset",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} supplier financial trouble OR capacity cut OR exit",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f4_input_costs",
+			"description": "Input-cost trajectory for key commodities/components; news + trade-press monitors per input",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} input costs OR component prices OR commodity costs",
+				"category": "news",
+				"cadence": "1d"
+			}
+		},
+		{
+			"id": "f4_logistics_geography",
+			"description": "Logistics/geography risk (chokepoints, sanctioned regions); policy cross-check with F2",
+			"polarity": "undermines",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "agent_run",
+				"query_template": "{company} logistics chokepoints OR sanctioned-region exposure in the supply chain"
+			}
+		},
+		{
+			"id": "f4_inventory_posture",
+			"description": "Inventory posture reported in filings (build-up vs shortage)",
+			"polarity": "both",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} inventory build-up OR shortage",
+				"category": "financial report",
+				"days": 365
+			}
+		},
+		{
+			"id": "f4_second_sourcing",
+			"description": "Vertical-integration or second-sourcing moves",
+			"polarity": "supports",
+			"weight": 0.15,
+			"recipe": {
+				"primitive": "monitor_feed",
+				"query_template": "{company} vertical integration OR second source OR dual sourcing",
+				"category": "news",
+				"cadence": "1d"
+			}
+		}
+	],
+	"grade_anchors": {
+		"A": "Multi-sourced critical inputs, healthy suppliers, input costs stable/hedged, no chokepoint exposure.",
+		"C": "One known single-source dependency with a mitigation plan; input costs pressuring but passable.",
+		"F": "Production hostage to a distressed or geopolitically exposed sole supplier; inventory signals contradict management narrative."
+	},
+	"false_signals": [
+		{
+			"id": "channel_stuffing_supply",
+			"description": "Inventory piling at distributors framed as \"demand.\" Distributor/partner complaints and returns coverage; inventory-vs-revenue divergence from filings extraction.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} distributor inventory OR returns OR channel complaints",
+				"category": "news",
+				"days": 365
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "phantom_capacity",
+			"description": "Announced factories/capacity that never break ground. Announcement-to-execution tracking (§4.4 ledger).",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} announced factory OR capacity expansion construction status",
+				"category": "news",
+				"days": 730
+			},
+			"action": "cap:C"
+		},
+		{
+			"id": "related_party_suppliers",
+			"description": "Inputs bought from entities tied to insiders. Filings extraction + news search on supplier ownership.",
+			"recipe": {
+				"primitive": "search",
+				"query_template": "{company} related party supplier OR insider-linked supplier ownership",
+				"category": "financial report",
+				"days": 730
+			},
+			"action": "cap:C"
+		}
+	],
+	"evidence_policy": {
+		"min_sources": 5,
+		"min_independent": 2,
+		"recency_days": 365
+	}
+}

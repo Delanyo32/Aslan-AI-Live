@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1805b03e-fe70-4cbe-9b52-0884685896be",
+  "id": "8f3b9956-40a0-4411-a293-83d5c5a2ba9f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -588,32 +588,60 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "email_captures": {
-      "name": "email_captures",
+    "pipeline_runs": {
+      "name": "pipeline_runs",
       "columns": {
-        "id": {
-          "name": "id",
+        "session_id": {
+          "name": "session_id",
           "type": "text",
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false
         },
-        "email": {
-          "name": "email",
+        "user_id": {
+          "name": "user_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "report_id": {
-          "name": "report_id",
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "error": {
+          "name": "error",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "captured_at": {
-          "name": "captured_at",
+        "result_slug": {
+          "name": "result_slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -621,21 +649,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "email_captures_report_id_backtest_reports_id_fk": {
-          "name": "email_captures_report_id_backtest_reports_id_fk",
-          "tableFrom": "email_captures",
-          "tableTo": "backtest_reports",
-          "columnsFrom": [
-            "report_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

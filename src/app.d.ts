@@ -8,6 +8,8 @@ declare global {
       env: {
         DB: D1Database
         PIPELINE_RUNNER: DurableObjectNamespace
+        TERMINAL_REPORT_RUNNER: DurableObjectNamespace
+        COMPANY_MONITOR: DurableObjectNamespace
         // Cloudflare exposes wrangler [vars] and secrets here too
         [key: string]: unknown
       }
