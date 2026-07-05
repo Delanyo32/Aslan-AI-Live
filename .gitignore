@@ -25,3 +25,8 @@ vite.config.ts.timestamp-*
 .gstack/
 .design-audit/
 .gstack-screenshots/
+
+# Agent tooling / skills
+.agents/
+.impeccable/
+.claude/skills/
