@@ -38,8 +38,8 @@
         <span class="w-2 h-2 bg-green-500 rounded-full pulse-status"></span>
         <span class="mono-label text-[10px] tracking-widest text-gray-500">Report Complete</span>
       </div>
-      <button onclick={() => window.print()}
-        class="hidden sm:block bg-white border border-[#e5e5e5] text-black px-5 py-2 rounded-full mono-label text-[10px] hover:border-black transition-colors duration-300 cursor-pointer">Export PDF</button>
+      <a href="/api/terminal/report/{report.slug}/pdf" download
+        class="hidden sm:block bg-white border border-[#e5e5e5] text-black px-5 py-2 rounded-full mono-label text-[10px] hover:border-black transition-colors duration-300 cursor-pointer no-underline">Export PDF</a>
       <a href="/terminal" class="bg-[#171717] text-white px-6 py-2.5 rounded-full mono-label text-[10px] hover:bg-[#4338ca] transition-colors duration-500 no-underline">New Report →</a>
     </div>
   </header>
