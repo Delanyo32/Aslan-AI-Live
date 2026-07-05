@@ -4,8 +4,6 @@
 @import '@fontsource/ibm-plex-sans/400.css';
 @import '@fontsource/ibm-plex-sans/500.css';
 @import '@fontsource/ibm-plex-mono/400.css';
-@import '@fontsource/instrument-serif/400.css';
-@import '@fontsource/instrument-serif/400-italic.css';
 @import '@fontsource/playfair-display/400.css';
 @import '@fontsource/playfair-display/400-italic.css';
 @import '@fontsource/playfair-display/700.css';
@@ -35,13 +33,11 @@
   --color-bg-dark:         #171717;
   --color-accent-indigo:   #4338ca;
 
-  /* Font families → font-sans, font-mono, font-serif, font-display, font-inter, font-jetbrains */
-  --font-sans:      'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono:      'IBM Plex Mono', monospace;
-  --font-serif:     'Source Serif 4', Georgia, serif;
-  --font-display:   'Playfair Display', Georgia, serif;
-  --font-inter:     'Inter', system-ui, sans-serif;
-  --font-jetbrains: 'JetBrains Mono', monospace;
+  /* Font families → font-sans, font-mono, font-serif, font-display */
+  --font-sans:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+  --font-serif:   'Source Serif 4', Georgia, serif;
+  --font-display: 'Playfair Display', Georgia, serif;
 
   /* Type scale */
   --text-xs:   11px;
@@ -164,7 +160,7 @@
 }
 
 .mono-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.35em;
   font-size: 0.75rem;

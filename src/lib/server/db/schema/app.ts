@@ -35,13 +35,6 @@ export const backtestReports = sqliteTable("backtest_reports", {
 	updated_at:           integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
 
-export const emailCaptures = sqliteTable("email_captures", {
-	id:          text("id").primaryKey(),
-	email:       text("email").notNull(),
-	report_id:   text("report_id").references(() => backtestReports.id),
-	captured_at: integer("captured_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-})
-
 export const waitlist = sqliteTable("waitlist", {
 	id:         text("id").primaryKey(),
 	email:      text("email").notNull(),
@@ -57,16 +50,6 @@ export const creditTransactions = sqliteTable("credit_transactions", {
 	backtest_id:       text("backtest_id").references(() => backtestReports.id),
 	stripe_payment_id: text("stripe_payment_id"),
 	created_at:        integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-})
-
-export const pipelineSessions = sqliteTable("pipeline_sessions", {
-	id:                     text("id").primaryKey(),
-	user_id:                text("user_id").notNull(),
-	params_json:            text("params_json").notNull(),
-	confirmed_rule_json:    text("confirmed_rule_json"),
-	confirmed_tickers_json: text("confirmed_tickers_json"),
-	created_at:             integer("created_at").notNull(),
-	expires_at:             integer("expires_at").notNull(),
 })
 
 // Cross-DO index of pipeline runs. One row per run. The DO itself owns event log

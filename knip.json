@@ -1,10 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "plugins": ["@sveltejs/kit"],
   "ignoreDependencies": [
     "@fontsource/ibm-plex-mono",
     "@fontsource/ibm-plex-sans",
-    "@fontsource/instrument-serif",
     "@fontsource/playfair-display",
     "@fontsource/source-serif-4",
     "tailwindcss",

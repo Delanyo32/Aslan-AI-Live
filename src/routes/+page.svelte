@@ -177,7 +177,7 @@
 					Strategic Semi-Conductor <span class="opacity-40">Restriction Thesis</span>
 				</h2>
 			</div>
-			<div class="flex gap-12 text-[10px] uppercase tracking-[0.4em] opacity-60" style="font-family: 'JetBrains Mono', monospace;">
+			<div class="flex gap-12 font-mono text-[10px] uppercase tracking-[0.4em] opacity-60">
 				<div class="flex flex-col">
 					<span class="opacity-30 mb-2">Confidence</span>
 					<span class="text-indigo-400 font-bold">0.94 / 1.0</span>
@@ -194,15 +194,15 @@
 			<div class="lg:col-span-1 flex flex-col gap-8">
 				<div class="p-8 border border-[#fcfbf9]/10 bg-white/5 rounded-2xl">
 					<span class="mono-label text-[9px] opacity-40 block mb-3">Total Return</span>
-					<div class="text-4xl font-bold tracking-tighter" style="font-family: 'JetBrains Mono', monospace;">+184.2%</div>
+					<div class="font-mono text-4xl font-bold tracking-tighter">+184.2%</div>
 					<div class="mt-10 grid grid-cols-2 gap-6">
 						<div>
 							<span class="mono-label text-[9px] opacity-30 block mb-1">Win Rate</span>
-							<span class="text-sm text-indigo-400 font-bold" style="font-family: 'JetBrains Mono', monospace;">75.0%</span>
+							<span class="font-mono text-sm text-indigo-400 font-bold">75.0%</span>
 						</div>
 						<div>
 							<span class="mono-label text-[9px] opacity-30 block mb-1">Events</span>
-							<span class="text-sm font-bold" style="font-family: 'JetBrains Mono', monospace;">6 FOUND</span>
+							<span class="font-mono text-sm font-bold">6 FOUND</span>
 						</div>
 					</div>
 				</div>
@@ -215,7 +215,7 @@
 
 			<!-- Table -->
 			<div class="lg:col-span-3 overflow-x-auto">
-				<table class="w-full text-sm border-collapse" style="font-family: 'JetBrains Mono', monospace;">
+				<table class="w-full font-mono text-sm border-collapse">
 					<thead>
 						<tr class="border-b border-[#fcfbf9]/10 text-left opacity-30">
 							<th class="pb-6 mono-label text-[10px] font-normal tracking-widest uppercase">Timestamp</th>
