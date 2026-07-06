@@ -73,7 +73,7 @@
   >☰</button>
 
   {#if menuOpen}
-    <div class="absolute top-full right-4 mt-2 bg-white border border-[#e5e5e5] rounded-2xl min-w-[160px] z-50 shadow-lg overflow-hidden">
+    <div class="absolute top-full right-4 mt-2 bg-white border border-[#e5e5e5] rounded-2xl min-w-[160px] z-50 overflow-hidden">
       <a
         href="/dashboard"
         onclick={() => menuOpen = false}

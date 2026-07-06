@@ -30,8 +30,21 @@
 
   const isNewDesk = $derived(data.rows.length === 0 && data.recentReports.length === 0)
 
+  // Rows with a run kicked off this session — optimistic, cleared on next load.
+  // ponytail: local-only; the ~20-min run resolves server-side and invalidateAll clears it.
+  let runningIds = $state(new Set<string>())
+
   // ── Drilldown ───────────────────────────────────────────────────────────────
   let drill = $state<{ companyId: string; dimension: string } | null>(null)
+
+  // ── Styled confirm (replaces native confirm() for spend / unwatch) ──────────
+  type ConfirmAction = { title: string; body: string; cta: string; danger?: boolean; run: () => void }
+  let confirmAction = $state<ConfirmAction | null>(null)
+  function runConfirm() {
+    const a = confirmAction
+    confirmAction = null
+    a?.run()
+  }
 
   // ── Add-company modal: resolve → confirm → /watch ───────────────────────────
   type ModalView = 'closed' | 'picking' | 'confirming'
@@ -73,8 +86,7 @@
   }
 
   // ── Row actions ─────────────────────────────────────────────────────────────
-  async function handleUnwatch(row: Row) {
-    if (!confirm(`Remove ${row.company.ticker} from the board? Monitoring stops for this company.`)) return
+  async function doUnwatch(row: Row) {
     try {
       const res = await fetch('/api/terminal/watch', {
         method: 'DELETE',
@@ -89,7 +101,7 @@
     }
   }
 
-  async function startRun(url: string, body: object | null, ticker: string, cost: number) {
+  async function startRun(url: string, body: object | null, row: Row, cost: number) {
     try {
       const res = await fetch(url, {
         method: 'POST',
@@ -102,21 +114,40 @@
         return
       }
       if (!res.ok) throw new Error('run_failed')
-      toast.success(`${ticker} run started — new grades land on the board when it completes.`)
+      runningIds = new Set(runningIds).add(row.company.id)
+      toast.success(`${row.company.ticker} run started — new grades land on the board when it completes.`)
     } catch {
       toast.error('Could not start the run. Please try again.')
     }
   }
 
+  function handleUnwatch(row: Row) {
+    confirmAction = {
+      title: `Remove ${row.company.ticker} from the board?`,
+      body: `Monitoring stops for ${row.company.name}. You can re-add it any time.`,
+      cta: 'Remove',
+      danger: true,
+      run: () => doUnwatch(row)
+    }
+  }
+
   function handleRefresh(row: Row) {
     if (!row.latest_slug) return
-    if (!confirm(`Re-run ${row.company.ticker} now for ${data.costs.rerun} credits?`)) return
-    startRun(`/api/terminal/report/${row.latest_slug}/rerun`, null, row.company.ticker, data.costs.rerun)
+    confirmAction = {
+      title: `Re-run ${row.company.ticker} now?`,
+      body: `Re-grades ${row.company.name} against the latest evidence for ${data.costs.rerun} credits.`,
+      cta: `Re-run · ${data.costs.rerun} credits`,
+      run: () => startRun(`/api/terminal/report/${row.latest_slug}/rerun`, null, row, data.costs.rerun)
+    }
   }
 
   function handleRunFirst(row: Row) {
-    if (!confirm(`Run the first report for ${row.company.ticker} at full cost — ${data.costs.report} credits?`)) return
-    startRun('/api/terminal/run', { company_id: row.company.id }, row.company.ticker, data.costs.report)
+    confirmAction = {
+      title: `Run the first report for ${row.company.ticker}?`,
+      body: `A full nine-framework report on ${row.company.name} at full cost — ${data.costs.report} credits.`,
+      cta: `Run report · ${data.costs.report} credits`,
+      run: () => startRun('/api/terminal/run', { company_id: row.company.id }, row, data.costs.report)
+    }
   }
 
   async function markRead(ids: string[]) {
@@ -140,11 +171,10 @@
   <!-- ── Command bar: grade any company ──────────────────────────────────────── -->
   <section class="grid grid-cols-1 lg:grid-cols-[1fr_auto] lg:items-end gap-8 lg:gap-12 mb-12">
     <div class="max-w-2xl">
-      <span class="mono-label text-[10px] text-[#4338ca] block mb-3">Aslan Terminal · The desk</span>
       <h1 class="serif-italic text-[#171717] leading-[1.04] mb-5" style="font-size: clamp(2.25rem, 3.5vw + 1rem, 3.5rem);">
         Grade any company.
       </h1>
-      <p class="font-serif text-lg text-gray-600 leading-relaxed mb-6">
+      <p class="font-serif text-lg text-gray-600 leading-relaxed mb-6 max-w-xl">
         Type a ticker or a name. Nine research frameworks, graded from public evidence —
         then watch it, and the grades keep moving as the evidence does.
       </p>
@@ -153,7 +183,7 @@
           bind:value={ticker}
           placeholder="AAPL, or Apple Inc."
           aria-label="Company ticker or name to grade"
-          class="flex-1 px-5 py-3.5 bg-white border border-[#e5e5e5] rounded-full font-sans text-sm text-[#171717] placeholder:text-gray-500 focus:outline-none focus:border-[#4338ca] transition-colors"
+          class="flex-1 px-5 py-3.5 bg-white border border-[#e5e5e5] rounded-full font-sans text-sm text-[#171717] placeholder:text-gray-500 focus:border-[#4338ca] transition-colors"
         />
         <button
           type="submit"
@@ -173,12 +203,12 @@
         <span class="mono-label text-[9px] text-gray-500">Engine live</span>
       </div>
       <div>
-        <span class="font-mono text-2xl text-[#171717] leading-none block">{data.rows.length}</span>
-        <span class="mono-label text-[9px] text-gray-400 mt-1 block">Watching</span>
+        <span class="font-mono text-2xl leading-none block {data.rows.length > 0 ? 'text-[#171717]' : 'text-gray-300'}">{data.rows.length}</span>
+        <span class="mono-label text-[9px] text-gray-500 mt-1 block">Watching</span>
       </div>
       <div>
-        <span class="font-mono text-2xl leading-none block {unread > 0 ? 'text-[#4338ca]' : 'text-[#171717]'}">{unread}</span>
-        <span class="mono-label text-[9px] text-gray-400 mt-1 block">Unread</span>
+        <span class="font-mono text-2xl leading-none block {unread > 0 ? 'text-[#4338ca]' : 'text-gray-300'}">{unread}</span>
+        <span class="mono-label text-[9px] text-gray-500 mt-1 block">Unread</span>
       </div>
     </div>
   </section>
@@ -186,7 +216,7 @@
   {#if isNewDesk}
     <!-- ── First run: teach the two moves ────────────────────────────────────── -->
     <section class="bg-white border border-[#e5e5e5] rounded-[2rem] p-8 lg:p-12">
-      <span class="mono-label text-[10px] text-gray-400 block mb-6">Your desk is empty — here's how it fills</span>
+      <p class="font-serif text-lg text-gray-600 mb-6 max-w-xl">Your desk is empty. It fills in two moves:</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#e5e5e5] border border-[#e5e5e5] rounded-2xl overflow-hidden">
         <div class="bg-white p-7">
           <span class="font-mono text-sm text-[#4338ca]">01</span>
@@ -232,7 +262,7 @@
         </div>
         <button
           onclick={openModal}
-          class="bg-[#171717] text-white px-6 py-2.5 rounded-full font-sans text-sm font-medium hover:bg-[#4338ca] transition-colors cursor-pointer inline-flex items-center gap-2 shrink-0"
+          class="bg-white border border-[#e5e5e5] text-[#171717] px-6 py-2.5 rounded-full font-sans text-sm font-medium hover:border-[#4338ca] hover:text-[#4338ca] transition-colors cursor-pointer inline-flex items-center gap-2 shrink-0"
         >
           <iconify-icon icon="lucide:plus" class="text-base"></iconify-icon>
           Add company
@@ -244,6 +274,7 @@
           rows={data.rows}
           rerunCost={data.costs.rerun}
           reportCost={data.costs.report}
+          {runningIds}
           oncell={(row, dimension) => (drill = { companyId: row.company.id, dimension })}
           onrefresh={handleRefresh}
           onrun={handleRunFirst}
@@ -251,10 +282,17 @@
         />
       {:else}
         <div class="bg-white border border-[#e5e5e5] rounded-3xl p-10 text-center">
-          <p class="font-serif text-lg text-gray-600 mb-1">Nothing on the board yet.</p>
-          <p class="font-sans text-sm text-gray-500">
-            Add a company to start monitoring its nine health frameworks.
+          <p class="font-serif text-lg text-gray-700 mb-1.5">Nothing on the board yet.</p>
+          <p class="font-sans text-sm text-gray-500 max-w-md mx-auto mb-6">
+            Watch a company and it re-grades itself as new evidence arrives — grade changes land here and in your inbox.
           </p>
+          <button
+            onclick={openModal}
+            class="bg-[#171717] text-white px-6 py-2.5 rounded-full font-sans text-sm font-medium hover:bg-[#4338ca] transition-colors cursor-pointer inline-flex items-center gap-2"
+          >
+            <iconify-icon icon="lucide:plus" class="text-base"></iconify-icon>
+            Add your first company
+          </button>
         </div>
       {/if}
     </section>
@@ -277,14 +315,20 @@
                 >
                   <span class="flex items-center justify-center w-12 h-12 rounded-xl border-2 shrink-0 {style.border} {style.bg} {style.text} font-serif text-2xl leading-none">{r.grade}</span>
                   <span class="min-w-0 flex-1">
-                    <span class="serif-italic text-lg text-[#171717] group-hover:text-[#4338ca] transition-colors leading-tight block truncate">{r.name}</span>
+                    <span class="flex items-center gap-2 flex-wrap">
+                      <span class="serif-italic text-lg text-[#171717] group-hover:text-[#4338ca] transition-colors leading-tight truncate">{r.name}</span>
+                      {#if r.red_banner}
+                        <span class="inline-flex items-center gap-1 text-[11px] font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">
+                          <iconify-icon icon="lucide:flag" class="text-xs"></iconify-icon> Red flag
+                        </span>
+                      {/if}
+                    </span>
                     <span class="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span class="font-mono text-xs text-gray-500">{r.ticker}</span>
                       <span class="font-mono text-xs text-gray-300">·</span>
                       <span class="font-mono text-xs text-gray-500">VRS {r.score}/100</span>
-                      {#if r.red_banner}
-                        <span class="mono-label text-[8px] text-[#b45309] bg-[#fffbeb] border border-amber-200 px-1.5 py-0.5 rounded">Flag</span>
-                      {/if}
+                      <span class="font-mono text-xs text-gray-300">·</span>
+                      <span class="font-mono text-xs text-gray-500 capitalize">{r.confidence} confidence</span>
                       {#if !r.is_public}
                         <span class="mono-label text-[8px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">Private</span>
                       {/if}
@@ -292,11 +336,11 @@
                   </span>
                   <span class="flex flex-col items-end gap-1 shrink-0 text-right">
                     {#if r.is_us}
-                      <span class="mono-label text-[8px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">US</span>
+                      <span class="mono-label text-[8px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded">US</span>
                     {:else}
                       <span class="mono-label text-[8px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">Research</span>
                     {/if}
-                    <span class="font-mono text-[10px] text-gray-400">{fmtDate(r.created_at, { month: 'short', day: 'numeric' })}</span>
+                    <span class="font-mono text-[10px] text-gray-500">{fmtDate(r.created_at, { month: 'short', day: 'numeric' })}</span>
                   </span>
                 </a>
               </li>
@@ -304,7 +348,7 @@
           </ul>
         {:else}
           <div class="bg-white border border-[#e5e5e5] rounded-3xl p-8 text-center">
-            <p class="font-serif text-lg text-gray-600 mb-1">No reports yet.</p>
+            <p class="font-serif text-lg text-gray-700 mb-1">No reports yet.</p>
             <p class="font-sans text-sm text-gray-500">Grade a company above to start your research trail.</p>
           </div>
         {/if}
@@ -328,11 +372,34 @@
   />
 {/if}
 
+<!-- Styled confirm (spend / unwatch) — replaces native confirm() -->
+<Dialog.Root bind:open={() => confirmAction !== null, (o) => { if (!o) confirmAction = null }}>
+  <Dialog.Portal>
+    <Dialog.Overlay class="fixed inset-0 bg-black/20 z-[200]" />
+    {#if confirmAction}
+      <Dialog.Content class="fixed left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-white border border-[#e5e5e5] rounded-3xl p-8 z-[201]">
+        <Dialog.Title class="font-serif text-xl text-[#171717] mb-2">{confirmAction.title}</Dialog.Title>
+        <Dialog.Description class="font-sans text-sm text-gray-600 mb-6">{confirmAction.body}</Dialog.Description>
+        <div class="flex items-center gap-4">
+          <button
+            onclick={runConfirm}
+            class="{confirmAction.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#171717] hover:bg-[#4338ca]'} text-white px-6 py-3 rounded-full font-sans text-sm font-medium transition-colors cursor-pointer"
+          >{confirmAction.cta}</button>
+          <button
+            onclick={() => (confirmAction = null)}
+            class="mono-label text-[10px] text-gray-500 hover:text-gray-700 bg-transparent border-none cursor-pointer transition-colors"
+          >Cancel</button>
+        </div>
+      </Dialog.Content>
+    {/if}
+  </Dialog.Portal>
+</Dialog.Root>
+
 <!-- Add-company modal (resolve → confirm → watch) -->
 <Dialog.Root bind:open={() => modal !== 'closed', (o) => { if (!o) modal = 'closed' }}>
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 bg-black/20 z-[200]" />
-    <Dialog.Content class="fixed left-1/2 top-24 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-white border border-[#e5e5e5] rounded-3xl shadow-2xl p-8 z-[201]">
+    <Dialog.Content class="fixed left-1/2 top-24 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-white border border-[#e5e5e5] rounded-3xl p-8 z-[201]">
 
       {#if modal === 'picking'}
         <span class="mono-label text-[#4338ca] block mb-2">Add to the Board</span>
@@ -346,7 +413,7 @@
           onpick={(c) => { selected = c; modal = 'confirming' }}
           onerror={(msg) => { toast.error(msg); resolving = false }}
         >
-          <p class="mono-label text-[9px] text-gray-400 mt-3">
+          <p class="mono-label text-[9px] text-gray-500 mt-3">
             Watching costs {data.costs.watchMonthly} credits / month · you have {data.credits}
           </p>
         </CompanyPicker>
@@ -355,9 +422,9 @@
         <span class="mono-label text-[#4338ca] block mb-2">Confirm</span>
         <Dialog.Title class="font-serif text-2xl text-[#171717] mb-4">{selected.name}</Dialog.Title>
         <p class="font-sans text-sm text-gray-600 mb-6">
-          Watch <span class="font-mono">{selected.ticker}</span> on the board for
-          {data.costs.watchMonthly} credits / month. Its grades re-run as new evidence arrives,
-          and grade changes alert you here and by email.
+          Watch <span class="font-mono">{selected.ticker}</span> for
+          {data.costs.watchMonthly} credits / month — <span class="text-[#171717]">recurring until you unwatch</span>.
+          Its grades re-run as new evidence arrives, and grade changes alert you here and by email.
         </p>
         <div class="flex items-center gap-4">
           <button
@@ -368,7 +435,7 @@
           <button
             onclick={() => (modal = 'picking')}
             disabled={busy}
-            class="mono-label text-[10px] text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer transition-colors"
+            class="mono-label text-[10px] text-gray-500 hover:text-gray-700 bg-transparent border-none cursor-pointer transition-colors"
           >← Back</button>
         </div>
       {/if}

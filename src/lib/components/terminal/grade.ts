@@ -17,6 +17,19 @@ export const DIMENSION_NAMES: Record<DimensionId, string> = {
 	F9: "Value Creation, Distribution & Management"
 }
 
+// One-word column labels for the board legend, so F1–F9 decode without hovering.
+export const DIMENSION_SHORT: Record<DimensionId, string> = {
+	F1: "Sentiment",
+	F2: "Policy",
+	F3: "Competition",
+	F4: "Supply",
+	F5: "Demand",
+	F6: "Staffing",
+	F7: "Operations",
+	F8: "Partnerships",
+	F9: "Value creation"
+}
+
 // Letter from a grade string ("B+" → "B"); anything unknown reads as F.
 export function gradeLetter(grade: string): Letter {
 	const c = grade.charAt(0).toUpperCase()

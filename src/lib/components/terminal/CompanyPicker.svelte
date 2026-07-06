@@ -58,6 +58,8 @@
       candidates = (await res.json()).candidates ?? []
     } catch {
       onerror('Could not look up that company. Please try again.')
+    } finally {
+      resolving = false
     }
   }
 </script>
@@ -70,7 +72,7 @@
     bind:value={query}
     placeholder="AAPL, or Apple Inc."
     disabled={resolving}
-    class="flex-1 px-5 py-3 bg-[#fcfbf9] border border-[#e5e5e5] rounded-full font-sans text-sm text-[#171717] placeholder:text-gray-400 focus:outline-none focus:border-[#4338ca] transition-colors disabled:opacity-50"
+    class="flex-1 px-5 py-3 bg-[#fcfbf9] border border-[#e5e5e5] rounded-full font-sans text-sm text-[#171717] placeholder:text-gray-500 focus:border-[#4338ca] transition-colors disabled:opacity-50"
   />
   <button
     type="submit"
@@ -81,7 +83,7 @@
 
 {@render children?.()}
 
-{#if resolving && candidates !== null}
+{#if candidates !== null}
   {#if candidates.length === 0}
     <p class="font-sans text-sm text-gray-500 {compact ? 'mt-6' : 'mt-8'}">
       No companies matched “{query}”.{#if !compact} Try a ticker (e.g. AAPL) or a fuller name.{/if}
@@ -94,14 +96,14 @@
       {#each candidates as c (c.ticker + c.name)}
         <button
           onclick={() => onpick(c)}
-          class="text-left bg-white border border-[#e5e5e5] rounded-2xl hover:border-[#4338ca] transition-all cursor-pointer flex items-center justify-between {compact ? 'px-4 py-3 gap-3' : 'px-5 py-4 gap-4 hover:shadow-sm'}"
+          class="text-left bg-white border border-[#e5e5e5] rounded-2xl hover:border-[#4338ca] transition-colors cursor-pointer flex items-center justify-between {compact ? 'px-4 py-3 gap-3' : 'px-5 py-4 gap-4'}"
         >
           <span class="flex flex-col min-w-0">
             <span class="font-sans text-sm text-[#171717] truncate">{c.name}</span>
-            <span class="font-mono text-xs text-gray-400">{c.ticker}</span>
+            <span class="font-mono text-xs text-gray-500">{c.ticker}</span>
           </span>
           {#if c.is_us}
-            <span class="mono-label text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">US listing</span>
+            <span class="mono-label text-[9px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full shrink-0">US listing</span>
           {:else if compact}
             <span class="mono-label text-[9px] text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full shrink-0">Research only</span>
           {:else}
