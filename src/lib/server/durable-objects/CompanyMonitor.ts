@@ -20,6 +20,7 @@
 //    (§5.4 reproducibility). The fresh agent run supplies findings/screens only.
 
 import type { DurableObjectState, DurableObjectStorage, D1Database } from "@cloudflare/workers-types"
+import type { EmailBinding } from "$lib/server/auth"
 
 import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm"
 import { createDb } from "$lib/server/db/client"
@@ -720,7 +721,8 @@ export class CompanyMonitor {
 		return raw
 	}
 
-	// Resend (dynamic import + swallow failures, mirrors auth.ts). Returns whether it sent.
+	// Cloudflare Email Sending via the EMAIL binding (dynamic env access + swallow
+	// failures, mirrors auth.ts). Returns whether it sent.
 	private async sendAlertEmail(
 		userId: string,
 		company: typeof companies.$inferSelect,
@@ -730,8 +732,8 @@ export class CompanyMonitor {
 		reason: string
 	): Promise<boolean> {
 		try {
-			const apiKey = this.env.RESEND_API_KEY as string | undefined
-			if (!apiKey) return false
+			const email = this.env.EMAIL as EmailBinding | undefined
+			if (!email) return false
 			const [user] = await this.db
 				.select({ email: authUser.email })
 				.from(authUser)
@@ -743,12 +745,11 @@ export class CompanyMonitor {
 			const fromDomain =
 				String(this.env.EMAIL_FROM_DOMAIN ?? "") || (base ? new URL(base).hostname : "aslanfinance.app")
 
-			const { Resend } = await import("resend")
-			const resend = new Resend(apiKey)
-			await resend.emails.send({
-				from: `alerts@${fromDomain}`,
+			await email.send({
+				from: { email: `alerts@${fromDomain}`, name: "Aslan Terminal" },
 				to: user.email,
 				subject: `${company.ticker} — ${dim} grade ${prior?.grade ?? "—"} → ${grade.grade}`,
+				text: `${company.name} (${company.ticker}): ${dim} moved ${prior?.grade ?? "—"} → ${grade.grade} (${grade.confidence} confidence).\n\n${reason}\n\nOpen the Board: ${base}/board`,
 				html: `<div style="font-family:sans-serif;color:#f0ede8;background:#0a0a0a;padding:32px;">
 					<p style="margin:0 0 12px;font-size:15px;"><b>${company.name} (${company.ticker})</b></p>
 					<p style="margin:0 0 12px;">${dim} moved <b>${prior?.grade ?? "—"}</b> → <b>${grade.grade}</b> (${grade.confidence} confidence).</p>

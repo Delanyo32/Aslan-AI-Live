@@ -3,6 +3,13 @@ main                = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date  = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
 
+# NOTE: aslanfinance.app custom domain is attached via the Cloudflare dashboard
+# (Worker → Settings → Domains & Routes), not here — the domain moved off the
+# old Pages project (which can't host the report/pipeline Durable Objects) and
+# the dashboard flow handles reassigning the pre-existing DNS record. Re-adding
+# a `routes = [{ pattern = "aslanfinance.app", custom_domain = true }]` line here
+# would fail to deploy until that record is Cloudflare-managed.
+
 # Static client assets (HTML, JS, CSS, images). The adapter writes both the
 # worker and the assets into .svelte-kit/cloudflare/ and generates an
 # .assetsignore file that keeps _worker.js from being served as a static asset.
@@ -18,6 +25,12 @@ binding        = "DB"
 database_name  = "aslan-ai"
 database_id    = "81f2a5e9-5864-41be-9870-19a36fc3b1d6"
 migrations_dir = "src/lib/server/db/migrations/drizzle"
+
+# Cloudflare Email Sending binding — used by better-auth's sendVerificationEmail
+# (src/lib/server/auth.ts). Sends from noreply@aslanfinance.app; the domain must
+# be onboarded via `wrangler email sending enable aslanfinance.app`.
+[[send_email]]
+name = "EMAIL"
 
 # Durable Object: long-running backtest pipeline runner (one DO instance per
 # session_id). Hosted in this same Worker bundle — Workers deployment allows
@@ -42,17 +55,20 @@ class_name = "TerminalReportRunner"
 name       = "COMPANY_MONITOR"
 class_name = "CompanyMonitor"
 
+# SQLite-backed DOs (new_sqlite_classes): KV-backed (new_classes) namespaces can
+# no longer be created on this account [API code 10099]. SQLite-backed still
+# supports the KV-style storage.get/put API the StreamingRunner uses.
 [[migrations]]
-tag         = "v1"
-new_classes = ["PipelineRunner"]
+tag                = "v1"
+new_sqlite_classes = ["PipelineRunner"]
 
 [[migrations]]
-tag         = "v2"
-new_classes = ["TerminalReportRunner"]
+tag                = "v2"
+new_sqlite_classes = ["TerminalReportRunner"]
 
 [[migrations]]
-tag         = "v3"
-new_classes = ["CompanyMonitor"]
+tag                = "v3"
+new_sqlite_classes = ["CompanyMonitor"]
 
 # Non-secret public vars. Secrets must be set via: wrangler secret put <NAME>
 # Secrets needed: BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY,

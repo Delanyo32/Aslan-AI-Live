@@ -6,7 +6,19 @@ import * as schema from "$lib/server/db/schema"
 import { eq, and, isNull } from "drizzle-orm"
 import type { createDb } from "$lib/server/db/client"
 
-export function createAuth(db: ReturnType<typeof createDb>) {
+// The Cloudflare Email Sending binding (wrangler.toml [[send_email]] name="EMAIL").
+// Structural subset of the runtime SendEmail binding — just the call we make.
+export type EmailBinding = {
+  send(message: {
+    to: string | string[]
+    from: { email: string; name?: string }
+    subject: string
+    html?: string
+    text?: string
+  }): Promise<{ messageId: string }>
+}
+
+export function createAuth(db: ReturnType<typeof createDb>, email?: EmailBinding) {
   // IMPORTANT: read env at call time, not module load time. Under
   // adapter-cloudflare, hooks.server.ts (which imports this file) is evaluated
   // during `new Server(manifest)` — before server.init({ env }) runs, so
@@ -16,7 +28,6 @@ export function createAuth(db: ReturnType<typeof createDb>) {
     BETTER_AUTH_SECRET,
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
-    RESEND_API_KEY,
   } = privateEnv
   const PUBLIC_BASE_URL = publicEnv.PUBLIC_BASE_URL
 
@@ -41,13 +52,17 @@ export function createAuth(db: ReturnType<typeof createDb>) {
       sendOnSignUp:                true,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
+        if (!email) {
+          console.error("[auth] EMAIL binding missing — verification email not sent")
+          return
+        }
         try {
-          const { Resend } = await import("resend")
-          const resend = new Resend(RESEND_API_KEY)
-          await resend.emails.send({
-            from:    `noreply@${new URL(PUBLIC_BASE_URL).hostname}`,
+          const hostname = new URL(PUBLIC_BASE_URL).hostname
+          await email.send({
             to:      user.email,
+            from:    { email: `noreply@${hostname}`, name: "Aslan Finance" },
             subject: "Verify your Aslan Finance account",
+            text: `Verify your Aslan Finance email address:\n${url}\n\nLink expires in 24 hours.`,
             html: `<div style="font-family:'IBM Plex Sans',sans-serif;color:#f0ede8;background:#0a0a0a;padding:32px;">
                      <p style="margin:0 0 16px;font-size:15px;">
                        Click to verify your email address:

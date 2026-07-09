@@ -15,7 +15,7 @@ export { CompanyMonitor } from "$lib/server/durable-objects/CompanyMonitor"
 
 export const handle: Handle = async ({ event, resolve }) => {
   const db   = createDb(event.platform!.env.DB)
-  const auth = createAuth(db)
+  const auth = createAuth(db, event.platform!.env.EMAIL)
   event.locals.db = db
 
   // Let better-auth handle all /api/auth/* routes
