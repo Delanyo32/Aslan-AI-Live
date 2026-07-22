@@ -20,7 +20,7 @@
 //    (§5.4 reproducibility). The fresh agent run supplies findings/screens only.
 
 import type { DurableObjectState, DurableObjectStorage, D1Database } from "@cloudflare/workers-types"
-import type { EmailBinding } from "$lib/server/auth"
+import type { EmailBinding } from "$lib/server/email"
 
 import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm"
 import { createDb } from "$lib/server/db/client"

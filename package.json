@@ -16,7 +16,6 @@
 		"db:migrate:local": "wrangler d1 migrations apply aslan-ai --local",
 		"db:migrate:prod": "wrangler d1 migrations apply aslan-ai --remote",
 		"db:studio": "drizzle-kit studio",
-		"seed:polar": "bun run scripts/seed-polar.ts",
 		"exa:smoke": "bun scripts/exa-smoke.ts",
 		"eval": "bun scripts/eval/run-eval.ts"
 	},
@@ -45,10 +44,8 @@
 		"@fontsource/source-serif-4": "^5.2.9",
 		"@mariozechner/pi-ai": "^0.66.1",
 		"@pdf-lib/fontkit": "^1.1.1",
-		"@polar-sh/sdk": "^0.47.0",
 		"@sveltejs/adapter-cloudflare": "^7.2.8",
 		"@tailwindcss/vite": "^4.2.2",
-		"better-auth": "^1.6.2",
 		"bits-ui": "^2.17.3",
 		"drizzle-orm": "^0.45.2",
 		"exa-js": "^2.11.0",

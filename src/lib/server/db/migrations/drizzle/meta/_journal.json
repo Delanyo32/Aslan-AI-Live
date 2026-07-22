@@ -43,6 +43,13 @@
       "when": 1784706243659,
       "tag": "0005_burly_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784709065489,
+      "tag": "0006_serious_sinister_six",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import type { D1Database, DurableObjectNamespace, Fetcher } from "@cloudflare/workers-types"
 import type { SessionAuthObject } from "@clerk/backend"
-import type { EmailBinding } from "$lib/server/auth"
+import type { EmailBinding } from "$lib/server/email"
 import type { createDb } from "$lib/server/db/client"
 
 declare global {

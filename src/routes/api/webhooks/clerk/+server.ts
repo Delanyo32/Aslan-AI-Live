@@ -1,6 +1,6 @@
 import { json } from "@sveltejs/kit"
 import { verifyWebhook } from "@clerk/backend/webhooks"
-import { profiles, backtestReports, creditTransactions } from "$lib/server/db/schema"
+import { profiles, backtestReports, terminalReports, creditTransactions, watchlistEntries, terminalAlerts } from "$lib/server/db/schema"
 import { and, eq, isNull } from "drizzle-orm"
 import type { RequestHandler } from "./$types"
 
@@ -97,6 +97,24 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
         .update(profiles)
         .set({ plan: null, period_end: null, updated_at: new Date() })
         .where(eq(profiles.user_id, userId))
+    }
+    return json({ ok: true })
+  }
+
+  // User deleted (via <UserProfile/>) → purge their D1 data. FKs to the user were
+  // dropped in phase 5, so cascade is manual; D1 has no interactive transactions,
+  // so use batch() for atomicity. Reports are unlinked (kept public), not deleted.
+  if (type === "user.deleted") {
+    const userId: string | undefined = data.id
+    if (userId) {
+      await db.batch([
+        db.delete(profiles).where(eq(profiles.user_id, userId)),
+        db.delete(creditTransactions).where(eq(creditTransactions.user_id, userId)),
+        db.delete(watchlistEntries).where(eq(watchlistEntries.user_id, userId)),
+        db.delete(terminalAlerts).where(eq(terminalAlerts.user_id, userId)),
+        db.update(backtestReports).set({ user_id: null }).where(eq(backtestReports.user_id, userId)),
+        db.update(terminalReports).set({ user_id: null }).where(eq(terminalReports.user_id, userId)),
+      ])
     }
     return json({ ok: true })
   }
