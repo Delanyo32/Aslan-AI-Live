@@ -62,18 +62,18 @@
 	const PRINCIPLES = [
 		{
 			tag: 'Evidence, not consensus',
-			title: 'No estimates. No price targets.',
-			body: 'Reports never cite street estimates or analyst price targets. Where valuation matters, a reverse-DCF shows what today’s price already assumes — so you judge the price against the evidence, not the crowd.'
+			title: 'We never cite a Wall Street price target.',
+			body: 'No analyst price targets. No street estimates. Where price matters, we show what today’s price is already betting on — so you judge it against the facts, not the crowd.'
 		},
 		{
-			tag: 'False-signal screening',
-			title: 'Manufactured signals get flagged.',
-			body: 'The core screen looks for signals that don’t hold up — coordinated sentiment, unsupported claims, staged announcements. They’re marked as unsupported, in observational language, never amplified into the grade.'
+			tag: 'Hype screening',
+			title: 'We catch the pump.',
+			body: 'When sentiment is being juiced — coordinated posts, unsupported claims, staged announcements — we flag it instead of feeding it into the grade.'
 		},
 		{
-			tag: 'Accuracy-gated verdicts',
-			title: 'Confidence, shown honestly.',
-			body: 'Beta and low-confidence states are surfaced, not hidden. Any ticker gets the nine-framework grade; the price-reconciliation verdict runs only where a real market price exists — US listings today.'
+			tag: 'Honest confidence',
+			title: 'We show our work — and when we’re guessing.',
+			body: 'Every grade opens to the filing behind it. When the evidence is thin, we say so. The price verdict runs only where there’s a real market price — US listings today.'
 		}
 	]
 
@@ -88,7 +88,7 @@
 	<title>Aslan Terminal — Evidence, not consensus</title>
 	<meta
 		name="description"
-		content="AI equity intelligence: grade any public company across nine research frameworks from public evidence, with false-signal screening and accuracy-gated verdicts."
+		content="Type a ticker. We read the 10-Ks, earnings calls and filings behind any public company and grade it A to F — with the receipts. No analyst price targets, no hype."
 	/>
 </svelte:head>
 
@@ -125,12 +125,11 @@
 				class="serif-italic text-gray-900 leading-[1.02] tracking-[-0.02em] mb-8"
 				style="font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem); text-wrap: balance;"
 			>
-				Evidence, not consensus.
+				Grade any stock like a report card.
 			</h1>
 			<p class="font-serif text-xl md:text-2xl text-gray-700 leading-relaxed max-w-2xl mx-auto mb-10">
-				Aslan Terminal grades any public company across nine research frameworks — from public
-				evidence, not the crowd. Every grade traces to its source, verdicts are accuracy-gated, and
-				manufactured signals get flagged.
+				Type a ticker. We read every 10-K, earnings call and filing behind it, then grade the
+				company A to F — and show you the receipts. No analyst price targets. No Reddit hype.
 			</p>
 
 			<form onsubmit={startAnalysis} class="max-w-xl mx-auto flex flex-col sm:flex-row gap-3">
@@ -160,8 +159,8 @@
 					One company, graded and traced.
 				</h2>
 				<p class="font-serif text-xl text-gray-700 leading-relaxed">
-					Nine frameworks composited into a single Value Reality Score — with a price verdict where a
-					real market price exists. Here is the shape of a report.
+					Nine grades — demand, competition, hiring and six more — boiled down to one score. Where a
+					real market price exists, we add a verdict on it. Here’s what a report looks like.
 				</p>
 			</div>
 
@@ -170,7 +169,7 @@
 				<div class="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
 					<div class="flex-1 min-w-0">
 						<div class="flex items-center gap-3 flex-wrap mb-3">
-							<span class="mono-label text-[10px] text-[#4338ca]">Value Reality Report</span>
+							<span class="mono-label text-[10px] text-[#4338ca]">Aslan Report</span>
 							<span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-mono uppercase tracking-widest rounded">US Listing</span>
 							<span class="px-2 py-1 bg-gray-100 text-gray-500 text-[10px] font-mono uppercase tracking-widest rounded">Illustrative sample</span>
 						</div>
@@ -187,7 +186,7 @@
 								<span class="font-mono text-4xl tracking-tighter text-gray-900">{SAMPLE.composite.score}</span>
 								<span class="font-mono text-lg text-gray-400">/100</span>
 							</div>
-							<span class="mono-label text-[10px] text-gray-400">Value Reality Score</span>
+							<span class="mono-label text-[10px] text-gray-400">Aslan Score</span>
 							<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 w-fit">
 								<span class="w-1.5 h-1.5 rounded-full {cStyle.dot}"></span>
 								<span class="font-mono text-[10px] uppercase tracking-widest text-gray-600">{SAMPLE.composite.confidence}</span>
@@ -251,10 +250,9 @@
 					How the grade is built.
 				</h2>
 				<p class="font-serif text-xl text-gray-700 leading-relaxed">
-					Aslan Terminal researches nine health frameworks from public evidence, using Exa as the sole
-					research layer, and composites them into a single Value Reality Score. Every claim is traced
-					to its source, verdicts are accuracy-gated, and manufactured signals are flagged rather than
-					amplified.
+					We research the nine things that actually move a stock — demand, competition, hiring and six
+					more — from public evidence only. Every claim traces back to the filing behind it. When a
+					stock is being pumped, we flag it instead of scoring it — and when we’re not sure, we say so.
 				</p>
 			</div>
 

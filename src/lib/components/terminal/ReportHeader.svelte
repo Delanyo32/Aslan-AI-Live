@@ -20,7 +20,7 @@
 
 <div class="mb-12">
   <div class="flex items-center gap-4 mb-6 flex-wrap">
-    <span class="mono-label text-[#4338ca] text-[10px]">Value Reality Report</span>
+    <span class="mono-label text-[#4338ca] text-[10px]">Aslan Report</span>
     {#if company.is_us}
       <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-mono uppercase tracking-widest rounded">US Listing</span>
     {:else}
@@ -49,7 +49,7 @@
             <span class="font-mono text-4xl tracking-tighter text-gray-900">{composite.score}</span>
             <span class="font-mono text-lg text-gray-400">/100</span>
           </div>
-          <span class="mono-label text-[10px] text-gray-400">Value Reality Score</span>
+          <span class="mono-label text-[10px] text-gray-400">Aslan Score</span>
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 w-fit">
             <span class="w-1.5 h-1.5 rounded-full {style.dot}"></span>
             <span class="font-mono text-[10px] uppercase tracking-widest text-gray-600">{CONFIDENCE_LABEL[composite.confidence]}</span>

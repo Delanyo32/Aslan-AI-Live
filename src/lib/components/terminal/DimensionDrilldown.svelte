@@ -54,7 +54,7 @@
   })
 
   const dimName = $derived(
-    dimension === 'composite' ? 'Value Reality Score' : DIMENSION_NAMES[dimension as DimensionId]
+    dimension === 'composite' ? 'Aslan Score' : DIMENSION_NAMES[dimension as DimensionId]
   )
   const latest = $derived(payload?.history[0] ?? null)
 
@@ -74,7 +74,7 @@
       <div class="flex items-start justify-between gap-4">
         <div>
           <span class="mono-label text-[10px] text-gray-400 block mb-1">
-            {payload?.company.ticker ?? ''} · {dimension === 'composite' ? 'VRS' : dimension}
+            {payload?.company.ticker ?? ''} · {dimension === 'composite' ? 'Aslan Score' : dimension}
           </span>
           <Dialog.Title level={3} class="font-serif text-2xl text-[#171717] leading-snug">{dimName}</Dialog.Title>
         </div>

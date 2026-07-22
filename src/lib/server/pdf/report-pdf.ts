@@ -25,7 +25,7 @@ export async function buildReportPdf(
 ): Promise<Uint8Array> {
 	const doc = await PDFDocument.create()
 	const fonts = await embedFonts(doc, opts.load)
-	doc.setTitle(`${report.company.name} — Value Reality Report`)
+	doc.setTitle(`${report.company.name} — Aslan Report`)
 	doc.setAuthor("Aslan Terminal")
 	doc.setCreator("Aslan Terminal")
 
@@ -60,7 +60,7 @@ function brandHeader(L: Layout) {
 }
 
 function headerSection(L: Layout, report: TerminalReportWithCompany) {
-	L.label("Value Reality Report", C.indigo)
+	L.label("Aslan Report", C.indigo)
 	const badge = report.company.is_us ? "US LISTING" : "RESEARCH ONLY"
 	L.textLine(`${badge}${DOT}${fmtDate(report.created_at)}${DOT}RUBRIC ${report.rubric_version}`, {
 		font: L.f.mono,
@@ -97,7 +97,7 @@ function headerSection(L: Layout, report: TerminalReportWithCompany) {
 		L.line(score, rx, top - 30, L.f.mono, 30, C.ink)
 		const sw = L.f.mono.widthOfTextAtSize(score, 30)
 		L.line("/100", rx + sw + 4, top - 30, L.f.mono, 13, C.muted)
-		L.line("VALUE REALITY SCORE", rx, top - 44, L.f.mono, 7, C.faint, 1.6)
+		L.line("ASLAN SCORE", rx, top - 44, L.f.mono, 7, C.faint, 1.6)
 		L.line(CONFIDENCE_LABEL[cmp.confidence].toUpperCase(), rx, top - 58, L.f.mono, 7, C.gray, 1.4)
 		L.y = top - boxH
 		L.gap(18)

@@ -309,7 +309,7 @@
               <div class="max-w-md">
                 <p class="font-sans text-lg text-text-primary mb-2">Permanently delete account</p>
                 <p class="font-serif italic text-text-secondary leading-relaxed">
-                  All your backtest data, reports, and credit balance will be erased forever. This cannot be undone.
+                  All your reports and credit balance will be erased forever. This cannot be undone.
                 </p>
               </div>
               <button
@@ -320,7 +320,7 @@
           {:else}
             <div class="flex flex-col gap-6">
               <p class="font-serif italic text-text-secondary leading-relaxed max-w-md">
-                This permanently deletes your account, all saved backtests, and all report access. This cannot be undone.
+                This permanently deletes your account, all saved reports, and all report access. This cannot be undone.
               </p>
               <div class="flex items-center gap-4">
                 <button

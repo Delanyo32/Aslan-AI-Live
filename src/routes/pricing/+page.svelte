@@ -5,7 +5,7 @@
 
 <!-- ── Nav ───────────────────────────────────────────────────────────────── -->
 <nav class="flex items-center py-5 border-b-2 border-black">
-	<a href="/" class="font-display italic font-normal text-[22px] text-text-primary no-underline tracking-[-0.01em]">Aslan Finance</a>
+	<a href="/" class="font-display italic font-normal text-[22px] text-text-primary no-underline tracking-[-0.01em]">Aslan Terminal</a>
 	<div class="ml-auto flex items-center gap-7 max-sm:gap-4">
 		<a href="/#how-it-works" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline hover:underline">How it works</a>
 		<a href="/pricing" class="font-sans text-xs tracking-[0.1em] uppercase text-black no-underline border-b-2 border-black pb-px">Pricing</a>
@@ -99,7 +99,7 @@
 			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">FREE TIER</span>
 			<p class="font-sans text-base text-text-secondary leading-relaxed m-0">
 				Every account starts with 20 free credits — no credit card required.
-				Run your first backtest immediately after signing up.
+				Run your first report immediately after signing up.
 			</p>
 			<a
 				href="/auth/register"
@@ -112,7 +112,7 @@
 
 <footer class="border-t-4 border-black py-6">
 	<div class="max-w-[1100px] mx-auto px-6 flex items-center gap-3 font-sans text-xs text-text-muted flex-wrap">
-		<span>© 2025 Aslan Finance</span>
+		<span>© 2026 Aslan Terminal</span>
 		<span>·</span>
 		<a href="/disclaimer" class="text-text-muted no-underline hover:text-text-secondary transition-colors duration-100">Disclaimer</a>
 		<span>·</span>

@@ -318,7 +318,7 @@ export class TerminalReportRunner extends StreamingRunner {
 		await this.advance("competitor_set")
 	}
 
-	// ── Stage: researching — 9 frameworks, per-dimension checkpoint ────────────
+	// ── Stage: researching — 9 frameworks, one concurrent fan-out ──────────────
 
 	private async runResearching(): Promise<void> {
 		const company = await this.requireCompany()
@@ -331,48 +331,68 @@ export class TerminalReportRunner extends StreamingRunner {
 			return
 		}
 
-		// ONE dimension per alarm invocation: a full 9-dimension pass (~20 min of
-		// agent runs) exceeds the DO alarm execution limit (~15 min); the runtime
-		// kills and retries the alarm, re-paying the in-flight dimension. Staying
-		// under the limit makes each checkpoint an ordinary alarm boundary. The
-		// alarm() loop re-arms because the stage stays non-terminal until all nine
-		// are checkpointed.
-		{
-			const dim = pending[0]
-			const framework = FRAMEWORKS[dim]
-			let evidence: DimensionEvidence
+		// All pending dimensions run concurrently in ONE alarm. Each is an
+		// I/O-bound Exa agent run (poll-with-backoff), so allSettled overlaps the
+		// waits: wall-clock drops to ~the slowest dimension (~9× faster than
+		// one-per-alarm). Trade-off vs. the old per-dimension checkpoint: a
+		// mid-alarm eviction re-runs (and re-pays) every in-flight dimension, not
+		// just one — accepted for a ~3-min fan-out.
+		// ponytail: flat fan-out — up to 9 dims × MAX_SEARCHES_PER_DIMENSION (12)
+		// ≈ 100 concurrent Exa searches. If that trips Exa rate limits, batch the
+		// map in groups of ~3, or move to one child DO per dimension to also
+		// recover per-dimension resume.
+		const results = await Promise.allSettled(
+			pending.map((dim) => this.researchDimension(company, dim))
+		)
 
-			try {
-				evidence = await runDimensionResearch(company, framework)
-			} catch {
-				try {
-					evidence = await runDimensionResearch(company, framework) // 1 retry
-				} catch (e2) {
-					// Empty-evidence marker: this dimension will grade at base (C, low
-					// confidence) — correct behaviour, not an error (§WP2.1).
-					logger.warn("terminal_dimension_failed", {
-						dimension: dim,
-						error: logger.serializeError(e2)
-					})
-					evidence = { dimension: dim, findings: [], screen_hits: [], evidence_items: [], searches_run: 0 }
-					failures++
-				}
-			}
-
+		const evidencePatch: Record<string, DimensionEvidence> = {}
+		for (let i = 0; i < pending.length; i++) {
+			const dim = pending[i]
+			// Empty-evidence marker on failure: this dimension grades at base (C, low
+			// confidence) — correct behaviour, not an error (§WP2.1).
+			const r = results[i]
+			const evidence: DimensionEvidence =
+				r.status === "fulfilled"
+					? r.value
+					: { dimension: dim, findings: [], screen_hits: [], evidence_items: [], searches_run: 0 }
+			if (r.status === "rejected") failures++
+			evidencePatch[`evidence:${dim}`] = evidence
 			completed.push(dim)
-			await this.storage.put({
-				[`evidence:${dim}`]: evidence,
-				researching_completed: completed,
-				research_failures: failures,
-				updated_at: Date.now()
-			})
 			await this.log(
-				`${dim} ${framework.name}: ${evidence.findings.length} findings, ${evidence.evidence_items.length} evidence items`
+				`${dim} ${FRAMEWORKS[dim].name}: ${evidence.findings.length} findings, ${evidence.evidence_items.length} evidence items`
 			)
 		}
 
-		if (pendingDimensions(completed).length === 0) await this.advance("researching")
-		// else: stage stays "researching" — the alarm loop re-arms for the next dimension.
+		await this.storage.put({
+			...evidencePatch,
+			researching_completed: completed,
+			research_failures: failures,
+			updated_at: Date.now()
+		})
+
+		await this.advance("researching")
+	}
+
+	// One dimension's research with a single retry. Throws on the second failure
+	// so the allSettled caller can mark it failed (empty-evidence marker).
+	private async researchDimension(
+		company: StoredCompany,
+		dim: DimensionId
+	): Promise<DimensionEvidence> {
+		const framework = FRAMEWORKS[dim]
+		try {
+			return await runDimensionResearch(company, framework)
+		} catch {
+			try {
+				return await runDimensionResearch(company, framework) // 1 retry
+			} catch (e2) {
+				logger.warn("terminal_dimension_failed", {
+					dimension: dim,
+					error: logger.serializeError(e2)
+				})
+				throw e2
+			}
+		}
 	}
 
 	// ── Stage: extracting — fundamentals ───────────────────────────────────────

@@ -223,7 +223,7 @@
           <h3 class="serif-italic text-2xl text-[#171717] mt-2 mb-2 leading-snug">Grade a company.</h3>
           <p class="font-serif text-base text-gray-600 leading-relaxed">
             Enter a ticker above. In about twenty minutes you get a full report — nine framework
-            grades, a Value Reality Score, and, for US listings, a price-reconciliation verdict.
+            grades, an Aslan Score, and, for US listings, a price-reconciliation verdict.
             Every grade traces to its evidence.
           </p>
         </div>
@@ -326,7 +326,7 @@
                     <span class="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span class="font-mono text-xs text-gray-500">{r.ticker}</span>
                       <span class="font-mono text-xs text-gray-300">·</span>
-                      <span class="font-mono text-xs text-gray-500">VRS {r.score}/100</span>
+                      <span class="font-mono text-xs text-gray-500">Aslan Score {r.score}/100</span>
                       <span class="font-mono text-xs text-gray-300">·</span>
                       <span class="font-mono text-xs text-gray-500 capitalize">{r.confidence} confidence</span>
                       {#if !r.is_public}

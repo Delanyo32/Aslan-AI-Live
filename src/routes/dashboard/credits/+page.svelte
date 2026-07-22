@@ -66,7 +66,7 @@
       const pack = reason.replace('purchase_', '')
       return `Purchased ${pack} pack`
     }
-    if (reason === 'backtest') return 'Backtest run'
+    if (reason === 'backtest') return 'Report run'
     if (reason === 'signup_bonus') return 'Signup bonus'
     return reason
   }

@@ -41,7 +41,7 @@
   })
 
   function colTitle(col: string): string {
-    return col === 'composite' ? 'Value Reality Score' : DIMENSION_NAMES[col as DimensionId]
+    return col === 'composite' ? 'Aslan Score' : DIMENSION_NAMES[col as DimensionId]
   }
 </script>
 
@@ -67,7 +67,7 @@
           <th class="text-left px-5 py-3 mono-label text-[9px] text-gray-400 font-normal">Company</th>
           {#each COLUMNS as col}
             <th class="px-2 py-3 mono-label text-[9px] text-gray-400 font-normal text-center" title={colTitle(col)}>
-              {col === 'composite' ? 'VRS' : col}
+              {col === 'composite' ? 'Score' : col}
             </th>
           {/each}
           <th class="px-5 py-3"></th>
@@ -152,7 +152,7 @@
 
   <!-- Legend: decode the columns and the low-confidence convention without hovering. -->
   <div class="px-5 py-3 border-t border-[#f0f0f0] flex flex-wrap items-center gap-x-4 gap-y-1.5">
-    <span class="font-mono text-[11px] text-gray-600"><span class="text-[#4338ca] font-medium">VRS</span> Value Reality Score</span>
+    <span class="font-mono text-[11px] text-gray-600"><span class="text-[#4338ca] font-medium">Score</span> Aslan Score</span>
     {#each DIMS as id}
       <span class="font-mono text-[11px] text-gray-600"><span class="text-[#4338ca] font-medium">{id}</span> {DIMENSION_SHORT[id]}</span>
     {/each}

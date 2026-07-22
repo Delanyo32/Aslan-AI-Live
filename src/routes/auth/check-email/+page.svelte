@@ -34,7 +34,7 @@
 <main class="min-h-screen flex items-center justify-center p-8 bg-bg-primary">
   <div class="w-full max-w-[360px] flex flex-col gap-8">
 
-    <a href="/" class="serif-italic text-2xl text-bg-dark no-underline tracking-[-0.01em]">Aslan Finance</a>
+    <a href="/" class="serif-italic text-2xl text-bg-dark no-underline tracking-[-0.01em]">Aslan Terminal</a>
 
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-3">

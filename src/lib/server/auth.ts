@@ -60,9 +60,9 @@ export function createAuth(db: ReturnType<typeof createDb>, email?: EmailBinding
           const hostname = new URL(PUBLIC_BASE_URL).hostname
           await email.send({
             to:      user.email,
-            from:    { email: `noreply@${hostname}`, name: "Aslan Finance" },
-            subject: "Verify your Aslan Finance account",
-            text: `Verify your Aslan Finance email address:\n${url}\n\nLink expires in 24 hours.`,
+            from:    { email: `noreply@${hostname}`, name: "Aslan Terminal" },
+            subject: "Verify your Aslan Terminal account",
+            text: `Verify your Aslan Terminal email address:\n${url}\n\nLink expires in 24 hours.`,
             html: `<div style="font-family:'IBM Plex Sans',sans-serif;color:#f0ede8;background:#0a0a0a;padding:32px;">
                      <p style="margin:0 0 16px;font-size:15px;">
                        Click to verify your email address:

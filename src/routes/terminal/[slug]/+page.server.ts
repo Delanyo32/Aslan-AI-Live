@@ -15,9 +15,9 @@ async function loadLedger(db: App.Locals["db"], companyId: string) {
 function buildMeta(report: TerminalReportWithCompany, href: string) {
 	const c = report.composite
 	return {
-		title: `${report.company.name} — Value Reality Report`,
+		title: `${report.company.name} — Aslan Report`,
 		description: c
-			? `Value Reality Score ${c.grade} · ${c.score}/100 · ${report.company.ticker}`
+			? `Aslan Score ${c.grade} · ${c.score}/100 · ${report.company.ticker}`
 			: `${report.company.ticker} — nine-framework equity intelligence report`,
 		url: href
 	}

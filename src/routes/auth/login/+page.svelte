@@ -36,15 +36,15 @@
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#4338ca] blur-[120px] rounded-full animate-glow pointer-events-none"></div>
 
     <div class="z-10">
-      <a href="/" class="serif-italic text-2xl text-white no-underline tracking-[-0.01em]">Aslan Finance</a>
+      <a href="/" class="serif-italic text-2xl text-white no-underline tracking-[-0.01em]">Aslan Terminal</a>
     </div>
 
     <div class="z-10">
       <h2 class="serif-italic text-5xl xl:text-6xl text-white leading-[1.1] tracking-tight">
-        Your thesis.<br />Historical proof.
+        The filings.<br />Not the hype.
       </h2>
       <p class="font-sans text-white/50 mt-10 text-base max-w-sm leading-relaxed font-light">
-        Harness the power of news-driven backtesting to validate your conviction with institutional-grade data.
+        We read every 10-K, earnings call and filing behind a public company, then grade it A to F — with the receipts.
       </p>
     </div>
 
@@ -58,7 +58,7 @@
   <div class="flex-1 flex items-center justify-center p-8 bg-bg-primary">
     <div class="w-full max-w-[360px] flex flex-col gap-8">
 
-      <a href="/" class="lg:hidden serif-italic text-2xl text-bg-dark no-underline">Aslan Finance</a>
+      <a href="/" class="lg:hidden serif-italic text-2xl text-bg-dark no-underline">Aslan Terminal</a>
 
       <div class="flex flex-col gap-3">
         <span class="mono-label text-[#4338ca] block">Sign In</span>

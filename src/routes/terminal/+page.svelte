@@ -96,7 +96,7 @@
       <h1 class="serif-italic text-4xl lg:text-5xl text-[#171717] mb-3">Grade any company.</h1>
       <p class="font-sans text-sm text-gray-500 mb-8">
         Enter a ticker or company name. We research nine health frameworks from public
-        evidence and composite them into a Value Reality Score.
+        evidence and composite them into an Aslan Score.
       </p>
 
       <CompanyPicker
