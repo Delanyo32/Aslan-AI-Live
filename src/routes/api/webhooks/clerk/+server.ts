@@ -7,7 +7,9 @@ import type { RequestHandler } from "./$types"
 // Monthly credit allotment per Clerk plan slug. Credits RESET each billing cycle
 // (unused credits expire) — the subscription model chosen for this migration.
 // ponytail: reset-per-cycle (SET); for rollover, ADD with a cap instead.
-const ALLOTMENT: Record<string, number> = { starter: 50, pro: 200, power: 600 }
+// Keys MUST match the Clerk plan slugs exactly (verified via `clerk config pull`):
+// starter / professional / power. (The Professional plan's slug is "professional", not "pro".)
+const ALLOTMENT: Record<string, number> = { starter: 50, professional: 200, power: 600 }
 const WELCOME_CREDITS = 20
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
