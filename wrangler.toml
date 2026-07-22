@@ -71,12 +71,13 @@ tag                = "v3"
 new_sqlite_classes = ["CompanyMonitor"]
 
 # Non-secret public vars. Secrets must be set via: wrangler secret put <NAME>
-# Secrets needed: BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY,
+# Secrets needed (wrangler secret put): CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET,
 #                 OPENROUTER_API_KEY, ALPACA_API_KEY, ALPACA_API_SECRET, EXA_API_KEY,
-#                 EXA_WEBHOOK_TOKEN, POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET,
-#                 POLAR_PRODUCT_STARTER, POLAR_PRODUCT_PRO, POLAR_PRODUCT_POWER
+#                 EXA_WEBHOOK_TOKEN
 
 [vars]
 PUBLIC_BASE_URL          = "https://aslanfinance.app"
 OPENROUTER_DEFAULT_MODEL = "openai/gpt-5.4-mini"
 EMAIL_FROM_DOMAIN        = "aslanfinance.app"
+# Add the prod publishable key here at deploy (public, not a secret):
+# PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_..."

@@ -12,17 +12,15 @@ import type { DurableObjectNamespace } from "@cloudflare/workers-types"
 type Db = ReturnType<typeof createDb>
 export type CompanyRow = typeof companies.$inferSelect
 
-// ponytail: dev-only auth bypass (kept from WP2.1). Gated on the DEV_AUTH_BYPASS
-// platform var, which exists only in .dev.vars — never set it in production.
-// Lets curl acceptance runs hit the terminal routes without a session cookie.
+// The acting user from the Clerk session, or null when signed out. (The old
+// DEV_AUTH_BYPASS auth shortcut was removed — Clerk owns auth in dev and prod now.
+// `platform`/`request` are kept in the signature so callers stay unchanged.)
 export function resolveUserId(
 	locals: App.Locals,
-	platform: App.Platform | undefined,
-	request: Request
+	_platform?: App.Platform | undefined,
+	_request?: Request
 ): string | null {
-	if (locals.user) return locals.user.id
-	if (platform?.env.DEV_AUTH_BYPASS === "1") return request.headers.get("x-dev-user") || "dev-user"
-	return null
+	return locals.user?.id ?? null
 }
 
 // §2.8 402 payload. Null when the balance covers the cost.
@@ -48,8 +46,8 @@ export async function startTerminalRun(
 		.select({ credits: profiles.credits })
 		.from(profiles)
 		.where(eq(profiles.user_id, opts.userId))
-	// ponytail: no user row (dev-bypass id) skips the pre-check; the DO's atomic
-	// debit-with-refund at persist time is the real gate.
+	// ponytail: a user with no profile row (not yet created) skips the pre-check;
+	// the DO's atomic debit-with-refund at persist time is the real gate.
 	if (user) {
 		const short = insufficientCredits(user.credits ?? 0, creditCost)
 		if (short) return json(short, { status: 402 })
