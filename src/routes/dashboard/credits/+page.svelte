@@ -2,6 +2,7 @@
   import { page } from '$app/stores'
   import { onMount } from 'svelte'
   import { fmtDate } from '$lib/utils'
+  import { PricingTable } from 'svelte-clerk'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
@@ -10,7 +11,8 @@
   const credits = $derived(liveCredits ?? data.user.credits ?? 0)
   const success  = $derived($page.url.searchParams.get('success') === '1')
 
-  // Polar redirects back before the webhook fires — poll /api/user/credits until balance increases.
+  // After subscribing, Clerk redirects here with ?success=1; the credit grant lands
+  // via the billing webhook a moment later — poll /api/user/credits until it does.
   onMount(() => {
     if (!success) return
     const initial = data.user.credits ?? 0
@@ -27,45 +29,22 @@
       } catch { /* retry on next tick */ }
     }
 
-    const timers = [1000, 2500, 4500, 7500].map(d => setTimeout(check, d))
+    const timers = [1000, 2500, 4500, 7500, 11000].map(d => setTimeout(check, d))
     return () => { stopped = true; timers.forEach(clearTimeout) }
   })
-
-  const packs = [
-    { key: 'starter', label: 'Starter', credits: 50,  price: '$9.00',  perCredit: '$0.18/credit' },
-    { key: 'pro',     label: 'Pro',     credits: 200, price: '$19.00', perCredit: '$0.095/credit' },
-    { key: 'power',   label: 'Power',   credits: 600, price: '$49.00', perCredit: '$0.082/credit' },
-  ] as const
-
-  let buying = $state<string | null>(null)
-  let buyError = $state<string | null>(null)
-
-  async function buy(pack: string) {
-    buying = pack
-    buyError = null
-    try {
-      const res = await fetch('/api/credits/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pack }),
-      })
-      if (!res.ok) throw new Error('checkout_failed')
-      const { url } = await res.json()
-      window.location.href = url
-    } catch {
-      buyError = pack
-      buying = null
-    }
-  }
 
   // created_at is a Date (drizzle timestamp mode) — fmtDate takes an ISO string.
   const formatDate = (d: string | Date) => fmtDate(new Date(d).toISOString())
 
   function formatReason(reason: string): string {
-    if (reason.startsWith('purchase_')) {
-      const pack = reason.replace('purchase_', '')
-      return `Purchased ${pack} pack`
+    if (reason.startsWith('subscription_')) {
+      const plan = reason.replace('subscription_', '')
+      return `${plan.charAt(0).toUpperCase()}${plan.slice(1)} subscription`
     }
+    if (reason.startsWith('purchase_')) return `Purchased ${reason.replace('purchase_', '')} pack` // legacy
+    if (reason === 'terminal_report') return 'Report run'
+    if (reason === 'terminal_rerun')  return 'Report rerun'
+    if (reason === 'watchlist_monthly') return 'Watchlist (monthly)'
     if (reason === 'backtest') return 'Report run'
     if (reason === 'signup_bonus') return 'Signup bonus'
     return reason
@@ -85,7 +64,7 @@
   {#if success}
     <div class="border-l-4 border-[#4338ca] bg-white px-6 py-4 rounded-r-xl shadow-sm font-sans text-sm text-text-primary flex items-center gap-3 mb-8">
       <iconify-icon icon="lucide:check-circle" class="text-[#4338ca] text-lg shrink-0"></iconify-icon>
-      <span>Credits added to your account.</span>
+      <span>Subscription active — credits are being added to your account.</span>
     </div>
   {/if}
 
@@ -107,37 +86,12 @@
   <!-- ── Two-Column Grid ───────────────────────────────────────────────────── -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-    <!-- Left: Credit Packs (5/12) -->
+    <!-- Left: Subscription plans (5/12) -->
     <div class="lg:col-span-5 flex flex-col gap-6">
-      <span class="mono-label text-[#525252] text-[10px]">Acquisition / Packs</span>
-
-      {#each packs as pack (pack.key)}
-        {@const isPower = pack.key === 'power'}
-        <div class="{isPower ? 'bg-[#171717] text-white relative overflow-hidden' : 'bg-white border border-[#e5e5e5]'} rounded-2xl p-6 premium-transition flex items-center justify-between gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          {#if isPower}
-            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none" aria-hidden="true">
-              <iconify-icon icon="lucide:zap" class="text-5xl"></iconify-icon>
-            </div>
-          {/if}
-          <div class="flex flex-col gap-1 relative z-10">
-            <span class="font-sans text-lg font-medium {isPower ? 'text-white' : 'text-text-primary'}">{pack.label}</span>
-            <span class="font-mono text-[11px] {isPower ? 'text-[#aaaaaa]' : 'text-text-secondary'} uppercase tracking-wider">{pack.credits} Credits · {pack.perCredit}</span>
-          </div>
-          <span class="font-mono text-xl {isPower ? 'text-white' : 'text-text-primary'} relative z-10">{pack.price}</span>
-          <div class="flex flex-col items-end gap-2 relative z-10">
-            {#if buyError === pack.key}
-              <span class="font-sans text-[11px] text-text-secondary">Error — try again</span>
-            {/if}
-            <button
-              class="{isPower ? 'bg-white text-black border-2 border-white hover:bg-[#f0f0f0]' : 'bg-transparent border border-black text-text-primary hover:bg-black hover:text-white'} font-sans text-xs uppercase tracking-widest py-2.5 px-6 cursor-pointer rounded-full transition-all duration-300 disabled:opacity-40 disabled:cursor-default"
-              disabled={!!buying}
-              onclick={() => buy(pack.key)}
-            >
-              {buying === pack.key ? '...' : 'Buy →'}
-            </button>
-          </div>
-        </div>
-      {/each}
+      <span class="mono-label text-[#525252] text-[10px]">Subscription / Plans</span>
+      <div class="bg-white border border-[#e5e5e5] rounded-2xl p-6">
+        <PricingTable newSubscriptionRedirectUrl="/dashboard/credits?success=1" />
+      </div>
     </div>
 
     <!-- Right: Usage History (7/12) -->
@@ -162,7 +116,7 @@
                   <tr class="hover:bg-[#fcfbf9] transition-colors duration-150">
                     <td class="py-5 font-mono text-xs text-text-muted whitespace-nowrap">{formatDate(tx.created_at)}</td>
                     <td class="py-5 font-sans text-sm text-text-primary">{formatReason(tx.reason)}</td>
-                    <td class="py-5 font-mono text-sm text-right whitespace-nowrap {tx.amount > 0 ? 'text-text-primary font-bold' : tx.amount < 0 ? 'text-text-secondary' : 'text-text-secondary'}">{tx.amount > 0 ? `+${tx.amount}` : tx.amount}</td>
+                    <td class="py-5 font-mono text-sm text-right whitespace-nowrap {tx.amount > 0 ? 'text-text-primary font-bold' : 'text-text-secondary'}">{tx.amount > 0 ? `+${tx.amount}` : tx.amount}</td>
                   </tr>
                 {/each}
               </tbody>

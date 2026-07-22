@@ -1,10 +1,16 @@
 import type { PageServerLoad } from "./$types"
-import { creditTransactions } from "$lib/server/db/schema"
+import { creditTransactions, profiles } from "$lib/server/db/schema"
 import { eq, desc } from "drizzle-orm"
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = locals.user!
 	const { db } = locals
+
+	const [balance] = await db
+		.select({ credits: profiles.credits })
+		.from(profiles)
+		.where(eq(profiles.user_id, user.id))
+		.limit(1)
 
 	const transactions = await db
 		.select({
@@ -18,5 +24,5 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.orderBy(desc(creditTransactions.created_at))
 		.limit(20)
 
-	return { user, transactions }
+	return { user: { ...user, credits: balance?.credits ?? 0 }, transactions }
 }
