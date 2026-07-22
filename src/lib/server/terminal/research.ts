@@ -64,6 +64,10 @@ export type ClassifyFn = (input: ClassifyInput) => Promise<ClassifyOutput>
 
 export type ResearchOpts = {
 	seedItems?: EvidenceItem[] // passed into the agent run's input.data for incremental rescores
+	// Shared across all dimensions of one report so total fallback searches are
+	// bounded report-wide (not just per-dimension). Mutated in place; the sync
+	// check-and-decrement before each await is race-free under JS single-threading.
+	searchBudget?: { remaining: number }
 	// Injectable callers so tests run without network. Default to the real impls.
 	createAgentRun?: typeof createAgentRun
 	pollAgentRun?: typeof pollAgentRun
@@ -348,7 +352,8 @@ async function fallbackResearch(
 	company: Company,
 	framework: RubricFramework,
 	search: typeof terminalSearch,
-	classify: ClassifyFn
+	classify: ClassifyFn,
+	budget?: { remaining: number }
 ): Promise<DimensionResearchResult> {
 	const companyDomains = deriveCompanyDomains(company)
 	const cap = TERMINAL_CONFIG.MAX_SEARCHES_PER_DIMENSION
@@ -365,7 +370,15 @@ async function fallbackResearch(
 			skippedMonitor++ // watchlist input — not run in report runs (§ WP1.2)
 			continue
 		}
+		// Two caps: per-dimension (MAX_SEARCHES_PER_DIMENSION) and, when many
+		// dimensions fall back at once, a shared report-wide budget. Reserve from
+		// the shared budget synchronously before the await so concurrent dimensions
+		// can't overspend it.
 		if (searches_run >= cap) break
+		if (budget) {
+			if (budget.remaining <= 0) break
+			budget.remaining--
+		}
 		searches_run++
 		try {
 			const res = await search(recipe, company.name)
@@ -496,6 +509,6 @@ export async function runDimensionResearch(
 	try {
 		return await agentResearch(company, framework, opts, createRun, pollRun)
 	} catch {
-		return await fallbackResearch(company, framework, search, classify)
+		return await fallbackResearch(company, framework, search, classify, opts.searchBudget)
 	}
 }

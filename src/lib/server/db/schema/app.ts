@@ -10,7 +10,7 @@
 //   timestamp → integer (mode: "timestamp")  — Unix seconds
 //   boolean → integer (mode: "boolean")      — 0/1
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core"
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core"
 
 export const backtestReports = sqliteTable("backtest_reports", {
 	id:                   text("id").primaryKey(),
@@ -39,6 +39,25 @@ export const waitlist = sqliteTable("waitlist", {
 	email:      text("email").notNull(),
 	interest:   text("interest"),
 	created_at: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+})
+
+// Per-generation cost ledger. One row per billable action (deep report, rerun,
+// backtest, watchlist cycle). Records the measured Exa unit counts and an
+// estimated USD cost so real cost-to-serve and per-user margin are queryable:
+//   per generation → one row; per user → SUM(est_cost_usd) GROUP BY user_id.
+// est_cost_usd is an estimate (COST_USD price map × counts), not a billed amount.
+export const usageEvents = sqliteTable("usage_events", {
+	id:              text("id").primaryKey(),
+	user_id:         text("user_id").notNull(),
+	kind:            text("kind").notNull(),                       // deep_report | rerun | backtest | watchlist
+	report_id:       text("report_id"),                           // terminal report id or backtest id
+	exa_agent_runs:  integer("exa_agent_runs").notNull().default(0),
+	exa_searches:    integer("exa_searches").notNull().default(0),
+	exa_contents:    integer("exa_contents").notNull().default(0),
+	exa_websets:     integer("exa_websets").notNull().default(0),
+	est_cost_usd:    real("est_cost_usd").notNull().default(0),
+	credits_charged: integer("credits_charged").notNull().default(0),
+	created_at:      integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
 
 export const creditTransactions = sqliteTable("credit_transactions", {

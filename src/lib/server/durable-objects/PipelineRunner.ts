@@ -4,7 +4,8 @@
 // payloads, and the pipeline_runs D1 index.
 
 import { and, eq, sql } from "drizzle-orm"
-import { profiles, creditTransactions, pipelineRuns } from "$lib/server/db/schema"
+import { profiles, creditTransactions, usageEvents, pipelineRuns } from "$lib/server/db/schema"
+import { TERMINAL_CONFIG } from "$lib/server/terminal/config"
 import type {
 	ResearchEvent,
 	ResearchSummary,
@@ -522,6 +523,21 @@ export class PipelineRunner extends StreamingRunner {
 			reason:      params.is_rerun === true ? "rerun" : "backtest",
 			backtest_id: report.id,
 		})
+
+		// Per-generation cost row (backtest path). Non-fatal — never fail the run.
+		try {
+			await this.db.insert(usageEvents).values({
+				id:           crypto.randomUUID(),
+				user_id:      userId,
+				kind:         params.is_rerun === true ? "rerun" : "backtest",
+				report_id:    report.id,
+				exa_searches: totalExa,
+				est_cost_usd: totalExa * TERMINAL_CONFIG.COST_USD.EXA_SEARCH,
+				credits_charged: cost,
+			})
+		} catch (e) {
+			logger.warn("pipeline_usage_log_skipped", { error: logger.serializeError(e) })
+		}
 
 		await this.storage.put({
 			report_id:   report.id,

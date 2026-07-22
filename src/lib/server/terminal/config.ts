@@ -14,5 +14,15 @@ export const TERMINAL_CONFIG = {
 	LEDGER_CHECK_OFFSETS_MONTHS: [0, 6, 12],
 	VERDICT_BETA: true,                     // flipped manually after WP7.1 extraction eval ≥ 98%
 	MAX_SEARCHES_PER_DIMENSION: 12,
+	MAX_SEARCHES_PER_REPORT: 30,            // shared fallback budget across all 9 dims — caps worst-case cost
 	EXTRACTION_FILING_PAGES: 20,
+	// Per-unit Exa cost estimates (USD) for usage_events logging. Placeholder
+	// economics — tune against real usage_events data. Over-estimating is the safe
+	// direction for a margin guardrail.
+	COST_USD: {
+		EXA_AGENT_RUN: 0.1,                 // one agent run at AGENT_EFFORT_DIMENSION ("medium")
+		EXA_SEARCH: 0.005,                  // one fallback exa.search()
+		EXA_CONTENTS_CALL: 0.02,            // one getContents() (filing extraction, ≤20 subpages)
+		EXA_WEBSET: 0.05                    // one competitor webset create
+	}
 }

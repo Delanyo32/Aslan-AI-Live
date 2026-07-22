@@ -10,6 +10,7 @@ import { and, desc, eq, sql } from "drizzle-orm"
 import {
 	profiles,
 	creditTransactions,
+	usageEvents,
 	companies,
 	dimensionScores,
 	evidenceItems,
@@ -341,8 +342,12 @@ export class TerminalReportRunner extends StreamingRunner {
 		// ≈ 100 concurrent Exa searches. If that trips Exa rate limits, batch the
 		// map in groups of ~3, or move to one child DO per dimension to also
 		// recover per-dimension resume.
+		// One shared search budget for the whole fan-out: even if every dimension
+		// degrades to the fallback path, total Exa searches stay ≤
+		// MAX_SEARCHES_PER_REPORT instead of 9 × MAX_SEARCHES_PER_DIMENSION.
+		const searchBudget = { remaining: TERMINAL_CONFIG.MAX_SEARCHES_PER_REPORT }
 		const results = await Promise.allSettled(
-			pending.map((dim) => this.researchDimension(company, dim))
+			pending.map((dim) => this.researchDimension(company, dim, searchBudget))
 		)
 
 		const evidencePatch: Record<string, DimensionEvidence> = {}
@@ -377,14 +382,15 @@ export class TerminalReportRunner extends StreamingRunner {
 	// so the allSettled caller can mark it failed (empty-evidence marker).
 	private async researchDimension(
 		company: StoredCompany,
-		dim: DimensionId
+		dim: DimensionId,
+		searchBudget?: { remaining: number }
 	): Promise<DimensionEvidence> {
 		const framework = FRAMEWORKS[dim]
 		try {
-			return await runDimensionResearch(company, framework)
+			return await runDimensionResearch(company, framework, { searchBudget })
 		} catch {
 			try {
-				return await runDimensionResearch(company, framework) // 1 retry
+				return await runDimensionResearch(company, framework, { searchBudget }) // 1 retry
 			} catch (e2) {
 				logger.warn("terminal_dimension_failed", {
 					dimension: dim,
@@ -626,6 +632,40 @@ export class TerminalReportRunner extends StreamingRunner {
 				.set({ credits: sql`${profiles.credits} + ${creditCost}` })
 				.where(eq(profiles.user_id, userId))
 			throw e
+		}
+
+		// 5. usage_events: per-generation cost row from measured Exa units. Non-fatal
+		//    — a failed cost-log must never fail the report or undo the debit.
+		//    ponytail: searches_run===1 ⇒ agent path; a rare 1-search fallback is
+		//    counted as an agent run, which over-estimates cost (the safe direction
+		//    for a margin guardrail). Failed dims (searches_run 0) under-count.
+		try {
+			let exaAgentRuns = 0
+			let exaSearches = 0
+			for (const e of evidenceList) {
+				if (e.searches_run === 1) exaAgentRuns++
+				else exaSearches += e.searches_run
+			}
+			const C = TERMINAL_CONFIG.COST_USD
+			const estCost =
+				exaAgentRuns * C.EXA_AGENT_RUN +
+				exaSearches * C.EXA_SEARCH +
+				C.EXA_CONTENTS_CALL + // filing extraction (1 getContents)
+				C.EXA_WEBSET // competitor set (1 webset)
+			await this.db.insert(usageEvents).values({
+				id: crypto.randomUUID(),
+				user_id: userId,
+				kind: reason === "terminal_rerun" ? "rerun" : "deep_report",
+				report_id: report.id,
+				exa_agent_runs: exaAgentRuns,
+				exa_searches: exaSearches,
+				exa_contents: 1,
+				exa_websets: 1,
+				est_cost_usd: estCost,
+				credits_charged: creditCost
+			})
+		} catch (e) {
+			logger.warn("terminal_usage_log_skipped", { error: logger.serializeError(e) })
 		}
 
 		await this.storage.put({

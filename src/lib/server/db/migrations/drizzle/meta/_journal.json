@@ -50,6 +50,13 @@
       "when": 1784709065489,
       "tag": "0006_serious_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784750929788,
+      "tag": "0007_bright_iron_patriot",
+      "breakpoints": true
     }
   ]
 }

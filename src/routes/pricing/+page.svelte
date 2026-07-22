@@ -26,38 +26,39 @@
 			<p class="font-sans text-base text-text-secondary m-0">Free to start — 20 credits on signup, no card required.</p>
 		</div>
 
-		<!-- Credit packs -->
+		<!-- Monthly plans -->
 		<div class="border-t border-black py-10 flex flex-col gap-5">
-			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">CREDIT PACKS</span>
+			<span class="font-sans text-xs tracking-[0.08em] text-text-secondary uppercase">MONTHLY PLANS</span>
 
 			<div class="flex flex-col border border-black">
-				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-sans text-xs tracking-[0.06em] text-text-secondary bg-bg-surface uppercase border-b border-black">
-					<span>PACK</span>
-					<span>CREDITS</span>
-					<span class="text-right">PRICE</span>
-					<span class="text-right">PER CREDIT</span>
+				<div class="grid grid-cols-[1fr_110px_90px] py-2.5 px-3 font-sans text-xs tracking-[0.06em] text-text-secondary bg-bg-surface uppercase border-b border-black">
+					<span>PLAN</span>
+					<span class="text-right">CREDITS / MO</span>
+					<span class="text-right">PRICE / MO</span>
 				</div>
-				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
+				<div class="grid grid-cols-[1fr_110px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
 					<span>Starter</span>
-					<span>50</span>
-					<span class="text-right">$9</span>
-					<span class="text-right text-text-muted">$0.18</span>
-				</div>
-				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
-					<span>Pro</span>
-					<span>200</span>
-					<span class="text-right">$19</span>
-					<span class="text-right text-text-muted">$0.095</span>
-				</div>
-				<div class="grid grid-cols-[1fr_80px_70px_90px] py-2.5 px-3 font-mono text-sm bg-black text-white">
-					<span>Power</span>
-					<span>600</span>
+					<span class="text-right">50</span>
 					<span class="text-right">$49</span>
-					<span class="text-right text-[#AAAAAA]">$0.082</span>
+				</div>
+				<div class="grid grid-cols-[1fr_110px_90px] py-2.5 px-3 font-mono text-sm bg-black text-white border-b border-black">
+					<span>Professional</span>
+					<span class="text-right">200</span>
+					<span class="text-right">$179</span>
+				</div>
+				<div class="grid grid-cols-[1fr_110px_90px] py-2.5 px-3 font-mono text-sm text-text-primary border-b border-black">
+					<span>Power</span>
+					<span class="text-right">600</span>
+					<span class="text-right">$499</span>
+				</div>
+				<div class="grid grid-cols-[1fr_110px_90px] py-2.5 px-3 font-mono text-sm text-text-primary">
+					<span>Fund / Enterprise</span>
+					<span class="text-right text-text-muted">Custom</span>
+					<span class="text-right"><a href="mailto:hello@aslan.ai?subject=Fund%20plan" class="text-text-primary no-underline border-b border-black">Contact →</a></span>
 				</div>
 			</div>
 
-			<p class="font-sans text-sm text-text-muted m-0">Credits do not expire. No subscription required.</p>
+			<p class="font-sans text-sm text-text-muted m-0">Credits refill each billing cycle. Unused credits don't roll over. Cancel anytime.</p>
 		</div>
 
 		<!-- Credit costs -->
@@ -66,23 +67,19 @@
 
 			<div class="flex flex-col">
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">Per Exa search (usage-based)</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">1 credit</span>
+					<span class="text-text-secondary">Deep report (9-framework grade)</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">5 credits</span>
 				</div>
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">AI baseline — 1 ticker</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">+1 credit</span>
+					<span class="text-text-secondary">Re-run with adjusted parameters</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">2 credits</span>
 				</div>
 				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">AI baseline — 2–5 tickers</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">+2 credits</span>
-				</div>
-				<div class="flex justify-between py-[9px] border-b border-black font-sans text-sm">
-					<span class="text-text-secondary">AI baseline — 6+ tickers</span>
-					<span class="font-mono text-text-primary whitespace-nowrap ml-4">+3 credits</span>
+					<span class="text-text-secondary">Watchlist monitoring — per company</span>
+					<span class="font-mono text-text-primary whitespace-nowrap ml-4">10 credits / mo</span>
 				</div>
 				<div class="flex justify-between py-[9px] font-sans text-sm">
-					<span class="text-text-secondary">Re-run with adjusted parameters</span>
+					<span class="text-text-secondary">Backtest — per Exa search (usage-based)</span>
 					<span class="font-mono text-text-primary whitespace-nowrap ml-4">1 credit</span>
 				</div>
 			</div>

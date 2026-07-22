@@ -191,4 +191,35 @@ describe("fallback path", () => {
 		expect(res.skipped).toBeUndefined()
 		expect(res.searches_run).toBe(2)
 	})
+
+	test("shared searchBudget caps total searches across dimensions", async () => {
+		// More recipes than the per-dimension cap, so only the shared budget can stop it early.
+		const many: RubricRecipe[] = Array.from(
+			{ length: TERMINAL_CONFIG.MAX_SEARCHES_PER_DIMENSION + 4 },
+			() => searchRecipe
+		)
+		let searched = 0
+		const search = async (): Promise<ExaResults> => {
+			searched++
+			return { results: [] }
+		}
+		const classify: ClassifyFn = async () => ({ findings: [], screen_hits: [] })
+		const budget = { remaining: 3 }
+		const opts = {
+			createAgentRun: async () => {
+				throw new Error("agent unavailable") // force fallback
+			},
+			terminalSearch: search as never,
+			classify,
+			searchBudget: budget
+		}
+
+		const first = await runDimensionResearch(company(), framework(many), opts)
+		expect(first.searches_run).toBe(3) // stopped at the shared budget, not the per-dim cap
+		expect(budget.remaining).toBe(0)
+
+		const second = await runDimensionResearch(company(), framework(many), opts)
+		expect(second.searches_run).toBe(0) // budget already spent by the first dimension
+		expect(searched).toBe(3) // 3 searches total across both dimensions
+	})
 })
