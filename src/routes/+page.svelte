@@ -78,9 +78,9 @@
 	]
 
 	const PACKS = [
-		{ name: 'Starter', credits: '50', price: '$9', per: '$0.18' },
-		{ name: 'Pro', credits: '200', price: '$19', per: '$0.095' },
-		{ name: 'Power', credits: '600', price: '$49', per: '$0.082' }
+		{ name: 'Starter', credits: '50', price: '$49', per: '$0.98' },
+		{ name: 'Professional', credits: '200', price: '$179', per: '$0.90' },
+		{ name: 'Power', credits: '600', price: '$499', per: '$0.83' }
 	]
 </script>
 
