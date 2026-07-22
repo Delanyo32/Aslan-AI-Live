@@ -1,4 +1,8 @@
-PRAGMA defer_foreign_keys=ON;--> statement-breakpoint
+-- ponytail: D1 ignores defer_foreign_keys and enforces FKs on every DROP, so the
+-- generated `defer_foreign_keys=ON` + mid-file `foreign_keys=ON` fails the rebuild
+-- (DROP's implicit delete trips email_captures/dimension_scores). Force FK off for
+-- the whole rebuild instead; final state is consistent so re-enable isn't needed.
+PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_backtest_reports` (
 	`id` text PRIMARY KEY NOT NULL,
 	`slug` text NOT NULL,
@@ -24,7 +28,6 @@ CREATE TABLE `__new_backtest_reports` (
 INSERT INTO `__new_backtest_reports`("id", "slug", "user_id", "email", "query", "event_spec", "exa_search", "rule", "confirmed_tickers", "occurrences", "impact_windows", "backtest_result", "low_confidence_events", "research_narrative", "status", "is_public", "view_count", "created_at", "updated_at") SELECT "id", "slug", "user_id", "email", "query", "event_spec", "exa_search", "rule", "confirmed_tickers", "occurrences", "impact_windows", "backtest_result", "low_confidence_events", "research_narrative", "status", "is_public", "view_count", "created_at", "updated_at" FROM `backtest_reports`;--> statement-breakpoint
 DROP TABLE `backtest_reports`;--> statement-breakpoint
 ALTER TABLE `__new_backtest_reports` RENAME TO `backtest_reports`;--> statement-breakpoint
-PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `backtest_reports_slug_unique` ON `backtest_reports` (`slug`);--> statement-breakpoint
 CREATE TABLE `__new_credit_transactions` (
 	`id` text PRIMARY KEY NOT NULL,
