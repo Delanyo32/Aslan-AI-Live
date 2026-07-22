@@ -1,5 +1,5 @@
 import { redirect } from "@sveltejs/kit"
-import { authUser } from "$lib/server/db/schema"
+import { profiles } from "$lib/server/db/schema"
 import { eq } from "drizzle-orm"
 import { TERMINAL_CONFIG } from "$lib/server/terminal/config"
 import type { PageServerLoad } from "./$types"
@@ -9,14 +9,13 @@ import type { PageServerLoad } from "./$types"
 // how /dashboard guards) — this per-page guard mirrors the same two redirects.
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) throw redirect(302, "/auth/login")
-	if (locals.user.emailVerified === false) throw redirect(302, "/auth/check-email")
 
 	// Fresh balance (session-cached credits go stale after a run debits) — mirrors
 	// dashboard/+layout.server.ts.
 	const [row] = await locals.db
-		.select({ credits: authUser.credits })
-		.from(authUser)
-		.where(eq(authUser.id, locals.user.id))
+		.select({ credits: profiles.credits })
+		.from(profiles)
+		.where(eq(profiles.user_id, locals.user.id))
 		.limit(1)
 
 	return {

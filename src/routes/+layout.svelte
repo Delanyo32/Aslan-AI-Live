@@ -3,8 +3,9 @@
   import favicon from '$lib/assets/Aslan Finance Logo.svg';
   import ogImage from '$lib/assets/Aslan Finance Logo.png';
   import { Toaster } from 'svelte-sonner';
+  import { ClerkProvider } from 'svelte-clerk';
 
-  let { children } = $props();
+  let { children, data } = $props();
 </script>
 
 <svelte:head>
@@ -14,12 +15,19 @@
   <meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<Toaster
-  position="bottom-right"
-  theme="light"
-  toastOptions={{
-    style: 'font-family: var(--font-sans, sans-serif); background: #fcfbf9; border: 1px solid #e5e5e5; color: #171717;'
-  }}
-/>
+<ClerkProvider
+  publishableKey={data.clerkPublishableKey}
+  signInUrl="/auth/login"
+  signUpUrl="/auth/register"
+  afterSignOutUrl="/"
+>
+  <Toaster
+    position="bottom-right"
+    theme="light"
+    toastOptions={{
+      style: 'font-family: var(--font-sans, sans-serif); background: #fcfbf9; border: 1px solid #e5e5e5; color: #171717;'
+    }}
+  />
 
-{@render children()}
+  {@render children()}
+</ClerkProvider>

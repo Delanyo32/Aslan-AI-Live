@@ -25,7 +25,7 @@ import type { EmailBinding } from "$lib/server/auth"
 import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm"
 import { createDb } from "$lib/server/db/client"
 import {
-	authUser,
+	profiles,
 	commitments,
 	companies,
 	creditTransactions,
@@ -532,10 +532,10 @@ export class CompanyMonitor {
 				.where(eq(watchlistEntries.id, entry.id))
 
 			const deducted = await this.db
-				.update(authUser)
-				.set({ credits: sql`${authUser.credits} - ${cost}` })
-				.where(and(eq(authUser.id, entry.user_id), sql`${authUser.credits} >= ${cost}`))
-				.returning({ id: authUser.id })
+				.update(profiles)
+				.set({ credits: sql`${profiles.credits} - ${cost}` })
+				.where(and(eq(profiles.user_id, entry.user_id), sql`${profiles.credits} >= ${cost}`))
+				.returning({ id: profiles.user_id })
 
 			if (deducted.length > 0) {
 				await this.db.insert(creditTransactions).values({
@@ -735,9 +735,9 @@ export class CompanyMonitor {
 			const email = this.env.EMAIL as EmailBinding | undefined
 			if (!email) return false
 			const [user] = await this.db
-				.select({ email: authUser.email })
-				.from(authUser)
-				.where(eq(authUser.id, userId))
+				.select({ email: profiles.email })
+				.from(profiles)
+				.where(eq(profiles.user_id, userId))
 				.limit(1)
 			if (!user?.email) return false
 

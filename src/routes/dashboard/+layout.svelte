@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LayoutData } from "./$types"
-  import { authClient } from '$lib/auth-client'
+  import { useClerkContext } from 'svelte-clerk'
   import { page } from '$app/stores'
 
   let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props()
@@ -32,9 +32,10 @@
     return () => { stopped = true; timers.forEach(clearTimeout) }
   })
 
+  const clerkCtx = useClerkContext()
+
   async function handleSignOut() {
-    await authClient.signOut()
-    window.location.href = '/'
+    await clerkCtx.clerk?.signOut({ redirectUrl: '/' })
   }
 </script>
 

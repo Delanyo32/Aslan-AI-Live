@@ -3,7 +3,6 @@
 // Unix seconds, integer(mode:"boolean"). See app.ts header for D1 type notes.
 
 import { sqliteTable, text, integer, index, uniqueIndex } from "drizzle-orm/sqlite-core"
-import { authUser } from "./auth"
 // Type-only (erased at compile) — no runtime cycle with $lib/types/terminal.
 import type {
 	Citation,
@@ -32,7 +31,7 @@ export const companies = sqliteTable("companies", {
 export const terminalReports = sqliteTable("terminal_reports", {
 	id:             text("id").primaryKey(),
 	slug:           text("slug").unique().notNull(),           // random 6-char, reports.ts pattern
-	user_id:        text("user_id").references(() => authUser.id, { onDelete: "set null" }),
+	user_id:        text("user_id"),
 	company_id:     text("company_id").notNull().references(() => companies.id),
 	status:         text("status").notNull().default("pending"), // pending | running | complete | failed
 	rubric_version: text("rubric_version").notNull(),
@@ -105,7 +104,7 @@ export const commitments = sqliteTable("commitments", {
 
 export const watchlistEntries = sqliteTable("watchlist_entries", {
 	id:              text("id").primaryKey(),
-	user_id:         text("user_id").notNull().references(() => authUser.id, { onDelete: "cascade" }),
+	user_id:         text("user_id").notNull(),
 	company_id:      text("company_id").notNull().references(() => companies.id),
 	active:          integer("active", { mode: "boolean" }).notNull().default(true),
 	next_billing_at: integer("next_billing_at", { mode: "timestamp" }).notNull(),
@@ -116,7 +115,7 @@ export const watchlistEntries = sqliteTable("watchlist_entries", {
 
 export const terminalAlerts = sqliteTable("terminal_alerts", {
 	id:          text("id").primaryKey(),
-	user_id:     text("user_id").notNull().references(() => authUser.id, { onDelete: "cascade" }),
+	user_id:     text("user_id").notNull(),
 	company_id:  text("company_id").notNull().references(() => companies.id),
 	dimension:   text("dimension").notNull(),
 	old_grade:   text("old_grade"),

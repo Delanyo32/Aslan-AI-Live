@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from "drizzle-orm"
 import {
-	authUser,
+	profiles,
 	companies,
 	dimensionScores,
 	terminalAlerts,
@@ -53,7 +53,6 @@ export type RecentReport = {
 export const load: PageServerLoad = async ({ locals, platform, request }) => {
 	const userId = resolveUserId(locals, platform, request)
 	if (!userId) throw redirect(302, "/auth/login")
-	if (locals.user && locals.user.emailVerified === false) throw redirect(302, "/auth/check-email")
 
 	const db = locals.db
 
@@ -178,9 +177,9 @@ export const load: PageServerLoad = async ({ locals, platform, request }) => {
 
 	// Fresh balance for the run/rerun/watch confirm dialogs.
 	const [balance] = await db
-		.select({ credits: authUser.credits })
-		.from(authUser)
-		.where(eq(authUser.id, userId))
+		.select({ credits: profiles.credits })
+		.from(profiles)
+		.where(eq(profiles.user_id, userId))
 		.limit(1)
 
 	return {

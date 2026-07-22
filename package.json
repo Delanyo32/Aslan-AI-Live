@@ -54,6 +54,7 @@
 		"exa-js": "^2.11.0",
 		"layerchart": "^1.0.13",
 		"pdf-lib": "^1.17.1",
+		"svelte-clerk": "^1.1.11",
 		"svelte-sonner": "^1.1.0",
 		"tailwindcss": "^4.2.2"
 	}

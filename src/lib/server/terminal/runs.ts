@@ -4,7 +4,7 @@
 
 import { json } from "@sveltejs/kit"
 import { eq } from "drizzle-orm"
-import { authUser, companies, terminalRuns } from "$lib/server/db/schema"
+import { profiles, companies, terminalRuns } from "$lib/server/db/schema"
 import { terminalCreditCost } from "$lib/server/durable-objects/TerminalReportRunner"
 import type { createDb } from "$lib/server/db/client"
 import type { DurableObjectNamespace } from "@cloudflare/workers-types"
@@ -45,9 +45,9 @@ export async function startTerminalRun(
 	const creditCost = terminalCreditCost(opts.isRerun)
 
 	const [user] = await db
-		.select({ credits: authUser.credits })
-		.from(authUser)
-		.where(eq(authUser.id, opts.userId))
+		.select({ credits: profiles.credits })
+		.from(profiles)
+		.where(eq(profiles.user_id, opts.userId))
 	// ponytail: no user row (dev-bypass id) skips the pre-check; the DO's atomic
 	// debit-with-refund at persist time is the real gate.
 	if (user) {

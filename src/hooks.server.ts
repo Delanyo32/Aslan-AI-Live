@@ -1,47 +1,56 @@
-import { createAuth } from "$lib/server/auth"
 import { createDb } from "$lib/server/db/client"
-import { svelteKitHandler } from "better-auth/svelte-kit"
-import { building } from "$app/environment"
+import { createClerkClient } from "@clerk/backend"
 import type { Handle, HandleServerError } from "@sveltejs/kit"
 import { redirect } from "@sveltejs/kit"
 import { logger } from "$lib/server/logger"
 
 // Re-export Durable Object classes so the adapter-cloudflare-generated worker
-// entry exposes them at the top level. Cloudflare Pages wires the DO binding
-// declared in wrangler.toml to the matching named export.
+// entry exposes them at the top level. Cloudflare wires the DO binding declared
+// in wrangler.toml to the matching named export.
 export { PipelineRunner } from "$lib/server/durable-objects/PipelineRunner"
 export { TerminalReportRunner } from "$lib/server/durable-objects/TerminalReportRunner"
 export { CompanyMonitor } from "$lib/server/durable-objects/CompanyMonitor"
 
 export const handle: Handle = async ({ event, resolve }) => {
-  const db   = createDb(event.platform!.env.DB)
-  const auth = createAuth(db, event.platform!.env.EMAIL)
-  event.locals.db = db
+  const env = event.platform!.env
+  event.locals.db = createDb(env.DB)
 
-  // Let better-auth handle all /api/auth/* routes
-  if (event.url.pathname.startsWith("/api/auth")) {
-    return svelteKitHandler({ event, resolve, auth, building })
+  // IMPORTANT: read Clerk keys from platform.env PER REQUEST. Under adapter-cloudflare
+  // $env/dynamic/* is empty at module load, so svelte-clerk's withClerkHandler (which
+  // resolves keys at import time) can't be used here — we call @clerk/backend directly.
+  const secretKey      = env.CLERK_SECRET_KEY as string | undefined
+  const publishableKey = env.PUBLIC_CLERK_PUBLISHABLE_KEY as string | undefined
+
+  if (!secretKey || !publishableKey) {
+    logger.error("clerk_keys_missing", { path: event.url.pathname })
+    event.locals.auth = () => null
+    event.locals.user = null
+    event.locals.session = null
+  } else {
+    const clerk = createClerkClient({ secretKey, publishableKey })
+    const requestState = await clerk.authenticateRequest(event.request, { secretKey, publishableKey })
+
+    // Handshake: Clerk needs a browser redirect to (re)issue the session cookie.
+    // Returning its headers verbatim forwards both Location and Set-Cookie.
+    if (requestState.headers.get("location")) {
+      return new Response(null, { status: 307, headers: requestState.headers })
+    }
+
+    event.locals.auth = () => requestState.toAuth()
+    const a = requestState.toAuth()
+    // Clerk owns email verification — an email/password account has no active session
+    // until it's verified, and Google arrives verified — so this is always true here.
+    // ponytail: credits stays null until phase 5 moves the balance to `profiles`.
+    event.locals.user    = a?.userId ? { id: a.userId, emailVerified: true, credits: null } : null
+    event.locals.session = a?.sessionId ? { token: a.sessionId } : null
+    // ponytail: non-handshake Set-Cookie forwarding is skipped — clerk-js sets the
+    // session cookie client-side and the handshake branch above covers server refresh.
+    // Mirror svelte-clerk's decorateHeaders if a cookie-refresh edge case surfaces.
   }
-
-  // Attach session to locals for all other routes
-  const session = await auth.api.getSession({ headers: event.request.headers })
-  event.locals.user    = session?.user    ?? null
-  event.locals.session = session?.session ?? null
 
   // Guard dashboard routes
   if (event.url.pathname.startsWith("/dashboard") && !event.locals.user) {
     throw redirect(302, "/auth/login")
-  }
-
-  // Gate unverified email/password accounts out of the dashboard
-  // Google OAuth users always arrive with emailVerified=true, so this only fires for
-  // email/password registrations that haven't clicked their verification link yet.
-  if (
-    event.url.pathname.startsWith("/dashboard") &&
-    event.locals.user &&
-    event.locals.user.emailVerified === false
-  ) {
-    throw redirect(302, "/auth/check-email")
   }
 
   return resolve(event)

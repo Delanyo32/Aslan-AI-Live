@@ -8,7 +8,7 @@
 
 import { and, desc, eq, sql } from "drizzle-orm"
 import {
-	authUser,
+	profiles,
 	creditTransactions,
 	companies,
 	dimensionScores,
@@ -607,10 +607,10 @@ export class TerminalReportRunner extends StreamingRunner {
 		// 4. atomic credit debit + credit_transactions, refund on txn-insert failure
 		//    (persistReportAndDebit pattern). Debit is last per §WP2.1 ordering.
 		const deducted = await this.db
-			.update(authUser)
-			.set({ credits: sql`${authUser.credits} - ${creditCost}` })
-			.where(and(eq(authUser.id, userId), sql`${authUser.credits} >= ${creditCost}`))
-			.returning({ id: authUser.id })
+			.update(profiles)
+			.set({ credits: sql`${profiles.credits} - ${creditCost}` })
+			.where(and(eq(profiles.user_id, userId), sql`${profiles.credits} >= ${creditCost}`))
+			.returning({ id: profiles.user_id })
 		if (deducted.length === 0) throw new RunnerAbort("insufficient_credits", "persisting")
 
 		try {
@@ -622,9 +622,9 @@ export class TerminalReportRunner extends StreamingRunner {
 			})
 		} catch (e) {
 			await this.db
-				.update(authUser)
-				.set({ credits: sql`${authUser.credits} + ${creditCost}` })
-				.where(eq(authUser.id, userId))
+				.update(profiles)
+				.set({ credits: sql`${profiles.credits} + ${creditCost}` })
+				.where(eq(profiles.user_id, userId))
 			throw e
 		}
 

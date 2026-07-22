@@ -4,7 +4,7 @@
 // payloads, and the pipeline_runs D1 index.
 
 import { and, eq, sql } from "drizzle-orm"
-import { authUser, creditTransactions, pipelineRuns } from "$lib/server/db/schema"
+import { profiles, creditTransactions, pipelineRuns } from "$lib/server/db/schema"
 import type {
 	ResearchEvent,
 	ResearchSummary,
@@ -466,10 +466,10 @@ export class PipelineRunner extends StreamingRunner {
 
 		// Reserve credits atomically; rollback on report failure.
 		const deducted = await this.db
-			.update(authUser)
-			.set({ credits: sql`${authUser.credits} - ${cost}` })
-			.where(and(eq(authUser.id, userId), sql`${authUser.credits} >= ${cost}`))
-			.returning({ id: authUser.id })
+			.update(profiles)
+			.set({ credits: sql`${profiles.credits} - ${cost}` })
+			.where(and(eq(profiles.user_id, userId), sql`${profiles.credits} >= ${cost}`))
+			.returning({ id: profiles.user_id })
 
 		if (deducted.length === 0) {
 			throw new RunnerAbort("insufficient_credits", "credits")
@@ -509,9 +509,9 @@ export class PipelineRunner extends StreamingRunner {
 		} catch (e) {
 			// Refund the reservation — the report never persisted.
 			await this.db
-				.update(authUser)
-				.set({ credits: sql`${authUser.credits} + ${cost}` })
-				.where(eq(authUser.id, userId))
+				.update(profiles)
+				.set({ credits: sql`${profiles.credits} + ${cost}` })
+				.where(eq(profiles.user_id, userId))
 			throw e
 		}
 

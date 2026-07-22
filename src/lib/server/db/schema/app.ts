@@ -11,12 +11,11 @@
 //   boolean → integer (mode: "boolean")      — 0/1
 
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core"
-import { authUser } from "./auth"
 
 export const backtestReports = sqliteTable("backtest_reports", {
 	id:                   text("id").primaryKey(),
 	slug:                 text("slug").unique().notNull(),
-	user_id:              text("user_id").references(() => authUser.id, { onDelete: "set null" }),
+	user_id:              text("user_id"),
 	email:                text("email"),
 	query:                text("query").notNull(),
 	event_spec:           text("event_spec", { mode: "json" }).$type<object>().notNull(),
@@ -44,12 +43,27 @@ export const waitlist = sqliteTable("waitlist", {
 
 export const creditTransactions = sqliteTable("credit_transactions", {
 	id:                text("id").primaryKey(),
-	user_id:           text("user_id").notNull().references(() => authUser.id, { onDelete: "cascade" }),
+	user_id:           text("user_id").notNull(),
 	amount:            integer("amount").notNull(),
 	reason:            text("reason").notNull(),
 	backtest_id:       text("backtest_id").references(() => backtestReports.id),
 	stripe_payment_id: text("stripe_payment_id"),
 	created_at:        integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+})
+
+// Clerk-owned identity mirror + app credit balance. Replaces the better-auth `user`
+// table's role as the credit store: keyed by Clerk user id (e.g. "user_xxx"), populated
+// from the Clerk `user.created` webhook. `credits` is the atomic debit target the DOs hit
+// (moving off authUser.credits in phase 5). `plan` / `period_end` track the active
+// subscription allotment (set by the paymentAttempt.updated webhook).
+export const profiles = sqliteTable("profiles", {
+	user_id:    text("user_id").primaryKey(),                  // Clerk user id
+	email:      text("email"),
+	credits:    integer("credits").notNull().default(20),      // welcome grant; refilled per billing cycle
+	plan:       text("plan"),                                  // Clerk plan slug; null = free
+	period_end: integer("period_end", { mode: "timestamp" }),  // when the current allotment lapses
+	created_at: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+	updated_at: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 })
 
 // Cross-DO index of pipeline runs. One row per run. The DO itself owns event log
