@@ -67,42 +67,50 @@
   // Tabs let users pick from a list instead of knowing the ticker. "Search" keeps
   // the Exa lookup; category tabs load {symbol,name,is_us} from /api/stocks/list
   // and select directly (a known company → skip the Exa resolve round-trip).
+  // The search box filters the active category server-side (the universe is ~14k).
   const TABS = [
     { key: 'search', label: 'Search' },
     { key: 'graded', label: 'Previously graded' },
-    { key: 'board', label: 'On your board' }
+    { key: 'board', label: 'On your board' },
+    { key: 'major', label: 'Major companies' },
+    { key: 'nasdaq', label: 'NASDAQ' },
+    { key: 'nyse', label: 'NYSE' },
+    { key: 'etf', label: 'ETFs' },
+    { key: 'movers', label: 'Movers' }
   ] as const
   type TabKey = (typeof TABS)[number]['key']
 
   let tab = $state<TabKey>('search')
   let listItems = $state<Candidate[] | null>(null)
   let listLoading = $state(false)
+  let listReq = 0 // guards against out-of-order responses
 
-  // Live client-side filter over the loaded category list (lists are user-sized).
-  const visibleList = $derived.by(() => {
-    if (listItems === null) return null
-    const q = query.trim().toLowerCase()
-    if (!q) return listItems
-    return listItems.filter((c) => c.ticker.toLowerCase().startsWith(q) || c.name.toLowerCase().includes(q))
-  })
+  const selectTab = (key: TabKey) => { tab = key }
 
-  async function selectTab(key: TabKey) {
-    tab = key
-    if (key === 'search') return
+  async function loadList(key: TabKey, q: string) {
     listLoading = true
-    listItems = null
+    const myReq = ++listReq
     try {
-      const res = await fetch(`/api/stocks/list?category=${key}`)
+      const res = await fetch(`/api/stocks/list?category=${key}&q=${encodeURIComponent(q)}`)
+      if (myReq !== listReq) return // a newer request superseded this one
       if (!res.ok) throw new Error('list_failed')
       const items = (await res.json()) as { symbol: string; name: string; is_us: boolean }[]
       listItems = items.map((i) => ({ ticker: i.symbol, name: i.name, is_us: i.is_us }))
     } catch {
-      onerror('Could not load that list. Please try again.')
-      listItems = []
+      if (myReq === listReq) { onerror('Could not load that list. Please try again.'); listItems = [] }
     } finally {
-      listLoading = false
+      if (myReq === listReq) listLoading = false
     }
   }
+
+  // Debounced load whenever a category tab is active and the tab or filter changes.
+  $effect(() => {
+    if (tab === 'search') { listItems = null; return }
+    const key = tab
+    const q = query.trim()
+    const t = setTimeout(() => loadList(key, q), 180)
+    return () => clearTimeout(t)
+  })
 </script>
 
 <!-- Category tabs — browse instead of typing a ticker -->
@@ -139,16 +147,16 @@
 
 {#if tab !== 'search'}
   <!-- Category list -->
-  {#if listLoading}
+  {#if listLoading && listItems === null}
     <p class="font-sans text-sm text-gray-500 {compact ? 'mt-6' : 'mt-8'}">Loading…</p>
-  {:else if visibleList !== null}
-    {#if visibleList.length === 0}
+  {:else if listItems !== null}
+    {#if listItems.length === 0}
       <p class="font-sans text-sm text-gray-500 {compact ? 'mt-6' : 'mt-8'}">
-        {#if listItems && listItems.length > 0}No match in this list.{:else if tab === 'graded'}You haven't graded any companies yet.{:else}Nothing on your board yet.{/if}
+        {#if query.trim()}No match for “{query.trim()}”.{:else if tab === 'graded'}You haven't graded any companies yet.{:else if tab === 'board'}Nothing on your board yet.{:else if tab === 'movers'}No movers to show right now.{:else}No companies to show.{/if}
       </p>
     {:else}
       <div class="flex flex-col {compact ? 'mt-6 gap-2 max-h-72 overflow-y-auto' : 'mt-8 gap-3'}">
-        {#each visibleList as c (c.ticker + c.name)}
+        {#each listItems as c (c.ticker + c.name)}
           <button
             onclick={() => onpick(c)}
             class="text-left bg-white border border-[#e5e5e5] rounded-2xl hover:border-[#4338ca] transition-colors cursor-pointer flex items-center justify-between {compact ? 'px-4 py-3 gap-3' : 'px-5 py-4 gap-4'}"

@@ -172,21 +172,29 @@ export type Screener = { gainers: MoverItem[]; losers: MoverItem[]; most_actives
 const EMPTY_SCREENER: Screener = { gainers: [], losers: [], most_actives: [] }
 
 // Screener refreshes per-minute upstream — cache briefly so dashboard loads don't refetch.
+// The cache holds up to MAX_CACHED per list; callers slice to their own `limit`.
 let _screener: Screener | null = null
 let _screenerAt = 0
 const SCREENER_TTL_MS = 60 * 1000
+const MAX_CACHED = 25
 
 type RawMover = { symbol: string; price: number; percent_change: number }
 type RawActive = { symbol: string; volume: number }
 
+const sliceScreener = (s: Screener, n: number): Screener => ({
+	gainers: s.gainers.slice(0, n),
+	losers: s.losers.slice(0, n),
+	most_actives: s.most_actives.slice(0, n)
+})
+
 /**
- * Top gainers, losers, and most-active US operating companies for the dashboard.
- * Raw Alpaca movers are dominated by warrants/penny stocks/leveraged ETFs; we
- * keep only real companies (see isRealCompany) and enrich each with its name.
- * Returns empty lists on any failure — the dashboard degrades gracefully.
+ * Top gainers, losers, and most-active US operating companies. Raw Alpaca movers
+ * are dominated by warrants/penny stocks/leveraged ETFs; we keep only real
+ * companies (see isRealCompany) and enrich each with its name. Returns empty
+ * lists on any failure — callers degrade gracefully.
  */
 export async function fetchScreener(limit = 6): Promise<Screener> {
-	if (_screener && Date.now() - _screenerAt < SCREENER_TTL_MS) return _screener
+	if (_screener && Date.now() - _screenerAt < SCREENER_TTL_MS) return sliceScreener(_screener, limit)
 
 	const headers: Record<string, string> = {
 		"APCA-API-KEY-ID":     env.ALPACA_API_KEY,
@@ -209,17 +217,17 @@ export async function fetchScreener(limit = 6): Promise<Screener> {
 		const name = (symbol: string) => universe.names.get(symbol) ?? symbol
 
 		const mapMovers = (rows: RawMover[] | undefined): MoverItem[] =>
-			(rows ?? []).filter(r => keep(r.symbol)).slice(0, limit)
+			(rows ?? []).filter(r => keep(r.symbol)).slice(0, MAX_CACHED)
 				.map(r => ({ symbol: r.symbol, name: name(r.symbol), price: r.price, percent_change: r.percent_change }))
 
 		_screener = {
 			gainers: mapMovers(movers.gainers),
 			losers:  mapMovers(movers.losers),
-			most_actives: (actives.most_actives ?? []).filter(r => keep(r.symbol)).slice(0, limit)
+			most_actives: (actives.most_actives ?? []).filter(r => keep(r.symbol)).slice(0, MAX_CACHED)
 				.map(r => ({ symbol: r.symbol, name: name(r.symbol), volume: r.volume }))
 		}
 		_screenerAt = Date.now()
-		return _screener
+		return sliceScreener(_screener, limit)
 	} catch {
 		return EMPTY_SCREENER
 	}
