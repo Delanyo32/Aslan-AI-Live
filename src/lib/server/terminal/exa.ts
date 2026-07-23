@@ -163,6 +163,26 @@ export async function terminalContents(
 	return exa.getContents(reqUrls, contents)
 }
 
+// Base-plan poll: a raw exa.search — NOT a Websets monitor, so it works without an
+// Exa Pro plan (monitors 401 without Pro). Returns a parseMonitorWebhook-shaped
+// payload so CompanyMonitor /ingest consumes poll hits exactly like a monitor
+// webhook (same triage, content_hash dedupe, and rescore-queue path).
+export async function pollSearch(
+	query: string,
+	opts: { numResults?: number; category?: ExaCategory; includeDomains?: string[]; startPublishedDate?: string } = {}
+): Promise<{ output: ExaResults }> {
+	const exa = await getExa()
+	const options: Record<string, unknown> = {
+		numResults: opts.numResults ?? 10,
+		contents: { text: true } // parseMonitorWebhook reads text as the snippet fallback
+	}
+	if (opts.category) options.category = opts.category
+	if (opts.includeDomains?.length) options.includeDomains = opts.includeDomains
+	if (opts.startPublishedDate) options.startPublishedDate = opts.startPublishedDate
+	const res = (await exa.search(query, options)) as ExaResults
+	return { output: { results: res.results ?? [] } }
+}
+
 // ── Agent API (POST /agent/runs — not in exa-js 2.11, raw via exa.request) ───
 
 export type AgentEffort = "minimal" | "low" | "medium" | "high" | "xhigh"

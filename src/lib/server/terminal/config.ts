@@ -10,6 +10,8 @@ export const TERMINAL_CONFIG = {
 	MONITOR_CADENCE_NEWS: "6h",
 	MONITOR_CADENCE_POLICY: "1d",
 	MONITOR_CADENCE_COMPETITOR: "7d",
+	POLL_CADENCE_HOURS: 24,                 // base-plan exa.search poll (works without Exa Pro monitors)
+	POLL_MAX_AGE_HOURS: 30,                 // poll recency window; > cadence so nothing slips between polls
 	RESCORE_BATCH_HOURS: 12,                // ordinary material evidence batches; red_flag bypasses
 	LEDGER_CHECK_OFFSETS_MONTHS: [0, 6, 12],
 	VERDICT_BETA: true,                     // flipped manually after WP7.1 extraction eval ≥ 98%

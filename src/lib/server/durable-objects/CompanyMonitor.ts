@@ -40,7 +40,7 @@ import { triageEvidence } from "$lib/server/terminal/triage"
 import { classifyScreenHits } from "$lib/server/terminal/screens"
 import { checkLanguageCompliance } from "$lib/server/terminal/synthesis"
 import { evidenceHash, contentHash, COMPANY_CONTROLLED_DOMAINS } from "$lib/server/terminal/scoring"
-import { createMonitor, deleteMonitor, parseMonitorWebhook } from "$lib/server/terminal/exa"
+import { createMonitor, deleteMonitor, parseMonitorWebhook, pollSearch } from "$lib/server/terminal/exa"
 import { FRAMEWORKS, RUBRIC_VERSION } from "$lib/server/terminal/rubrics"
 import { TERMINAL_CONFIG } from "$lib/server/terminal/config"
 import { DIMENSION_IDS } from "$lib/types/terminal"
@@ -104,6 +104,11 @@ export function addOneMonth(from: Date): Date {
 /** §2.6 batch gate: due when immediate (red_flag/forced) or aged past the batch window. */
 export function rescoreDue(entry: PendingEntry, now: number, batchMs: number): boolean {
 	return entry.immediate || now - entry.queued_at >= batchMs
+}
+
+/** Poll gate: due when it has never run (lastPollAt 0) or the cadence window elapsed. */
+export function pollDue(lastPollAt: number, now: number, cadenceMs: number): boolean {
+	return now - lastPollAt >= cadenceMs
 }
 
 /** Pick one due dimension for this alarm — immediate ones first, then batched, F1..F9 order. */
@@ -187,6 +192,10 @@ export class CompanyMonitor {
 
 	private batchMs(): number {
 		return TERMINAL_CONFIG.RESCORE_BATCH_HOURS * 60 * 60 * 1000
+	}
+
+	private pollMs(): number {
+		return TERMINAL_CONFIG.POLL_CADENCE_HOURS * 60 * 60 * 1000
 	}
 
 	// ── HTTP entry ─────────────────────────────────────────────────────────────
@@ -446,6 +455,15 @@ export class CompanyMonitor {
 
 		// (a) due billing — cheap D1 debits, so all due watchers this pass.
 		await this.processBilling(company_id, now)
+
+		// (a.5) poll for fresh evidence when the cadence window has elapsed. Cheap
+		//       (one exa.search, base-plan — works without Exa Pro monitors) and it
+		//       only ingests → queues rescores; the expensive rescore below still
+		//       runs at most once per alarm, so the one-expensive-unit rule holds.
+		const lastPoll = (await this.storage.get<number>("last_poll_at")) ?? 0
+		if (pollDue(lastPoll, now, this.pollMs())) {
+			await this.runPoll(company_id, now)
+		}
 
 		// (b) pending rescores — ONE dimension per invocation (the expensive unit).
 		const pending = await this.loadPending()
@@ -854,6 +872,42 @@ export class CompanyMonitor {
 
 	// Wake at the soonest of: a due/pending rescore, the next billing date, or a
 	// daily housekeeping floor. Never schedules in the past.
+	// Base-plan freshness poll (works without Exa Pro monitors): search recent news
+	// + policy and feed hits through /ingest exactly like a monitor webhook —
+	// content_hash dedupe makes overlap with real monitors (when present) harmless.
+	private async runPoll(company_id: string, now: number): Promise<void> {
+		const company = await this.loadCompany(company_id)
+		if (!company) return
+		if ((await this.activeWatchers(company_id)).length === 0) return
+
+		const since = new Date(now - TERMINAL_CONFIG.POLL_MAX_AGE_HOURS * 60 * 60 * 1000)
+			.toISOString()
+			.slice(0, 10)
+		try {
+			const [news, policy] = await Promise.all([
+				pollSearch(newsMonitorQuery(company.name), { category: "news", numResults: 10, startPublishedDate: since }),
+				pollSearch(policyMonitorQuery(company.name), {
+					includeDomains: policyMonitorDomains(),
+					numResults: 5,
+					startPublishedDate: since
+				})
+			])
+			const results = [...news.output.results, ...policy.output.results]
+			// Reuse /ingest wholesale (triage + dedupe + rescore-queue) via its wire shape.
+			await this.handleIngest(
+				new Request("https://do/ingest", {
+					method: "POST",
+					body: JSON.stringify({ company_id, payload: { output: { results } } })
+				})
+			)
+		} catch (e) {
+			logger.warn("company_monitor_poll_failed", { company_id, error: logger.serializeError(e) })
+		} finally {
+			// Record the attempt regardless so a failing poll doesn't hammer Exa each alarm.
+			await this.storage.put("last_poll_at", now)
+		}
+	}
+
 	private async scheduleNext(company_id: string, now: number): Promise<void> {
 		const pending = await this.loadPending()
 		const batchMs = this.batchMs()
@@ -877,7 +931,12 @@ export class CompanyMonitor {
 			.limit(1)
 		const billingWake = soonest ? soonest.nb.getTime() : now + DAY_MS
 
-		const next = Math.max(now + 1000, Math.min(earliestRescore, billingWake))
+		// Poll heartbeat, only while there are active watchers (soonest present).
+		// last_poll_at 0 on a first watch ⇒ pollWake ≈ epoch ⇒ next alarm polls now.
+		const lastPoll = (await this.storage.get<number>("last_poll_at")) ?? 0
+		const pollWake = soonest ? lastPoll + this.pollMs() : Infinity
+
+		const next = Math.max(now + 1000, Math.min(earliestRescore, billingWake, pollWake))
 		await this.storage.setAlarm(next)
 	}
 

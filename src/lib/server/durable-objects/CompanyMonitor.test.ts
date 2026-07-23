@@ -2,6 +2,7 @@ import { describe, test, expect } from "bun:test"
 import {
 	addOneMonth,
 	rescoreDue,
+	pollDue,
 	pickDueDimension,
 	rescoreShouldSkip,
 	alertNeeded,
@@ -57,6 +58,23 @@ describe("rescoreDue (batch gating)", () => {
 
 	test("batched item aged past the window is due", () => {
 		expect(rescoreDue({ queued_at: now - batchMs, immediate: false }, now, batchMs)).toBe(true)
+	})
+})
+
+describe("pollDue (poll cadence gate)", () => {
+	const cadenceMs = TERMINAL_CONFIG.POLL_CADENCE_HOURS * 60 * 60 * 1000
+	const now = 1_000_000_000_000
+
+	test("never polled (lastPollAt 0) is always due", () => {
+		expect(pollDue(0, now, cadenceMs)).toBe(true)
+	})
+
+	test("within the cadence window is not due", () => {
+		expect(pollDue(now - (cadenceMs - 1), now, cadenceMs)).toBe(false)
+	})
+
+	test("exactly at the cadence window is due", () => {
+		expect(pollDue(now - cadenceMs, now, cadenceMs)).toBe(true)
 	})
 })
 
