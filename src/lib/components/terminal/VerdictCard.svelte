@@ -1,11 +1,16 @@
 <script lang="ts">
   import type { ReconciliationVerdict } from '$lib/types/terminal';
+  import PriceChart from '$lib/components/charts/PriceChart.svelte';
 
   interface Props {
     verdict: ReconciliationVerdict | null;
   }
 
   let { verdict }: Props = $props();
+
+  // Price line only when we have a US price series with ≥2 points.
+  const priceSeries = $derived(verdict?.price_series ?? []);
+  const showPriceChart = $derived(priceSeries.length >= 2);
 
   const BUCKET_HEADLINE: Record<ReconciliationVerdict['bucket'], string> = {
     priced_for_more: 'Priced for more than the evidence supports',
@@ -48,6 +53,21 @@
     <p class="font-serif text-xl text-gray-700 leading-relaxed max-w-3xl mb-8">
       {verdict.sentence}
     </p>
+
+    {#if showPriceChart}
+      <div class="mb-8 border border-[#eee] rounded-2xl p-5">
+        <div class="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+          <span class="mono-label text-[10px] text-gray-400">Share price · past year</span>
+          {#if verdict.graded_price}
+            <span class="font-mono text-sm text-gray-900">
+              ${verdict.graded_price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+              <span class="text-gray-400 text-[10px]">at grading</span>
+            </span>
+          {/if}
+        </div>
+        <PriceChart data={priceSeries} gradedPrice={verdict.graded_price} />
+      </div>
+    {/if}
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Implied assumptions -->

@@ -334,6 +334,25 @@ export async function reconcilePrice(
 		timeline = undefined
 	}
 
+	// Price-at-grading chart: best-effort ~1y of daily closes. Attached to every
+	// verdict (incl. gaps) so the report shows a price line whenever data exists.
+	let priceSeries: { date: string; close: number }[] | undefined
+	try {
+		const to = new Date(now).toISOString().slice(0, 10)
+		const from = new Date(now - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+		const bars = await ohlcv(symbol, from, to)
+		priceSeries = bars.length ? bars.map((b) => ({ date: b.date, close: b.close })) : undefined
+	} catch {
+		priceSeries = undefined
+	}
+	const gradedAt = new Date(now).toISOString().slice(0, 10)
+	// graded price defaults to the latest close; the main path overrides with the live snapshot.
+	const chartFields = (gradedPrice: number | null): Partial<ReconciliationVerdict> => {
+		if (!priceSeries) return {}
+		const gp = typeof gradedPrice === "number" && gradedPrice > 0 ? gradedPrice : priceSeries[priceSeries.length - 1].close
+		return { price_series: priceSeries, graded_price: gp, graded_at: gradedAt }
+	}
+
 	const fig = latestAnnualFigures(extraction.figures)
 	const revenue = fig.get("revenue")
 	const shareCount = fig.get("share_count")
@@ -342,22 +361,28 @@ export async function reconcilePrice(
 	if (revenue == null) missing.push("revenue")
 	if (shareCount == null) missing.push("share_count")
 	if (missing.length) {
-		return gapVerdict(
-			`A price verdict is not available: the extraction is missing ${missing.join(" and ")}, ` +
-				`so enterprise value cannot be computed. Confidence is low.`,
-			beta,
-			timeline
-		)
+		return {
+			...gapVerdict(
+				`A price verdict is not available: the extraction is missing ${missing.join(" and ")}, ` +
+					`so enterprise value cannot be computed. Confidence is low.`,
+				beta,
+				timeline
+			),
+			...chartFields(null)
+		}
 	}
 
 	const price = await snapshot(symbol).catch(() => null)
 	if (price == null) {
-		return gapVerdict(
-			`A price verdict is not available: no current market price was retrieved for ${company.ticker}, ` +
-				`so market cap cannot be computed. Confidence is low.`,
-			beta,
-			timeline
-		)
+		return {
+			...gapVerdict(
+				`A price verdict is not available: no current market price was retrieved for ${company.ticker}, ` +
+					`so market cap cannot be computed. Confidence is low.`,
+				beta,
+				timeline
+			),
+			...chartFields(null)
+		}
 	}
 
 	const netDebtRaw = fig.get("net_debt")
@@ -423,6 +448,7 @@ export async function reconcilePrice(
 		multiples,
 		sentence,
 		confidence,
-		...(timeline ? { timeline } : {})
+		...(timeline ? { timeline } : {}),
+		...chartFields(price)
 	}
 }

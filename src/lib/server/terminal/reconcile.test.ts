@@ -206,4 +206,30 @@ describe("reconcilePrice", () => {
 		expect(v.timeline).toBeUndefined()
 		expect(v.implied).not.toBeNull()
 	})
+
+	test("US run persists a price series + graded price for the chart", async () => {
+		const bar = (date: string, close: number): OHLCVBar => ({ date, open: close, high: close, low: close, close, volume: 1 })
+		const bars = [bar("2026-06-01", 40), bar("2026-06-02", 45), bar("2026-06-03", 50)]
+		const v = (await reconcilePrice(usCompany, extraction(FULL_FIGURES), composite, grades, {
+			...baseDeps,
+			fetchOHLCV: async () => bars,
+			fetchSnapshot: async () => 50
+		}))!
+		expect(v.price_series).toEqual([
+			{ date: "2026-06-01", close: 40 },
+			{ date: "2026-06-02", close: 45 },
+			{ date: "2026-06-03", close: 50 }
+		])
+		expect(v.graded_price).toBe(50) // live snapshot overrides last close
+		expect(v.graded_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+	})
+
+	test("empty OHLCV ⇒ no price series (chart stays hidden)", async () => {
+		const v = (await reconcilePrice(usCompany, extraction(FULL_FIGURES), composite, grades, baseDeps))!
+		expect(v.price_series).toBeUndefined()
+	})
+
+	test("non-US company stores no price series (verdict is null)", async () => {
+		expect(await reconcilePrice(nonUsCompany, extraction(FULL_FIGURES), composite, grades, baseDeps)).toBeNull()
+	})
 })

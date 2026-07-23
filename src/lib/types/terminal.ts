@@ -104,6 +104,10 @@ export type ReconciliationVerdict = {
 	confidence: Confidence
 	// Event-attribution timeline (US only): major price moves aligned against researched evidence.
 	timeline?: { date: string; move_pct: number; car: number | null; evidence: Citation[] }[]
+	// Price-at-grading line chart (US only): ~1y of daily closes + the price at grade time.
+	price_series?: { date: string; close: number }[]
+	graded_price?: number
+	graded_at?: string // YYYY-MM-DD
 }
 
 export type TriageResult = {
