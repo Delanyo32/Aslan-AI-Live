@@ -16,4 +16,4 @@
   <meta name="twitter:description" content={data.meta.description} />
 </svelte:head>
 
-<TerminalReport report={data.report} isOwner={data.isOwner} ledger={data.ledger} />
+<TerminalReport report={data.report} isOwner={data.isOwner} ledger={data.ledger} scoreHistory={data.scoreHistory} />

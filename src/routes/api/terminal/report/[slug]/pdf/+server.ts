@@ -1,5 +1,5 @@
 import { error } from "@sveltejs/kit"
-import { getTerminalReportBySlug } from "$lib/server/db/terminal-reports"
+import { getTerminalReportBySlug, getCompositeScoreHistory } from "$lib/server/db/terminal-reports"
 import { redactForPublic } from "$lib/types/terminal"
 import { followThroughRate } from "$lib/server/terminal/ledger"
 import { buildReportPdf } from "$lib/server/pdf/report-pdf"
@@ -49,7 +49,8 @@ export const GET: RequestHandler = async ({ params, locals, platform, url }) => 
 
 	const payload = isOwner ? report : redactForPublic(report)
 	const ledger = await loadLedger(db, report.company_id)
+	const scoreHistory = await getCompositeScoreHistory(db, report.company_id)
 
-	const bytes = await buildReportPdf(payload, { isOwner, ledger, load })
+	const bytes = await buildReportPdf(payload, { isOwner, ledger, load, scoreHistory })
 	return pdfResponse(bytes, report.company.ticker)
 }

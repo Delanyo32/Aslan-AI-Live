@@ -1,5 +1,5 @@
 import { error } from "@sveltejs/kit"
-import { getTerminalReportBySlug, incrementTerminalViewCount } from "$lib/server/db/terminal-reports"
+import { getTerminalReportBySlug, incrementTerminalViewCount, getCompositeScoreHistory } from "$lib/server/db/terminal-reports"
 import { redactForPublic } from "$lib/types/terminal"
 import { followThroughRate } from "$lib/server/terminal/ledger"
 import type { TerminalReportWithCompany } from "$lib/server/db/terminal-reports"
@@ -32,7 +32,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 		const { fixtureReport } = await import("./fixture")
 		const isOwner = url.searchParams.get("public") !== "1"
 		const report = isOwner ? fixtureReport : redactForPublic(fixtureReport)
-		return { report, isOwner, ledger: null, meta: buildMeta(fixtureReport, url.href) }
+		return { report, isOwner, ledger: null, scoreHistory: [], meta: buildMeta(fixtureReport, url.href) }
 	}
 
 	const report = await getTerminalReportBySlug(db, params.slug)
@@ -52,6 +52,8 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 	// no suspected hits, no extraction disagreements.
 	const payload = isOwner ? report : redactForPublic(report)
 	const ledger = await loadLedger(db, report.company_id)
+	// Composite grade trend (grade data — safe for public shares); chart renders only ≥2 points.
+	const scoreHistory = await getCompositeScoreHistory(db, report.company_id)
 
-	return { report: payload, isOwner, ledger, meta: buildMeta(report, url.href) }
+	return { report: payload, isOwner, ledger, scoreHistory, meta: buildMeta(report, url.href) }
 }

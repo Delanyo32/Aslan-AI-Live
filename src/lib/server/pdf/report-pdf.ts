@@ -1,8 +1,8 @@
 // Renders a completed terminal report to a branded PDF, section-for-section
 // with the web report (src/lib/components/terminal/*). Pure data in → bytes out,
 // so private reports need no auth-over-network (unlike browser rendering).
-import { PDFDocument } from "pdf-lib"
-import type { TerminalReportWithCompany } from "$lib/server/db/terminal-reports"
+import { PDFDocument, type RGB } from "pdf-lib"
+import type { TerminalReportWithCompany, ScorePoint } from "$lib/server/db/terminal-reports"
 import type { Citation, DimensionGrade, ReconciliationVerdict } from "$lib/types/terminal"
 import { DIMENSION_NAMES, CONFIDENCE_LABEL, TREND, citationDomain } from "$lib/components/terminal/grade"
 import { embedFonts, type AssetLoader } from "./fonts"
@@ -21,7 +21,7 @@ const DOT = "   ·   "
 
 export async function buildReportPdf(
 	report: TerminalReportWithCompany,
-	opts: { isOwner: boolean; ledger?: Ledger; load: AssetLoader; generatedAt?: Date }
+	opts: { isOwner: boolean; ledger?: Ledger; load: AssetLoader; generatedAt?: Date; scoreHistory?: ScorePoint[] }
 ): Promise<Uint8Array> {
 	const doc = await PDFDocument.create()
 	const fonts = await embedFonts(doc, opts.load)
@@ -32,7 +32,7 @@ export async function buildReportPdf(
 	const L = new Layout(doc, fonts)
 
 	brandHeader(L)
-	headerSection(L, report)
+	headerSection(L, report, opts.scoreHistory ?? [])
 	verdictSection(L, report.verdict)
 	frameworksSection(L, report.dimensions ?? [], opts.isOwner)
 	ledgerSection(L, report.created_at, opts.ledger ?? null)
@@ -59,7 +59,7 @@ function brandHeader(L: Layout) {
 	L.gap(22)
 }
 
-function headerSection(L: Layout, report: TerminalReportWithCompany) {
+function headerSection(L: Layout, report: TerminalReportWithCompany, scoreHistory: ScorePoint[]) {
 	L.label("Aslan Report", C.indigo)
 	const badge = report.company.is_us ? "US LISTING" : "RESEARCH ONLY"
 	L.textLine(`${badge}${DOT}${fmtDate(report.created_at)}${DOT}RUBRIC ${report.rubric_version}`, {
@@ -108,7 +108,60 @@ function headerSection(L: Layout, report: TerminalReportWithCompany) {
 				"Confirmed red-flag findings cap this score — see F9. One or more confirmed screen hits in Value Creation (F9) limit the composite grade regardless of the other dimensions."
 			)
 		}
+
+		scoreTrend(L, scoreHistory, col.text)
 	}
+}
+
+// Compact composite score-over-time line chart. Drawn only once a watched company
+// has been re-graded (≥2 points); flat aesthetic — grade-coloured line, mono
+// axis ticks, no fill. Mirrors ScoreHistoryChart.svelte's padded y-domain.
+function scoreTrend(L: Layout, series: ScorePoint[], lineColor: RGB) {
+	if (!series || series.length < 2) return
+	const fmtShort = (d: string) => new Date(d).toLocaleString("en-US", { month: "short", day: "numeric" })
+	L.gap(6)
+	L.label("Score over time", C.muted)
+
+	const H = 54
+	const padR = 26 // y-tick labels
+	const padB = 12 // x-tick labels
+	L.ensure(H + 6)
+	const top = L.y
+	const x0 = MARGIN.left
+	const plotW = CONTENT_W - padR
+	const plotTop = top
+	const plotBot = top - (H - padB)
+	const plotH = plotTop - plotBot
+
+	const t0 = new Date(series[0].date).getTime()
+	const tN = new Date(series[series.length - 1].date).getTime()
+	const tSpan = tN - t0 || 1
+	const scores = series.map((s) => s.score)
+	const lo = Math.max(0, Math.min(Math.min(...scores) - 5, 95))
+	const hi = Math.min(100, Math.max(Math.max(...scores) + 5, lo + 1))
+	const ySpan = hi - lo || 1
+	const X = (d: string) => x0 + ((new Date(d).getTime() - t0) / tSpan) * plotW
+	const Y = (v: number) => plotBot + ((v - lo) / ySpan) * plotH
+
+	for (let i = 1; i < series.length; i++) {
+		L.page.drawLine({
+			start: { x: X(series[i - 1].date), y: Y(series[i - 1].score) },
+			end: { x: X(series[i].date), y: Y(series[i].score) },
+			thickness: 1.25,
+			color: lineColor
+		})
+	}
+	const last = series[series.length - 1]
+	L.page.drawRectangle({ x: X(last.date) - 1.25, y: Y(last.score) - 1.25, width: 2.5, height: 2.5, color: lineColor })
+
+	// y ticks (hi / lo), right-aligned; x ticks (first / last date), on the baseline.
+	L.right(String(Math.round(hi)), x0 + CONTENT_W, plotTop - 3, L.f.mono, 7, C.faint)
+	L.right(String(Math.round(lo)), x0 + CONTENT_W, plotBot - 1, L.f.mono, 7, C.faint)
+	L.line(fmtShort(series[0].date), x0, plotBot - 10, L.f.mono, 7, C.faint)
+	L.right(fmtShort(last.date), x0 + plotW, plotBot - 10, L.f.mono, 7, C.faint)
+
+	L.y = top - H
+	L.gap(18)
 }
 
 function verdictSection(L: Layout, v: ReconciliationVerdict | null) {

@@ -30,6 +30,9 @@ export type BoardRow = {
 	deterioration: number // 30d negative-delta magnitude, sort key
 	latest_slug: string | null // newest complete report owned by this user
 	flagged: boolean // latest report carries a confirmed red-flag (composite.red_banner)
+	composite_series: { date: string; score: number }[] // composite score history, oldest→newest (board sparkline)
+	// The single dimension whose latest grade moved most vs its prior — the focus-list "biggest move".
+	mover: { dim: string; from: string; to: string; delta: number } | null
 }
 
 // A recent-report card: the report's own composite snapshot (stored on the row),
@@ -112,6 +115,8 @@ export const load: PageServerLoad = async ({ locals, platform, request }) => {
 	const rows: BoardRow[] = entries.map(({ company }) => {
 		const companyScores = scores.filter((s) => s.company_id === company.id)
 		const cells: Record<string, BoardCell> = {}
+		let mover: BoardRow["mover"] = null
+		let bestAbs = 0
 		for (const [dim, { latest, prior }] of latestPerDimension(companyScores)) {
 			cells[dim] = {
 				grade: latest.grade,
@@ -119,13 +124,27 @@ export const load: PageServerLoad = async ({ locals, platform, request }) => {
 				confidence: latest.confidence,
 				trend: computeTrend(latest.score, prior?.score ?? null)
 			}
+			// Biggest single-dimension move (by |score delta|) vs its prior grade.
+			if (dim !== "composite" && prior) {
+				const delta = latest.score - prior.score
+				if (Math.abs(delta) > bestAbs) {
+					bestAbs = Math.abs(delta)
+					mover = { dim, from: prior.grade, to: latest.grade, delta }
+				}
+			}
 		}
+		const composite_series = companyScores
+			.filter((s) => s.dimension === "composite")
+			.map((s) => ({ date: s.created_at.toISOString(), score: s.score }))
+			.sort((a, b) => a.date.localeCompare(b.date))
 		return {
 			company: { id: company.id, ticker: company.ticker, name: company.name, is_us: company.is_us },
 			cells,
 			deterioration: deteriorationScore(companyScores),
 			latest_slug: latestSlug.get(company.id) ?? null,
-			flagged: flaggedByCompany.get(company.id) ?? false
+			flagged: flaggedByCompany.get(company.id) ?? false,
+			composite_series,
+			mover
 		}
 	})
 

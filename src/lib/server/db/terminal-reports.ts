@@ -1,5 +1,5 @@
-import { terminalReports, companies } from "./schema"
-import { eq, and, sql } from "drizzle-orm"
+import { terminalReports, companies, dimensionScores } from "./schema"
+import { eq, and, sql, asc } from "drizzle-orm"
 import { withUniqueSlug } from "./slug"
 import type {
 	Citation,
@@ -84,6 +84,23 @@ export async function getTerminalReportBySlug(
 			is_us: row.company.is_us
 		}
 	}
+}
+
+// Composite score-over-time for a company, oldest→newest. Drives the report page
+// + PDF trend chart. Empty or single-point until a watched company is re-graded,
+// so callers render the chart only at length ≥ 2.
+export type ScorePoint = { date: string; score: number; grade: string }
+export async function getCompositeScoreHistory(db: Db, companyId: string): Promise<ScorePoint[]> {
+	const rows = await db
+		.select({
+			score: dimensionScores.score,
+			grade: dimensionScores.grade,
+			created_at: dimensionScores.created_at
+		})
+		.from(dimensionScores)
+		.where(and(eq(dimensionScores.company_id, companyId), eq(dimensionScores.dimension, "composite")))
+		.orderBy(asc(dimensionScores.created_at))
+	return rows.map((r) => ({ date: r.created_at.toISOString(), score: r.score, grade: r.grade }))
 }
 
 export async function incrementTerminalViewCount(db: Db, slug: string): Promise<void> {

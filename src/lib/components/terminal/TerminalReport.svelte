@@ -6,20 +6,25 @@
   import LedgerStats from './LedgerStats.svelte';
   import BearBull from './BearBull.svelte';
   import CitationAppendix from './CitationAppendix.svelte';
+  import ScoreHistoryChart from '$lib/components/charts/ScoreHistoryChart.svelte';
+  import { gradeStyle } from './grade';
 
   interface Props {
     report: TerminalReportWithCompany;
     isOwner: boolean;
     // WP6.1 follow-through stats; null when no ledger data (dev fixture / empty).
     ledger?: { ftr: number | null; onTime: number; late: number; unaccounted: number; total: number } | null;
+    // Composite grade trend (oldest→newest); chart renders only when re-graded (≥2 points).
+    scoreHistory?: { date: string; score: number; grade: string }[];
   }
 
-  let { report, isOwner, ledger = null }: Props = $props();
+  let { report, isOwner, ledger = null, scoreHistory = [] }: Props = $props();
 
   // Mobile disclaimer expand/collapse — replicates BacktestReport banner pattern.
   let disclaimerExpanded = $state(false);
 
   const dimensions = $derived(report.dimensions ?? []);
+  const trendColor = $derived(gradeStyle(report.composite?.grade ?? 'C').text);
 </script>
 
 <div class="min-h-screen bg-[#fcfbf9]">
@@ -77,6 +82,17 @@
       createdAt={report.created_at}
       rubricVersion={report.rubric_version}
     />
+
+    <!-- Composite grade trend — only once the company has been re-graded (≥2 points). -->
+    {#if scoreHistory.length >= 2}
+      <section class="bg-white border border-[#e5e5e5] rounded-[2rem] p-8 md:p-10">
+        <div class="flex items-baseline justify-between mb-5">
+          <span class="mono-label text-[10px] text-gray-400">Score over time</span>
+          <span class="font-mono text-[10px] text-gray-400">{scoreHistory.length} grades</span>
+        </div>
+        <ScoreHistoryChart data={scoreHistory} colorClass={trendColor} height={160} />
+      </section>
+    {/if}
 
     <VerdictCard verdict={report.verdict} />
 

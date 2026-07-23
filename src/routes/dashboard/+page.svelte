@@ -35,7 +35,8 @@
   let runningIds = $state(new Set<string>())
 
   // ── Drilldown ───────────────────────────────────────────────────────────────
-  let drill = $state<{ companyId: string; dimension: string } | null>(null)
+  // cells travels with it so the composite drawer can list the 9 dimensions.
+  let drill = $state<{ companyId: string; dimension: string; cells: Row['cells'] } | null>(null)
 
   // ── Styled confirm (replaces native confirm() for spend / unwatch) ──────────
   type ConfirmAction = { title: string; body: string; cta: string; danger?: boolean; run: () => void }
@@ -275,7 +276,7 @@
           rerunCost={data.costs.rerun}
           reportCost={data.costs.report}
           {runningIds}
-          oncell={(row, dimension) => (drill = { companyId: row.company.id, dimension })}
+          oncell={(row, dimension) => (drill = { companyId: row.company.id, dimension, cells: row.cells })}
           onrefresh={handleRefresh}
           onrun={handleRunFirst}
           onunwatch={handleUnwatch}
@@ -368,6 +369,8 @@
   <DimensionDrilldown
     companyId={drill.companyId}
     dimension={drill.dimension}
+    dimensions={drill.cells}
+    onselect={(dimension) => { if (drill) drill = { ...drill, dimension } }}
     onclose={() => (drill = null)}
   />
 {/if}

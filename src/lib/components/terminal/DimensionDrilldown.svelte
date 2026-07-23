@@ -1,17 +1,22 @@
 <script lang="ts">
   import { Dialog } from 'bits-ui'
   import type { DimensionId, ScreenHit } from '$lib/types/terminal'
-  import { DIMENSION_NAMES, gradeStyle, CONFIDENCE_LABEL, citationDomain, faviconUrl } from './grade'
+  import { DIMENSION_IDS } from '$lib/types/terminal'
+  import { DIMENSION_NAMES, gradeStyle, CONFIDENCE_LABEL, TREND, type Trend, citationDomain, faviconUrl } from './grade'
+  import ScoreHistoryChart from '$lib/components/charts/ScoreHistoryChart.svelte'
   import { fmtDate } from '$lib/utils'
   import type { Confidence } from '$lib/types/terminal'
 
   interface Props {
     companyId: string
     dimension: string
+    // Latest grade per dimension — lets the composite view list the nine frameworks.
+    dimensions?: Record<string, { grade: string; score: number; confidence: string; trend: string }>
+    onselect?: (dim: string) => void
     onclose: () => void
   }
 
-  let { companyId, dimension, onclose }: Props = $props()
+  let { companyId, dimension, dimensions, onselect, onclose }: Props = $props()
 
   // Response shape of /board/drilldown/[company]/[dimension].
   type HistoryRow = {
@@ -68,11 +73,14 @@
 <Dialog.Root bind:open={() => true, (o) => { if (!o) onclose() }}>
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 bg-black/20 z-[200]" />
-    <Dialog.Content class="fixed right-0 top-0 h-full w-full max-w-xl bg-white border-l border-[#e5e5e5] shadow-2xl overflow-y-auto z-[201]">
+    <Dialog.Content class="fixed right-0 top-0 h-full w-full max-w-xl bg-white border-l border-[#e5e5e5] overflow-y-auto z-[201]">
     <div class="p-8 flex flex-col gap-8">
 
       <div class="flex items-start justify-between gap-4">
         <div>
+          {#if dimension !== 'composite' && onselect}
+            <button onclick={() => onselect('composite')} class="mono-label text-[10px] text-gray-400 hover:text-[#4338ca] bg-transparent border-none p-0 mb-2 cursor-pointer transition-colors">← Aslan Score</button>
+          {/if}
           <span class="mono-label text-[10px] text-gray-400 block mb-1">
             {payload?.company.ticker ?? ''} · {dimension === 'composite' ? 'Aslan Score' : dimension}
           </span>
@@ -98,10 +106,45 @@
             </div>
             <div class="font-mono text-[11px] text-gray-500 flex flex-col gap-1 min-w-0">
               <span class="text-gray-900 text-sm">{latest.score}<span class="text-gray-400">/100</span> · {CONFIDENCE_LABEL[latest.confidence]}</span>
-              <span class="truncate" title={latest.evidence_hash}>evidence {latest.evidence_hash.slice(0, 16)}…</span>
               <span>rubric v{latest.rubric_version} · {fmtDate(latest.created_at)}</span>
             </div>
+            {#if payload.history.length >= 2}
+              <div class="ml-auto w-28 shrink-0" title="{payload.history.length} grades over time">
+                <ScoreHistoryChart
+                  data={payload.history.map((h) => ({ date: h.created_at, score: h.score }))}
+                  mini
+                  colorClass={style.text}
+                  height={40}
+                />
+              </div>
+            {/if}
           </div>
+        {/if}
+
+        <!-- Composite: the nine frameworks, each a drill-in (keeps the board a focus list). -->
+        {#if dimension === 'composite' && dimensions}
+          <section>
+            <span class="mono-label text-[10px] text-gray-400 block mb-2">Dimensions</span>
+            <div class="flex flex-col">
+              {#each DIMENSION_IDS as id}
+                {@const dc = dimensions[id]}
+                {#if dc}
+                  {@const st = gradeStyle(dc.grade)}
+                  {@const tr = TREND[dc.trend as Trend]}
+                  <button
+                    onclick={() => onselect?.(id)}
+                    class="flex items-center gap-3 py-2.5 border-b border-[#f5f5f5] last:border-b-0 text-left group cursor-pointer bg-transparent"
+                  >
+                    <span class="font-mono text-[10px] text-gray-400 w-5 shrink-0">{id}</span>
+                    <span class="font-sans text-[13px] text-gray-700 group-hover:text-[#4338ca] transition-colors flex-1 truncate">{DIMENSION_NAMES[id]}</span>
+                    <span class="font-mono text-[11px] text-gray-400 tabular-nums">{dc.score}</span>
+                    <span class="text-[11px] {tr.class} w-3 text-center shrink-0">{tr.arrow}</span>
+                    <span class="font-serif text-base leading-none {st.text} w-6 text-center shrink-0">{dc.grade}</span>
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          </section>
         {/if}
 
         <!-- Grade history (append-only dimension_scores rows, newest first) -->
@@ -112,9 +155,7 @@
               {@const style = gradeStyle(h.grade)}
               {@const d = delta(payload.history, i)}
               <li class="flex items-start gap-3 py-3 border-b border-[#f5f5f5] last:border-b-0">
-                <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg border {style.border} {style.bg} shrink-0">
-                  <span class="font-serif text-base leading-none {style.text}">{h.grade}</span>
-                </span>
+                <span class="font-serif text-lg leading-none {style.text} w-6 text-center shrink-0 mt-0.5">{h.grade}</span>
                 <div class="min-w-0 font-mono text-[11px] text-gray-500 flex flex-col gap-0.5">
                   <span class="text-gray-900">
                     {h.score}/100
@@ -127,7 +168,7 @@
                   </span>
                   <span>{fmtDate(h.created_at)} · {h.report_id ? 'report run' : 'watchlist rescore'}</span>
                   {#each h.flags as flag}
-                    <div class="border-l-[3px] border-red-400 bg-red-50/60 rounded-r-lg px-2.5 py-1.5 mt-1 font-sans text-[12px] text-red-800 leading-snug">
+                    <div class="border border-red-200 bg-red-50/60 rounded-lg px-2.5 py-1.5 mt-1 font-sans text-[12px] text-red-800 leading-snug">
                       <span class="mono-label text-[8px] text-red-700 block mb-0.5">Flag · {flag.status} · {flag.action}</span>
                       {flag.summary}
                       {#if flag.detail}
@@ -143,7 +184,8 @@
           </ol>
         </section>
 
-        <!-- Evidence trail -->
+        <!-- Evidence trail (per-dimension; composite drills in via Dimensions above) -->
+        {#if dimension !== 'composite'}
         <section>
           <span class="mono-label text-[10px] text-gray-400 block mb-3">Evidence trail · {payload.evidence.length}</span>
           <ul class="list-none p-0 m-0 flex flex-col gap-3">
@@ -166,14 +208,11 @@
                 </a>
               </li>
             {:else}
-              <li class="font-sans text-sm text-gray-500">
-                {dimension === 'composite'
-                  ? 'The composite is derived from the nine dimensions — drill into a dimension for its evidence.'
-                  : 'No evidence items tagged with this dimension yet.'}
-              </li>
+              <li class="font-sans text-sm text-gray-500">No evidence items tagged with this dimension yet.</li>
             {/each}
           </ul>
         </section>
+        {/if}
       {/if}
     </div>
     </Dialog.Content>
