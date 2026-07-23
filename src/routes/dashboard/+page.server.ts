@@ -10,6 +10,7 @@ import {
 import { latestPerDimension, deteriorationScore } from "$lib/server/terminal/board"
 import { computeTrend } from "$lib/server/terminal/scoring"
 import { resolveUserId } from "$lib/server/terminal/runs"
+import { fetchScreener } from "$lib/server/alpaca-market-data"
 import { TERMINAL_CONFIG } from "$lib/server/terminal/config"
 import type { CompositeScore } from "$lib/types/terminal"
 import type { PageServerLoad } from "./$types"
@@ -201,9 +202,13 @@ export const load: PageServerLoad = async ({ locals, platform, request }) => {
 		.where(eq(profiles.user_id, userId))
 		.limit(1)
 
+	// Market movers — clickable grade suggestions (cached ~60s, empty on failure).
+	const movers = await fetchScreener()
+
 	return {
 		rows,
 		recentReports,
+		movers,
 		alerts: alerts.map((a) => ({
 			id: a.id,
 			company_ticker: tickerById.get(a.company_id) ?? "—",

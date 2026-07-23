@@ -1,7 +1,9 @@
 import { env } from "$env/dynamic/private"
 import type { OHLCVBar } from "$lib/types/pipeline"
+import { classifyAsset, isRealCompany, type AssetMeta } from "./screener-filter"
 
 const BASE_URL = "https://data.alpaca.markets/v2/stocks"
+const SCREENER_URL = "https://data.alpaca.markets/v1beta1/screener/stocks"
 
 type AlpacaBar = {
 	t: string // ISO timestamp e.g. "2023-10-17T04:00:00Z"
@@ -109,6 +111,8 @@ export type AssetUniverse = {
 	symbols: Set<string>
 	/** symbol → company name */
 	names: Map<string, string>
+	/** symbol → exchange / optionability / derived type (categories + movers junk-filter) */
+	meta: Map<string, AssetMeta>
 }
 
 // Module-level cache — reloaded at most once per 24 h per server process
@@ -133,10 +137,20 @@ export async function loadUSEquityUniverse(): Promise<AssetUniverse> {
 		try {
 			const res = await fetch(`${base}/v2/assets?status=active&asset_class=us_equity`, { headers })
 			if (!res.ok) continue
-			const assets = await res.json() as { symbol: string; name?: string }[]
+			const assets = await res.json() as { symbol: string; name?: string; exchange?: string; attributes?: string[] }[]
+			const meta = new Map<string, AssetMeta>()
+			for (const a of assets) {
+				const exchange = a.exchange ?? ""
+				meta.set(a.symbol, {
+					exchange,
+					hasOptions: (a.attributes ?? []).includes("has_options"),
+					type: classifyAsset(a.name ?? "", exchange)
+				})
+			}
 			_universe = {
 				symbols: new Set(assets.map(a => a.symbol)),
-				names:   new Map(assets.filter(a => a.name).map(a => [a.symbol, a.name!]))
+				names:   new Map(assets.filter(a => a.name).map(a => [a.symbol, a.name!])),
+				meta
 			}
 			_loadedAt = Date.now()
 			return _universe
@@ -146,5 +160,67 @@ export async function loadUSEquityUniverse(): Promise<AssetUniverse> {
 	}
 
 	console.error("[loadUSEquityUniverse] Failed to load from Alpaca — allowlist disabled")
-	return { symbols: new Set(), names: new Map() }
+	return { symbols: new Set(), names: new Map(), meta: new Map() }
+}
+
+// ── Screener: market movers + most-active (dashboard suggestions) ─────────────
+
+export type MoverItem = { symbol: string; name: string; price: number; percent_change: number }
+export type ActiveItem = { symbol: string; name: string; volume: number }
+export type Screener = { gainers: MoverItem[]; losers: MoverItem[]; most_actives: ActiveItem[] }
+
+const EMPTY_SCREENER: Screener = { gainers: [], losers: [], most_actives: [] }
+
+// Screener refreshes per-minute upstream — cache briefly so dashboard loads don't refetch.
+let _screener: Screener | null = null
+let _screenerAt = 0
+const SCREENER_TTL_MS = 60 * 1000
+
+type RawMover = { symbol: string; price: number; percent_change: number }
+type RawActive = { symbol: string; volume: number }
+
+/**
+ * Top gainers, losers, and most-active US operating companies for the dashboard.
+ * Raw Alpaca movers are dominated by warrants/penny stocks/leveraged ETFs; we
+ * keep only real companies (see isRealCompany) and enrich each with its name.
+ * Returns empty lists on any failure — the dashboard degrades gracefully.
+ */
+export async function fetchScreener(limit = 6): Promise<Screener> {
+	if (_screener && Date.now() - _screenerAt < SCREENER_TTL_MS) return _screener
+
+	const headers: Record<string, string> = {
+		"APCA-API-KEY-ID":     env.ALPACA_API_KEY,
+		"APCA-API-SECRET-KEY": env.ALPACA_API_SECRET,
+	}
+
+	try {
+		const universe = await loadUSEquityUniverse()
+		// Fetch a wide raw window (movers are junk-heavy) so enough survive the filter.
+		const [moversRes, activesRes] = await Promise.all([
+			fetch(`${SCREENER_URL}/movers?top=40`, { headers }),
+			fetch(`${SCREENER_URL}/most-actives?by=volume&top=40`, { headers })
+		])
+		if (!moversRes.ok || !activesRes.ok) return EMPTY_SCREENER
+
+		const movers = await moversRes.json() as { gainers?: RawMover[]; losers?: RawMover[] }
+		const actives = await activesRes.json() as { most_actives?: RawActive[] }
+
+		const keep = (symbol: string) => isRealCompany(universe.meta.get(symbol))
+		const name = (symbol: string) => universe.names.get(symbol) ?? symbol
+
+		const mapMovers = (rows: RawMover[] | undefined): MoverItem[] =>
+			(rows ?? []).filter(r => keep(r.symbol)).slice(0, limit)
+				.map(r => ({ symbol: r.symbol, name: name(r.symbol), price: r.price, percent_change: r.percent_change }))
+
+		_screener = {
+			gainers: mapMovers(movers.gainers),
+			losers:  mapMovers(movers.losers),
+			most_actives: (actives.most_actives ?? []).filter(r => keep(r.symbol)).slice(0, limit)
+				.map(r => ({ symbol: r.symbol, name: name(r.symbol), volume: r.volume }))
+		}
+		_screenerAt = Date.now()
+		return _screener
+	} catch {
+		return EMPTY_SCREENER
+	}
 }

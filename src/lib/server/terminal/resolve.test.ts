@@ -8,7 +8,8 @@ const universe: AssetUniverse = {
 	names: new Map([
 		["AAPL", "Apple Inc. Common Stock"],
 		["MSFT", "Microsoft Corporation Common Stock"]
-	])
+	]),
+	meta: new Map()
 }
 
 const exa = (title: string | null, url = "https://ex.com"): ExaResultItem => ({ url, title })
@@ -44,7 +45,8 @@ describe("mapCandidates", () => {
 		// use matching names to force distinct tickers instead
 		const big: AssetUniverse = {
 			symbols: new Set(),
-			names: new Map(Array.from({ length: 8 }, (_, i) => [`T${i}`, `NoMatch Co ${i} Common`]))
+			names: new Map(Array.from({ length: 8 }, (_, i) => [`T${i}`, `NoMatch Co ${i} Common`])),
+			meta: new Map()
 		}
 		expect(mapCandidates("nomatch", results, big)).toHaveLength(5)
 	})

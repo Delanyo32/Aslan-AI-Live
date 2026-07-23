@@ -23,6 +23,20 @@
     goto(t ? `/terminal?q=${encodeURIComponent(t)}` : '/terminal')
   }
 
+  // ── Market movers: click a suggestion → straight into the grade flow ─────────
+  const pickMover = (symbol: string) => goto(`/terminal?q=${encodeURIComponent(symbol)}`)
+  const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`
+  const fmtVol = (n: number) =>
+    n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(0)}M` : `${n}`
+
+  // Uniform row shape across all three columns (avoids a mixed union in the template).
+  const moverCols = $derived([
+    { label: 'Gainers', rows: data.movers.gainers.map((g) => ({ symbol: g.symbol, name: g.name, badge: fmtPct(g.percent_change), cls: 'text-emerald-600' })) },
+    { label: 'Losers', rows: data.movers.losers.map((g) => ({ symbol: g.symbol, name: g.name, badge: fmtPct(g.percent_change), cls: 'text-red-600' })) },
+    { label: 'Most active', rows: data.movers.most_actives.map((a) => ({ symbol: a.symbol, name: a.name, badge: fmtVol(a.volume), cls: 'text-gray-500' })) }
+  ])
+  const hasMovers = $derived(moverCols.some((c) => c.rows.length > 0))
+
   // ── Alerts (local copy so the header badge and feed stay in sync) ────────────
   let alerts = $state(structuredClone(data.alerts))
   $effect(() => { alerts = structuredClone(data.alerts) })
@@ -213,6 +227,45 @@
       </div>
     </div>
   </section>
+
+  {#if hasMovers}
+    <!-- ── Market movers: Alpaca suggestions, click to grade ──────────────────── -->
+    <section class="mb-14">
+      <div class="mb-5">
+        <h2 class="serif-italic text-2xl lg:text-3xl text-[#171717]">Market movers</h2>
+        <p class="font-serif text-base text-gray-600 mt-1">
+          Today's biggest US moves — pick one to grade. Warrants, penny stocks, and ETFs filtered out.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e5e5e5] border border-[#e5e5e5] rounded-2xl overflow-hidden">
+        {#each moverCols as col (col.label)}
+          <div class="bg-white p-5">
+            <span class="mono-label text-[10px] text-gray-400 block mb-3">{col.label}</span>
+            {#if col.rows.length === 0}
+              <p class="font-sans text-xs text-gray-400">—</p>
+            {:else}
+              <ul class="list-none p-0 m-0 flex flex-col gap-1">
+                {#each col.rows as it (it.symbol)}
+                  <li>
+                    <button
+                      onclick={() => pickMover(it.symbol)}
+                      class="w-full text-left flex items-center justify-between gap-3 px-3 py-2 rounded-xl hover:bg-[#fcfbf9] border border-transparent hover:border-[#e5e5e5] transition-colors cursor-pointer"
+                    >
+                      <span class="min-w-0 flex flex-col">
+                        <span class="font-mono text-sm text-[#171717]">{it.symbol}</span>
+                        <span class="font-sans text-xs text-gray-500 truncate">{it.name}</span>
+                      </span>
+                      <span class="font-mono text-xs shrink-0 {it.cls}">{it.badge}</span>
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   {#if isNewDesk}
     <!-- ── First run: teach the two moves ────────────────────────────────────── -->
