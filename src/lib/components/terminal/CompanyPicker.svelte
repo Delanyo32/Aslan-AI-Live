@@ -119,7 +119,7 @@
     <button
       type="button"
       onclick={() => selectTab(t.key)}
-      class="mono-label text-[10px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer {tab === t.key ? 'bg-[#171717] text-white border-[#171717]' : 'bg-white text-gray-500 border-[#e5e5e5] hover:border-[#4338ca] hover:text-[#4338ca]'}"
+      class="font-mono uppercase tracking-[0.08em] text-[11px] px-3 py-1 rounded-full border transition-colors cursor-pointer {tab === t.key ? 'bg-[#171717] text-white border-[#171717]' : 'bg-white text-gray-500 border-[#e5e5e5] hover:border-[#4338ca] hover:text-[#4338ca]'}"
     >{t.label}</button>
   {/each}
 </div>
@@ -132,7 +132,7 @@
     bind:value={query}
     placeholder={tab === 'search' ? 'AAPL, or Apple Inc.' : 'Filter this list…'}
     disabled={resolving}
-    class="flex-1 px-5 py-3 bg-[#fcfbf9] border border-[#e5e5e5] rounded-full font-sans text-sm text-[#171717] placeholder:text-gray-500 focus:border-[#4338ca] transition-colors disabled:opacity-50"
+    class="flex-1 px-5 py-3 {compact ? 'bg-[#fcfbf9]' : 'bg-white'} border border-[#e5e5e5] rounded-full font-sans text-sm text-[#171717] placeholder:text-gray-500 focus:border-[#4338ca] transition-colors disabled:opacity-50"
   />
   {#if tab === 'search'}
     <button
@@ -145,6 +145,38 @@
 
 {@render children?.()}
 
+{#if !compact && tab === 'search' && candidates === null && !resolving}
+  <!-- Empty search state — quick-picks so the panel teaches instead of sitting blank. -->
+  <div class="mt-6 flex items-center gap-2 flex-wrap">
+    <span class="mono-label text-[9px] text-gray-400">Try</span>
+    {#each ['AAPL', 'NVDA', 'MSFT', 'TSLA'] as ex (ex)}
+      <button
+        type="button"
+        onclick={() => { query = ex; handleResolve() }}
+        class="font-mono text-[11px] px-3 py-1 rounded-full border border-[#e5e5e5] text-gray-600 hover:border-[#4338ca] hover:text-[#4338ca] transition-colors cursor-pointer"
+      >{ex}</button>
+    {/each}
+  </div>
+{/if}
+
+<!-- One result row — name is the hero; listing is a quiet marker, not a filled pill. -->
+{#snippet companyRow(c: Candidate)}
+  <button
+    onclick={() => onpick(c)}
+    class="text-left bg-white border border-[#e5e5e5] rounded-2xl hover:border-[#4338ca] transition-colors cursor-pointer flex items-center justify-between {compact ? 'px-4 py-3 gap-3' : 'px-5 py-4 gap-4'}"
+  >
+    <span class="flex flex-col min-w-0 flex-1">
+      <span class="font-sans text-sm text-[#171717] truncate">{c.name}</span>
+      <span class="font-mono text-xs text-gray-500">{c.ticker}</span>
+    </span>
+    {#if c.is_us}
+      <span class="font-mono text-[10px] tracking-[0.04em] text-[#4338ca] shrink-0">US</span>
+    {:else}
+      <span class="font-mono text-[10px] tracking-[0.04em] text-gray-400 shrink-0">Research</span>
+    {/if}
+  </button>
+{/snippet}
+
 {#if tab !== 'search'}
   <!-- Category list -->
   {#if listLoading && listItems === null}
@@ -155,22 +187,9 @@
         {#if query.trim()}No match for “{query.trim()}”.{:else if tab === 'graded'}You haven't graded any companies yet.{:else if tab === 'board'}Nothing on your board yet.{:else if tab === 'movers'}No movers to show right now.{:else}No companies to show.{/if}
       </p>
     {:else}
-      <div class="flex flex-col {compact ? 'mt-6 gap-2 max-h-72 overflow-y-auto' : 'mt-8 gap-3'}">
+      <div class="{compact ? 'flex flex-col mt-6 gap-2 max-h-72 overflow-y-auto' : 'grid grid-cols-1 sm:grid-cols-2 mt-8 gap-3'}">
         {#each listItems as c (c.ticker + c.name)}
-          <button
-            onclick={() => onpick(c)}
-            class="text-left bg-white border border-[#e5e5e5] rounded-2xl hover:border-[#4338ca] transition-colors cursor-pointer flex items-center justify-between {compact ? 'px-4 py-3 gap-3' : 'px-5 py-4 gap-4'}"
-          >
-            <span class="flex flex-col min-w-0">
-              <span class="font-sans text-sm text-[#171717] truncate">{c.name}</span>
-              <span class="font-mono text-xs text-gray-500">{c.ticker}</span>
-            </span>
-            {#if c.is_us}
-              <span class="mono-label text-[9px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full shrink-0">US listing</span>
-            {:else}
-              <span class="mono-label text-[9px] text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full shrink-0">Research only</span>
-            {/if}
-          </button>
+          {@render companyRow(c)}
         {/each}
       </div>
     {/if}
@@ -181,27 +200,12 @@
       No companies matched “{query}”.{#if !compact} Try a ticker (e.g. AAPL) or a fuller name.{/if}
     </p>
   {:else}
-    <div class="flex flex-col {compact ? 'mt-6 gap-2 max-h-72 overflow-y-auto' : 'mt-8 gap-3'}">
-      {#if !compact}
-        <span class="mono-label text-[10px] text-gray-400">Select a company</span>
-      {/if}
+    {#if !compact}
+      <span class="mono-label text-[10px] text-gray-400 block mt-8 mb-3">Select a company</span>
+    {/if}
+    <div class="{compact ? 'flex flex-col mt-6 gap-2 max-h-72 overflow-y-auto' : 'grid grid-cols-1 sm:grid-cols-2 gap-3'}">
       {#each candidates as c (c.ticker + c.name)}
-        <button
-          onclick={() => onpick(c)}
-          class="text-left bg-white border border-[#e5e5e5] rounded-2xl hover:border-[#4338ca] transition-colors cursor-pointer flex items-center justify-between {compact ? 'px-4 py-3 gap-3' : 'px-5 py-4 gap-4'}"
-        >
-          <span class="flex flex-col min-w-0">
-            <span class="font-sans text-sm text-[#171717] truncate">{c.name}</span>
-            <span class="font-mono text-xs text-gray-500">{c.ticker}</span>
-          </span>
-          {#if c.is_us}
-            <span class="mono-label text-[9px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full shrink-0">US listing</span>
-          {:else if compact}
-            <span class="mono-label text-[9px] text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full shrink-0">Research only</span>
-          {:else}
-            <span class="mono-label text-[9px] text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full shrink-0 text-right leading-tight">Research only — price verdict for US listings</span>
-          {/if}
-        </button>
+        {@render companyRow(c)}
       {/each}
     </div>
   {/if}
