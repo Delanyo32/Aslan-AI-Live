@@ -1,4 +1,4 @@
-import type { D1Database, DurableObjectNamespace, Fetcher } from "@cloudflare/workers-types"
+import type { D1Database, DurableObjectNamespace, Fetcher, R2Bucket } from "@cloudflare/workers-types"
 import type { SessionAuthObject } from "@clerk/backend"
 import type { EmailBinding } from "$lib/server/email"
 import type { createDb } from "$lib/server/db/client"
@@ -12,7 +12,9 @@ declare global {
         PIPELINE_RUNNER: DurableObjectNamespace
         TERMINAL_REPORT_RUNNER: DurableObjectNamespace
         COMPANY_MONITOR: DurableObjectNamespace
+        REALITY_RUNNER: DurableObjectNamespace
         EMAIL: EmailBinding
+        SEC_R2: R2Bucket
         // Cloudflare exposes wrangler [vars] and secrets here too
         [key: string]: unknown
       }

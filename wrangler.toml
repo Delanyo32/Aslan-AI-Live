@@ -26,6 +26,13 @@ database_name  = "aslan-ai"
 database_id    = "81f2a5e9-5864-41be-9870-19a36fc3b1d6"
 migrations_dir = "src/lib/server/db/migrations/drizzle"
 
+# R2 bucket: raw SEC EDGAR documents, keyed sec/{cik}/{accession}/{filename}.
+# Keyed on CIK (not ticker) so a ticker change never splits a company across two
+# prefixes. Create once with: wrangler r2 bucket create aslan-sec-filings
+[[r2_buckets]]
+binding     = "SEC_R2"
+bucket_name = "aslan-sec-filings"
+
 # Cloudflare Email Sending binding — used by better-auth's sendVerificationEmail
 # (src/lib/server/auth.ts). Sends from noreply@aslanfinance.app; the domain must
 # be onboarded via `wrangler email sending enable aslanfinance.app`.
@@ -55,6 +62,12 @@ class_name = "TerminalReportRunner"
 name       = "COMPANY_MONITOR"
 class_name = "CompanyMonitor"
 
+# Durable Object: Reality Ledger runner (one DO instance per company CIK).
+# Same Worker bundle; re-exported from src/hooks.server.ts.
+[[durable_objects.bindings]]
+name       = "REALITY_RUNNER"
+class_name = "RealityRunner"
+
 # SQLite-backed DOs (new_sqlite_classes): KV-backed (new_classes) namespaces can
 # no longer be created on this account [API code 10099]. SQLite-backed still
 # supports the KV-style storage.get/put API the StreamingRunner uses.
@@ -70,14 +83,22 @@ new_sqlite_classes = ["TerminalReportRunner"]
 tag                = "v3"
 new_sqlite_classes = ["CompanyMonitor"]
 
+[[migrations]]
+tag                = "v4"
+new_sqlite_classes = ["RealityRunner"]
+
 # Non-secret public vars. Secrets must be set via: wrangler secret put <NAME>
 # Secrets needed (wrangler secret put): CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET,
 #                 OPENROUTER_API_KEY, ALPACA_API_KEY, ALPACA_API_SECRET, EXA_API_KEY,
-#                 EXA_WEBHOOK_TOKEN
+#                 EXA_WEBHOOK_TOKEN, SEC_SYNC_TOKEN
 
 [vars]
 PUBLIC_BASE_URL          = "https://aslanfinance.app"
 OPENROUTER_DEFAULT_MODEL = "openai/gpt-5.4-mini"
 EMAIL_FROM_DOMAIN        = "aslanfinance.app"
+# www.sec.gov returns 403 unless User-Agent contains an "@" (verified against the
+# live endpoint). SEC treats it as their contact route before they block you, so
+# keep it a real, reachable address.
+SEC_USER_AGENT           = "Aslan-AI/1.0 (sec-bot@aslanfinance.app)"
 # Add the prod publishable key here at deploy (public, not a secret):
 # PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_..."

@@ -57,6 +57,27 @@
       "when": 1784750929788,
       "tag": "0007_bright_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1786761386425,
+      "tag": "0008_colorful_white_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786822114803,
+      "tag": "0009_long_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1787078419878,
+      "tag": "0010_conscious_elektra",
+      "breakpoints": true
     }
   ]
 }

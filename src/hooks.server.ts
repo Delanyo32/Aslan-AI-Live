@@ -10,6 +10,7 @@ import { logger } from "$lib/server/logger"
 export { PipelineRunner } from "$lib/server/durable-objects/PipelineRunner"
 export { TerminalReportRunner } from "$lib/server/durable-objects/TerminalReportRunner"
 export { CompanyMonitor } from "$lib/server/durable-objects/CompanyMonitor"
+export { RealityRunner } from "$lib/server/durable-objects/RealityRunner"
 
 export const handle: Handle = async ({ event, resolve }) => {
   const env = event.platform!.env
