@@ -12,7 +12,8 @@
 <div class="flex flex-col gap-2">
   {#each items as d (d.label)}
     <div class="flex items-center gap-3" title={d.hint}>
-      <span class="mono-label text-[10px] text-gray-600 w-44 shrink-0 text-right truncate">{d.label}</span>
+      <!-- Plain-tracking mono, not .mono-label: its 0.35em letter-spacing truncates long labels. -->
+      <span class="font-mono text-[10px] uppercase tracking-wide text-gray-600 w-36 sm:w-52 shrink-0 text-right truncate">{d.label}</span>
       <div class="flex-1 h-4 flex items-center">
         <div class="h-4 rounded-r-[3px]" style:width="{(d.value / max) * 100}%" style:background="#2a78d6"></div>
         <span class="font-mono text-[10px] text-gray-600 ml-2 whitespace-nowrap" style="font-variant-numeric: tabular-nums;">{fmt(d.value)}</span>
