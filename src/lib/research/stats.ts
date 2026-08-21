@@ -132,13 +132,18 @@ export function companySeries(stmts: Stmt[], entries: Entry[], currency: string)
 // ── reported debt (XBRL alias picks, mirroring xbrl.ts CONCEPT_MAP order) ───
 
 // Keep in sync with src/lib/server/reality/xbrl.ts (debt_short / debt_long).
+// The trailing `6k:` aliases are the cataloger's 6-K extractions — foreign
+// filers (ASML/TSM/NBIS) only carry XBRL on the annual 20-F, so for their
+// quarters those rows ARE the debt spine (mirrors reconciler.ts eligibility).
 const DEBT_SHORT_TAGS = [
 	"us-gaap:ShortTermBorrowings", "us-gaap:LongTermDebtCurrent", "us-gaap:DebtCurrent",
-	"us-gaap:LongTermDebtAndCapitalLeaseObligationsCurrent", "ifrs-full:CurrentPortionOfLongtermBorrowings"
+	"us-gaap:LongTermDebtAndCapitalLeaseObligationsCurrent", "ifrs-full:CurrentPortionOfLongtermBorrowings",
+	"6k:debt_short"
 ]
 const DEBT_LONG_TAGS = [
 	"us-gaap:LongTermDebtNoncurrent", "us-gaap:LongTermDebt",
-	"us-gaap:LongTermDebtAndCapitalLeaseObligations", "ifrs-full:LongtermBorrowings"
+	"us-gaap:LongTermDebtAndCapitalLeaseObligations", "ifrs-full:LongtermBorrowings",
+	"6k:debt_long"
 ]
 const LEASE_TAGS = ["us-gaap:OperatingLeaseLiability"]
 const LEASE_PAIR_TAGS = [
@@ -150,7 +155,9 @@ const PURCHASE_TAGS = [
 	"us-gaap:PurchaseCommitmentRemainingMinimumAmountCommitted"
 ]
 
-const live = (e: Entry): boolean => !e.superseded && e.value_type === "currency" && e.origin === "xbrl"
+const live = (e: Entry): boolean =>
+	!e.superseded && e.value_type === "currency" &&
+	(e.origin === "xbrl" || (e.origin === "ai" && (e.taxonomy_tag?.startsWith("6k:") ?? false)))
 
 /** First alias with an instant fact within 6 days of period_end wins (xbrl.ts rule). */
 export function pickAliasInstant(entries: Entry[], tags: string[], periodEnd: string, unit: string): number | null {

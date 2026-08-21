@@ -239,6 +239,28 @@ describe("reconcile (validation layer)", () => {
 		expect(q1.narrative).toBe("Quarter one narrative.")
 		expect(q4.narrative).toBe("No reconciliation notes for this quarter.")
 	})
+
+	test("committed_to_expense only applies when the citation IS a committed component", async () => {
+		const q1End = "2023-09-30"
+		const debtClaim = entry({ taxonomy_tag: "us-gaap:LongTermDebtNoncurrent", kind: "obligation", certainty: "committed", amount: 1000, period_end: q1End })
+		const cogs = entry({ taxonomy_tag: "us-gaap:CostOfRevenue", kind: "expense", period_start: "2023-07-01", period_end: q1End, amount: 60 })
+		const rnd = entry({ taxonomy_tag: "us-gaap:ResearchAndDevelopmentExpense", kind: "expense", period_start: "2023-07-01", period_end: q1End, amount: 10 })
+		const soft6kDebt = entry({ origin: "ai", taxonomy_tag: "6k:debt_short", kind: "obligation", certainty: "committed", amount: 40, period_end: q1End, source_location: "6k:press" })
+		const softAccrual = entry({ origin: "ai", taxonomy_tag: null, kind: "obligation", certainty: "committed", amount: 25, period_end: q1End, source_location: "Note 9", notes: "The court entered final judgment and the amount was accrued." })
+		const out = await reconcile("c", [...FY24, debtClaim, cogs, rnd, soft6kDebt, softAccrual], [], async () => ({
+			adjustments: [
+				{ period_end: q1End, action: "committed_to_expense", entry_ids: [softAccrual.id], flag_ids: [], rationale: "accrued judgment cited" }, // rejected: never inside committed_balance
+				{ period_end: q1End, action: "committed_to_expense", entry_ids: [soft6kDebt.id], flag_ids: [], rationale: "6-K debt component cited" } // applies: a real committed component
+			],
+			quarters: []
+		}))
+		const q1 = out.find((s) => s.period_end === q1End)!
+		const adj = q1.adjusted as { committed_balance: number; expenses: number }
+		const draft = q1.draft as { committed_balance: number; expenses: number }
+		expect(draft.committed_balance).toBe(1040) // xbrl 1000 + 6-K 40
+		expect(adj.committed_balance).toBe(1000) // only the component move landed
+		expect(adj.expenses).toBe(draft.expenses + 40) // the accrual citation never applied
+	})
 })
 
 // appended: forward obligations schedule
@@ -281,6 +303,29 @@ describe("forwardSchedule", () => {
 		const estimated = out.reduce((s, b) => s + (b.estimated["obligation USD"] ?? 0), 0)
 		expect(disclosed).toBeCloseTo(6200) // schedule only — the purchase lump was the same money
 		expect(estimated).toBeCloseTo(800) // the guarantee survives, straight-lined
+	})
+
+	test("twin lumps for the same due date collapse to one; different due dates both survive", () => {
+		const out = forwardSchedule([
+			entry({ kind: "obligation", certainty: "committed", amount: 43_800, period_end: "2026-06-30", due_date: "2031-06-30", notes: "Maximum potential future payment under credit derivatives" }),
+			entry({ kind: "obligation", certainty: "committed", amount: 43_785, period_end: "2026-06-30", due_date: "2031-06-30", notes: "Credit derivative notional amounts" }),
+			entry({ kind: "obligation", certainty: "committed", amount: 500, period_end: "2026-06-30", due_date: "2056-06-30", notes: "The 2056 Notes principal" }),
+			entry({ kind: "obligation", certainty: "committed", amount: 500, period_end: "2026-06-30", due_date: "2066-06-30", notes: "The 2066 Notes principal" })
+		], TODAY)
+		const total = out.reduce((s, b) => s + (b.total_by_kind["obligation USD"] ?? 0), 0)
+		expect(total).toBeCloseTo(43_800 + 500 + 500) // the notional collapsed into the max payment; the twins survived
+	})
+
+	test("a subset-note lump drops only when a larger parent survives", () => {
+		const rpo = (amount: number, notes: string) =>
+			entry({ kind: "contingent_revenue", certainty: "conditional", amount, period_end: "2026-06-30", due_date: "2027-06-30", notes })
+		const withParent = forwardSchedule([
+			rpo(519_500, "Remaining performance obligations were $519.5 billion; just over 50% expected within a year."),
+			rpo(513_900, "$513.9 billion of revenue backlog related to Google Cloud.")
+		], TODAY)
+		expect(withParent.reduce((s, b) => s + (b.total_by_kind["contingent_revenue USD"] ?? 0), 0)).toBeCloseTo(519_500)
+		const alone = forwardSchedule([rpo(513_900, "$513.9 billion of revenue backlog related to Google Cloud.")], TODAY)
+		expect(alone.reduce((s, b) => s + (b.total_by_kind["contingent_revenue USD"] ?? 0), 0)).toBeCloseTo(513_900) // sole representative stays
 	})
 
 	test("straight-line spread sums to the lump and drops already-past quarters", () => {

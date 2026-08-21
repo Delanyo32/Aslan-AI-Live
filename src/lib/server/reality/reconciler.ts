@@ -379,10 +379,53 @@ export function forwardSchedule(entries: readonly LedgerEntryRow[], today: strin
 		const k = `${e.kind}|${famOf(e)}|${e.unit}`
 		if ((latestLump.get(k) ?? "") < e.period_end) latestLump.set(k, e.period_end)
 	}
-	for (const e of lumps) {
+	const surviving = lumps.filter((e) => {
 		const family = famOf(e)
-		if (family !== "other" && liveFamilies.has(`${family}|${e.unit}`)) continue // filed schedule already carries this money
-		if (dayDiff(latestLump.get(`${e.kind}|${family}|${e.unit}`)!, e.period_end) > 45) continue // stale vintage
+		if (family !== "other" && liveFamilies.has(`${family}|${e.unit}`)) return false // filed schedule already carries this money
+		if (dayDiff(latestLump.get(`${e.kind}|${family}|${e.unit}`)!, e.period_end) > 45) return false // stale vintage
+		return true
+	})
+
+	// Same-money dedup (probe 2026-08-21, GOOGL wall ~2x): filings state one
+	// commitment in several sentences — a notional beside a max payment, a total
+	// beside its segment split. Two read-time rules; amounts are never edited.
+	//  1. Lumps sharing (kind, unit, due_date) within 0.5% are one disclosure —
+	//     keep the largest. Amount alone is NOT enough (TSM has three distinct
+	//     $1.25B bonds; VRT twin $500M notes due 2056/2066) — the due date is.
+	//  2. A lump whose note declares it a portion of a larger figure ("Of $811.0
+	//     billion…", "$513.9 billion of revenue backlog related to Google Cloud")
+	//     drops when a larger same-kind survivor exists — the parent already
+	//     carries the money. Without a surviving parent it stays: dropping the
+	//     only representative would undercount.
+	const dropped = new Set<string>()
+	const byDue = new Map<string, LedgerEntryRow[]>()
+	for (const e of surviving) {
+		const k = `${e.kind}|${e.unit}|${e.due_date}`
+		byDue.set(k, [...(byDue.get(k) ?? []), e])
+	}
+	for (const group of byDue.values()) {
+		group.sort((a, b) => b.amount - a.amount)
+		for (let i = 0; i < group.length; i++) {
+			if (dropped.has(group[i].id)) continue
+			for (let j = i + 1; j < group.length; j++)
+				if (group[i].amount > 0 && (group[i].amount - group[j].amount) / group[i].amount < 0.005) dropped.add(group[j].id)
+		}
+	}
+	// ponytail: two note shapes cover every observed subset; widen if a probe finds more
+	const SUBSET_NOTE = /\bof \$[\d,.]+ ?(billion|million|trillion)\b|(billion|million|trillion) of (revenue backlog|remaining performance)/i
+	const maxByKind = new Map<string, number>()
+	for (const e of surviving) {
+		if (dropped.has(e.id)) continue
+		const k = `${e.kind}|${e.unit}`
+		maxByKind.set(k, Math.max(maxByKind.get(k) ?? 0, e.amount))
+	}
+	for (const e of surviving) {
+		if (dropped.has(e.id) || !e.notes || !SUBSET_NOTE.test(e.notes)) continue
+		if (e.amount < (maxByKind.get(`${e.kind}|${e.unit}`) ?? 0)) dropped.add(e.id)
+	}
+
+	for (const e of surviving) {
+		if (dropped.has(e.id)) continue
 		const key = `${e.kind} ${e.unit}`
 		const qs = quartersBetween(e.period_end, e.due_date!)
 		const layer = qs.length > 1 ? "estimated" : "disclosed" // due within one quarter = a dated fact, not a spread
@@ -625,6 +668,11 @@ export async function reconcile(
 				e.unit === d.currency &&
 				within(e.period_end, d.frame.end) &&
 				ACTION_KINDS[action].has(e.kind) &&
+				// committed_balance only ever sums debt/lease/purchase claims, so money
+				// can move OUT of it only when the citation IS one of those components.
+				// Probe 2026-08-21: all 15 fleet applications cited litigation accruals
+				// and receivables the balance never held (INTC's $2.2B VLSI judgment).
+				(action !== "committed_to_expense" || COMMITTED_BALANCE.has(internalOf(e) ?? "")) &&
 				(action !== "revenue_to_conditional" || !RPO_WORDS.test(`${e.notes ?? ""} ${e.source_location ?? ""}`))
 			)
 		if (cited.length === 0) continue // uncited (or wrongly cited) adjustments never apply

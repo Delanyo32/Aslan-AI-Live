@@ -78,6 +78,20 @@ describe("reported debt alias picks", () => {
 		]
 		expect(reportedDebtAt(es, "2025-06-30", "USD")).toBeNull()
 	})
+	test("6-K rows (ai origin, 6k: tag) are the debt spine for foreign filers", () => {
+		const es = [
+			entry({ taxonomy_tag: "6k:debt_long", amount: 900, origin: "ai", unit: "EUR" }),
+			entry({ taxonomy_tag: "6k:debt_short", amount: 100, origin: "ai", unit: "EUR" })
+		]
+		expect(reportedDebtAt(es, "2025-06-30", "EUR")).toBe(1000)
+	})
+	test("real XBRL outranks a 6-K row for the same period", () => {
+		const es = [
+			entry({ taxonomy_tag: "6k:debt_long", amount: 900, origin: "ai" }),
+			entry({ taxonomy_tag: "us-gaap:LongTermDebtNoncurrent", amount: 800 })
+		]
+		expect(reportedDebtAt(es, "2025-06-30", "USD")).toBe(800)
+	})
 	test("6-day date tolerance", () => {
 		const es = [entry({ taxonomy_tag: "us-gaap:LongTermDebt", amount: 7, period_end: "2025-06-28" })]
 		expect(pickAliasInstant(es, ["us-gaap:LongTermDebt"], "2025-06-30", "USD")).toBe(7)

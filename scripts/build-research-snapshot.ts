@@ -89,8 +89,17 @@ const BANNED = [
 	"deception", "cooking the books", "pump and dump", "is hiding", "are hiding", "is concealing",
 	"are concealing", "is faking", "are faking"
 ]
-const bannedIn = (text: string): string[] =>
-	BANNED.filter((p) => new RegExp(`\\b${p.replace(/ /g, "\\s+")}\\b`, "i").test(text))
+// Style tells that made the last bake read like a machine narrating a table.
+const STYLE_BANNED = [
+	"n/a", "5_to_10y", "is a company", "the ledger shows", "the filings report",
+	"identified in the filings", "recontextualize"
+]
+const bannedIn = (text: string): string[] => {
+	const hits = [...BANNED, ...STYLE_BANNED].filter((p) => new RegExp(`\\b${p.replace(/ /g, "\\s+")}\\b`, "i").test(text))
+	// "$0 million" is banned, but "$97.0 million" is a real figure — no digit/dot before the 0.
+	if (/(?<![\d.])0 million\b/.test(text)) hits.push("0 million")
+	return hits
+}
 
 /** Every number in prose must appear in the facts blob (or be a year / tiny int). */
 function offendingNumbers(text: string, factsJson: string): string[] {
@@ -107,11 +116,21 @@ function offendingNumbers(text: string, factsJson: string): string[] {
 }
 
 const PROSE_RULES =
-	"You write for a public research paper about SEC filings. Plain English, 8th-grade level, " +
-	"short sentences, active voice, no em dashes. Neutral evidence language only: state what the " +
-	"filings show, never accuse (no 'fraud', 'scheme', 'hiding', or similar). Every number you " +
-	"write MUST be copied character-for-character from the FACTS block (you may drop trailing " +
-	"zeros never; just copy exactly). Do not compute new numbers. Do not add facts not in FACTS."
+	"You write short prose blocks for a public research paper about SEC filings. The reader sees " +
+	"stat tiles and charts right next to your text that already show every headline total, so never " +
+	"walk through totals one at a time. Each block earns its place by saying the one thing a chart " +
+	"cannot: lead with the sharpest fact, then set it against the FACTS number or ratio that gives " +
+	"it scale. A number lands relatively — pair it with its contrast. " +
+	"Plain English, 8th-grade level, short sentences, active voice, no em dashes. " +
+	"Never open with boilerplate ('X is a company', 'X is listed as...') — the reader is already on " +
+	"the page. Vary sentence openers; do not narrate a data source in every sentence. Every amount " +
+	"must name what it is for — never a bare list of dollar figures. If a fact is missing from " +
+	"FACTS, skip it silently: do not write 'n/a' and do not narrate zero values. Do not repeat the " +
+	"same number in two different sections. " +
+	"Neutral evidence language only: state what filings show, never accuse (no 'fraud', 'scheme', " +
+	"'hiding', or similar). Every number you write MUST be copied character-for-character from the " +
+	"FACTS block. Do not compute new numbers, including ratios in words — if FACTS gives no ratio, " +
+	"make no quantitative comparison. Do not add facts not in FACTS."
 
 async function checkedProse<T extends Record<string, string>>(
 	system: string, factsJson: string, tool: Tool, label: string
@@ -151,7 +170,19 @@ const fmtMoney = (v: number | null | undefined, cur = "USD"): string => {
 	if (a >= 1e9) return `${sym}${(v / 1e9).toFixed(1)} billion`
 	return `${sym}${(v / 1e6).toFixed(0)} million`
 }
-const fmtPct = (v: number | null | undefined): string => (v === null || v === undefined ? "n/a" : `${(v * 100).toFixed(0)}%`)
+const fmtPct = (v: number | null | undefined): string =>
+	v === null || v === undefined ? "n/a" : `${(v * 100).toFixed(0).replace(/^-0$/, "0")}%`
+
+// The model narrates whatever it sees: strip absent/zero facts so it can't write "n/a" or "$0 million".
+const dropEmpty = (_k: string, v: unknown) =>
+	v === "n/a" || (typeof v === "string" && /^\D*0 million$/.test(v)) ? undefined : v
+
+// Code owns every number: comparisons the prose may want are computed here, never by the model.
+const ratio = (a: number | null | undefined, b: number | null | undefined): string | undefined => {
+	if (!a || !b || a <= 0 || b <= 0) return undefined
+	const r = (a / b).toFixed(1)
+	return r === "0.0" ? undefined : `${r}x` // a sub-0.1x ratio reads as "0.0x" — worse than silence
+}
 
 // ── per-company build ───────────────────────────────────────────────────────
 
@@ -248,22 +279,26 @@ async function buildCompany(ticker: string, cik: string, name: string) {
 		wall_beyond_10y: fmtMoney(wall.obligations[2].disclosed + wall.obligations[2].estimated, currency),
 		undated_after_year_5: fmtMoney(wall.undated_after5, currency),
 		future_revenue_next_5y: fmtMoney(wall.future_revenue[0], currency),
+		committed_vs_reported_debt: ratio(lastPt.committed, lastPt.reported_debt),
+		backlog_vs_one_year_of_revenue: ratio(lastPt.rpo, company.latest.ttm_revenue),
+		due_next_5y_vs_revenue_promised_next_5y: ratio(
+			wall.obligations[0].disclosed + wall.obligations[0].estimated, wall.future_revenue[0]),
 		revenue_growth_per_year: fmtPct(company.growth.revenue_cagr),
 		expense_growth_per_year: fmtPct(company.growth.expenses_cagr),
 		committed_growth_per_year: fmtPct(company.growth.committed_cagr),
 		quarters_changed_by_reconciliation: `${company.adjusted_quarters.n} of ${company.adjusted_quarters.of}`,
 		flags: company.flags.slice(0, 12).map((f) => `${f.type}: ${f.summary}`),
 		recent_narratives: company.narratives.map((n) => n.narrative.slice(0, 300))
-	}, null, 1)
+	}, dropEmpty, 1)
 
 	const tool: Tool = {
 		name: "submit_prose",
 		description: "Short sections for one company's research page",
 		parameters: Type.Object({
-			overview: Type.String({ description: "2-4 sentences: who they are and the one thing the ledger shows" }),
-			debt: Type.String({ description: "2-3 sentences: reported debt vs total committed money" }),
-			wall: Type.String({ description: "2-3 sentences: the obligations ahead vs revenue already promised to them" }),
-			flags_note: Type.String({ description: "1-3 sentences on the notable flags, neutral evidence language; empty string if no flags" })
+			overview: Type.String({ description: "2-3 sentences. Lead with this company's single sharpest fact and the FACTS comparison that gives it scale — prefer revenue scale, backlog vs revenue, growth, or a striking flag, NOT the debt-vs-committed story (the debt section owns that). Never open with who the company is or its ticker — both are in the page title." }),
+			debt: Type.String({ description: "1-3 sentences: what total committed money adds beyond reported debt (leases, purchases). If they are nearly equal, one sentence saying so." }),
+			wall: Type.String({ description: "1-3 sentences: the tension between what is due and the revenue already promised to them. Skip empty bands entirely." }),
+			flags_note: Type.String({ description: "1-3 sentences. Lead with the most striking flag; every amount must name what it is tied to. Neutral evidence language; empty string if no flags." })
 		})
 	}
 	company.prose = await checkedProse(PROSE_RULES, facts, tool, ticker)
@@ -437,6 +472,9 @@ const industryFacts = JSON.stringify({
 	wall_beyond_10y: fmtMoney(wallSum.obligations[2].disclosed + wallSum.obligations[2].estimated),
 	undated_after_year_5: fmtMoney(wallSum.undated_after5),
 	future_revenue_next_5y: fmtMoney(wallSum.future_revenue[0]),
+	committed_vs_reported_debt: ratio(latest.committed, latest.reported_debt),
+	backlog_vs_one_year_of_revenue: ratio(latest.rpo, latest.ttm_revenue),
+	due_next_5y_vs_revenue_promised_next_5y: ratio(industry.headline.wall_next5, wallSum.future_revenue[0]),
 	revenue_growth_per_year: fmtPct(industry.growth.cagr.revenue),
 	committed_growth_per_year: fmtPct(industry.growth.cagr.committed),
 	reported_debt_growth_per_year: fmtPct(industry.growth.cagr.reported_debt),
@@ -453,20 +491,20 @@ const industryFacts = JSON.stringify({
 		stock_pay_inside_those_lines: fmtMoney(compSum.at(-1)!.sbc), capex_cash: fmtMoney(compSum.at(-1)!.capex)
 	} : null,
 
-}, null, 1)
+}, dropEmpty, 1)
 
 const industryTool: Tool = {
 	name: "submit_prose",
 	description: "Sections for the industry research paper",
+	// No `intro` (it duplicated the hand-written masthead) and no `method` (the
+	// page has a better hand-written fallback) — the page's {#if} guards handle absence.
 	parameters: Type.Object({
-		intro: Type.String({ description: "3-5 sentences opening the paper: what was read, what the big picture shows" }),
-		debt: Type.String({ description: "2-4 sentences: reported debt vs total committed money across the industry" }),
-		revenue_reality: Type.String({ description: "2-4 sentences: realized revenue vs deferred (unrealized) and backlog" }),
-		components: Type.String({ description: "2-4 sentences: what the money is earned from and spent on" }),
-		wall: Type.String({ description: "2-4 sentences: commitments due in the next 5/10+ years vs revenue already promised" }),
-		growth: Type.String({ description: "2-4 sentences: which grows faster — revenue, commitments, debt, deferred" }),
-		declared: Type.String({ description: "2-4 sentences: how often reconciliation changed the as-filed numbers" }),
-		method: Type.String({ description: "2-4 sentences: how the pipeline works, code owns numbers, AI catalogs text" })
+		debt: Type.String({ description: "1-3 sentences adding what the section headline (which already states both totals) cannot: what drives the gap or how fast it grew, from FACTS only" }),
+		revenue_reality: Type.String({ description: "1-3 sentences: the comparison between earned revenue and the deferred + backlog pile, using the FACTS ratio" }),
+		components: Type.String({ description: "2-3 sentences: the one standout in where money is earned or spent — not a recitation of every line" }),
+		wall: Type.String({ description: "1-3 sentences: the tension between what is due and the revenue promised for the same window. Skip empty bands." }),
+		growth: Type.String({ description: "1-3 sentences: the single sharpest growth-rate comparison, stated plainly" }),
+		declared: Type.String({ description: "1-3 sentences: how often reconciliation changed the as-filed numbers and the leading reason" })
 	})
 }
 industry.prose = await checkedProse(PROSE_RULES, industryFacts, industryTool, "industry")
