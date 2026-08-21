@@ -97,6 +97,7 @@
 	<a href="/" class="serif-italic text-2xl text-gray-900 no-underline tracking-tight">Aslan Terminal</a>
 
 	<nav class="hidden md:flex items-center gap-10">
+		<a href="/research" class="mono-label text-[11px] text-gray-500 hover:text-black nav-underline no-underline">Research</a>
 		<a href="#report" class="mono-label text-[11px] text-gray-500 hover:text-black nav-underline no-underline">Report</a>
 		<a href="#methodology" class="mono-label text-[11px] text-gray-500 hover:text-black nav-underline no-underline">Methodology</a>
 		<a href="#pricing" class="mono-label text-[11px] text-gray-500 hover:text-black nav-underline no-underline">Pricing</a>
